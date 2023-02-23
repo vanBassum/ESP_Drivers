@@ -263,12 +263,12 @@ ESP_Drivers::mcp23s17_pins_t* ESP_Drivers::T6963C::OSetAddress(uint8_t col, uint
 	return order;
 }
 
-uint32_t ESP_Drivers::T6963C::GetHeight()
+uint16_t ESP_Drivers::T6963C::GetHeight()
 {
 	return 64;
 }
 
-uint32_t ESP_Drivers::T6963C::GetWidth()
+uint16_t ESP_Drivers::T6963C::GetWidth()
 {
 	return 240;
 }

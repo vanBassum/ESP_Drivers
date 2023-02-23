@@ -43,8 +43,8 @@ namespace ESP_Drivers
 	public:
 		esp_err_t Init(MCP23S17& expander, int width, int height);
 		void SetBacklight(t6963c_backlight_t value);
-		uint32_t GetHeight() override;
-		uint32_t GetWidth() override;
+		uint16_t GetHeight() override;
+		uint16_t GetWidth() override;
 		void WriteRow(uint32_t y, uint8_t* data, size_t size) override;
 	};
 }
