@@ -265,12 +265,12 @@ ESP_Drivers::mcp23s17_pins_t* ESP_Drivers::T6963C::OSetAddress(uint8_t col, uint
 
 uint32_t ESP_Drivers::T6963C::GetHeight()
 {
-	return 240;
+	return 64;
 }
 
 uint32_t ESP_Drivers::T6963C::GetWidth()
 {
-	return 64;
+	return 240;
 }
 
 void ESP_Drivers::T6963C::WriteRow(uint32_t y, uint8_t* data, size_t size)

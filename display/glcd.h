@@ -3,7 +3,7 @@
 
 namespace ESP_Drivers
 {
-	class GLCD
+	class GLCD_Mono
 	{
 	public:
 		virtual uint32_t GetWidth() = 0;

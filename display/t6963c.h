@@ -14,7 +14,7 @@ namespace ESP_Drivers
 	}t6963c_backlight_t;
 
 
-	class T6963C : public GLCD
+	class T6963C : public GLCD_Mono
 	{
 		MCP23S17 expander;
 		uint8_t rows = 0;
