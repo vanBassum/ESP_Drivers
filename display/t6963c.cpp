@@ -263,16 +263,25 @@ ESP_Drivers::mcp23s17_pins_t* ESP_Drivers::T6963C::OSetAddress(uint8_t col, uint
 	return order;
 }
 
-void ESP_Drivers::T6963C::WriteRow(int row, uint8_t* data)
+uint32_t ESP_Drivers::T6963C::GetHeight()
+{
+	return 240;
+}
+
+uint32_t ESP_Drivers::T6963C::GetWidth()
+{
+	return 64;
+}
+
+void ESP_Drivers::T6963C::WriteRow(uint32_t y, uint8_t* data, size_t size)
 {
 	mcp23s17_pins_t pinOrder[70];	//6 SetAddr + 2 StartAW + 60 AW + 2 StopAW
 	mcp23s17_pins_t* wrPtr = pinOrder;
-	wrPtr = OSetAddress(0, row, wrPtr);
+	wrPtr = OSetAddress(0, y, wrPtr);
 	wrPtr = OWriteCmd(T6963_SET_DATA_AUTO_WRITE, wrPtr);	
 	int col;
-	for (col = 0; col < 30; col++)
+	for (col = 0; col < size; col++)
 		wrPtr = OWriteByte(0, data[col], wrPtr);	
 	wrPtr = OWriteCmd(T6963_AUTO_RESET, wrPtr);	
 	expander.ConsecutivePinWriting(GLCD_CTRL_PINS | GLCD_DATA_PINS, pinOrder, 70);
 }
-
