@@ -455,7 +455,7 @@ size_t ESP_Drivers::MAX14830::Uart::Write(const void* data, size_t size)
 }
 
 size_t ESP_Drivers::MAX14830::Uart::Read(void* data, size_t size)
-{
+{	
 	return inputBuffer.Read(data, size);
 }
 
@@ -494,21 +494,21 @@ void ESP_Drivers::MAX14830::IrqTaskWork(Task& task, void* args)
 				//ESP_LOGI(TAG, "IRQ handeling");
 				uint8_t uart = 0;				
 				regmap_read(MAX310X_GLOBALIRQ_REG, &uart);
+				Uart0.HandleIRQ(&changedPins);
 				Uart1.HandleIRQ(&changedPins);
 				Uart2.HandleIRQ(&changedPins);
 				Uart3.HandleIRQ(&changedPins);
-				Uart4.HandleIRQ(&changedPins);
 			}
 			
 			
 			if (HAS_BIT(notifications, MAX14830_EVENT_PORT0_TX))
-				Uart1.HandleOutputBuffer();
+				Uart0.HandleOutputBuffer();
 			if (HAS_BIT(notifications, MAX14830_EVENT_PORT1_TX))
-				Uart2.HandleOutputBuffer();
+				Uart1.HandleOutputBuffer();
 			if (HAS_BIT(notifications, MAX14830_EVENT_PORT2_TX))
-				Uart3.HandleOutputBuffer();
+				Uart2.HandleOutputBuffer();
 			if (HAS_BIT(notifications, MAX14830_EVENT_PORT3_TX))
-				Uart4.HandleOutputBuffer();
+				Uart3.HandleOutputBuffer();
 			
 			spidev.ReleaseBus();
 			

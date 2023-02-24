@@ -127,10 +127,10 @@ namespace ESP_Drivers
 		void SetPins(max14830_pins_t mask, max14830_pins_t value);
 		void SetInterrupts(max14830_pins_t mask, max14830_pins_t value);
 		max14830_pins_t GetPins(max14830_pins_t mask);
-		Uart Uart1 = Uart(this, MAX14830_UART_NUM_0);
-		Uart Uart2 = Uart(this, MAX14830_UART_NUM_1);
-		Uart Uart3 = Uart(this, MAX14830_UART_NUM_2);
-		Uart Uart4 = Uart(this, MAX14830_UART_NUM_3);
+		Uart Uart0 = Uart(this, MAX14830_UART_NUM_0);
+		Uart Uart1 = Uart(this, MAX14830_UART_NUM_1);
+		Uart Uart2 = Uart(this, MAX14830_UART_NUM_2);
+		Uart Uart3 = Uart(this, MAX14830_UART_NUM_3);
 	
 	}
 	;
