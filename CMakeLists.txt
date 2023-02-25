@@ -5,10 +5,12 @@ idf_component_register(
 		"esp_drivers.cpp"
 		"display/hd44780.cpp"
 		"display/t6963c.cpp"
+		"display/st7735.cpp"
 		"expander/max14830.cpp"
 		"expander/mcp23s17.cpp"
 		"rtc/pcf2123.cpp"
 		"mcu/esp32.cpp"
+		
 	INCLUDE_DIRS "." "display" "expander" "rtc" "mcu"
 	REQUIRES ESP_Base ESP_Com
 	PRIV_REQUIRES esp_wifi)
