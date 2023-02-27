@@ -10,7 +10,7 @@ idf_component_register(
 		"expander/mcp23s17.cpp"
 		"rtc/pcf2123.cpp"
 		"mcu/esp32.cpp"
-		
-	INCLUDE_DIRS "." "display" "expander" "rtc" "mcu"
+		"measure/ina3221.cpp"
+	INCLUDE_DIRS "." "display" "expander" "rtc" "mcu" "measure"
 	REQUIRES ESP_Base ESP_Com
 	PRIV_REQUIRES esp_wifi)

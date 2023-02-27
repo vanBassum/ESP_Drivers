@@ -8,4 +8,4 @@
 #include "expander/mcp23s17.h"
 #include "mcu/esp32.h"
 #include "rtc/pcf2123.h"
-
+#include "measure/ina3221.h"
