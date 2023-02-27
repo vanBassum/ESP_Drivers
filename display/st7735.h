@@ -49,8 +49,7 @@ namespace ESP_Drivers
         esp_err_t Init(SPIBus& spiBus);
         void DrawPixel(uint16_t x, uint16_t y, uint16_t color);
         void SetWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
-		void WriteWindow(uint8_t* data, size_t size);
-        void ST7735_DrawPixel(uint16_t x, uint16_t y, uint16_t color) ;
+		void WriteWindow(uint16_t* colors, size_t size);
     };
 }
 

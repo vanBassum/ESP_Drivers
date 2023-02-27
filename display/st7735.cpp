@@ -1,6 +1,6 @@
 #include "st7735.h"
 #include <vector>
-
+#include "rom/gpio.h"
 
 #define DELAY 0x80
 #define HAL_MAX_DELAY	  100
@@ -151,6 +151,7 @@ static const uint8_t
 esp_err_t ESP_Drivers::ST7735::Init(SPIBus &spiBus)
 {
     esp_err_t result = ESP_FAIL;
+	gpio_pad_select_gpio(settings.dc);
     gpio_set_direction(settings.cs, GPIO_MODE_OUTPUT);
     gpio_set_direction(settings.dc, GPIO_MODE_OUTPUT);
     gpio_set_direction(settings.rst, GPIO_MODE_OUTPUT);
@@ -174,9 +175,20 @@ esp_err_t ESP_Drivers::ST7735::Init(SPIBus &spiBus)
     return result;
 }
 
-void ESP_Drivers::ST7735::WriteWindow(uint8_t *data, size_t size)
+void ESP_Drivers::ST7735::WriteWindow(uint16_t *colors, size_t size)
 {
-    ST7735_WriteData(data, size * 2);
+	size_t bytes = size * 2;
+	uint8_t* buf = (uint8_t*)colors;
+	
+	int i = 0;
+	while (i < bytes)
+	{
+		size_t wrt = bytes - i;
+		if (wrt > 64)
+			wrt = 64;
+		ST7735_WriteData(&buf[i], wrt);
+		i += wrt;
+	}
 }
 
 
@@ -265,17 +277,18 @@ void ESP_Drivers::ST7735::Reset()
 
 
 
-void ESP_Drivers::ST7735::ST7735_DrawPixel(uint16_t x, uint16_t y, uint16_t color)
+void ESP_Drivers::ST7735::DrawPixel(uint16_t x, uint16_t y, uint16_t color)
 {
-    if((x >= settings.width) || (y >= settings.height))
-        return;
+	if ((x >= settings.width) || (y >= settings.height))
+		return;
 
 
-    SetWindow(x, y, x+1, y+1);
-    uint8_t data[] = { 
-	    (uint8_t)(color >> 8), 
-	    (uint8_t)(color & 0xFF)};
-    ST7735_WriteData(data, sizeof(data));
+	SetWindow(x, y, x + 1, y + 1);
+	uint8_t data[] = { 
+		(uint8_t)(color >> 8), 
+		(uint8_t)(color & 0xFF)
+	 };
+	ST7735_WriteData(data, sizeof(data));
 
 }
 
