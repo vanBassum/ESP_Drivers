@@ -1,6 +1,5 @@
 #pragma once
 #include "mcp23s17.h"
-#include "glcd.h"
 
 namespace ESP_Drivers
 {
@@ -14,7 +13,7 @@ namespace ESP_Drivers
 	}t6963c_backlight_t;
 
 
-	class T6963C : public GLCD_Mono
+	class T6963C
 	{
 		MCP23S17 expander;
 		uint8_t rows = 0;
@@ -41,10 +40,15 @@ namespace ESP_Drivers
 		mcp23s17_pins_t* OSetAddress(uint8_t col, uint8_t row, mcp23s17_pins_t* order);
 	
 	public:
-		esp_err_t Init(MCP23S17& expander, int width, int height);
+		struct Settings
+		{
+			uint16_t width = 128;
+			uint16_t height = 128;
+		};
+
+		Settings settings;
+		esp_err_t Init(MCP23S17& expander);
 		void SetBacklight(t6963c_backlight_t value);
-		uint16_t GetHeight() override;
-		uint16_t GetWidth() override;
-		void WriteRow(uint32_t y, uint8_t* data, size_t size) override;
+		void WriteRow(uint32_t y, uint8_t* data, size_t size);
 	};
 }

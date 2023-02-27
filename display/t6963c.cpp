@@ -54,11 +54,11 @@
 #define ADDR(col, row)	(col + (row * 30))
 
 
-esp_err_t ESP_Drivers::T6963C::Init(MCP23S17& expander, int width, int height)
+esp_err_t ESP_Drivers::T6963C::Init(MCP23S17& expander)
 {
 	this->expander = expander;
-	this->columns = width / 8;
-	this->rows = height;
+	this->columns = settings.width / 8;
+	this->rows = settings.height;
 	expander.SetPinsMode(GLCD_ALL_PINS, MCP23S17_PINMODE_OUTPUT);
 	expander.SetPins(GLCD_CTRL_PINS, GLCD_CTRL_PINS);
 	//RESET, NOT POSSIBLE
@@ -261,16 +261,6 @@ ESP_Drivers::mcp23s17_pins_t* ESP_Drivers::T6963C::OSetAddress(uint8_t col, uint
 	uint16_t address = ADDR(col, row);
 	order = OWriteCmd(0x24, address, (address >> 8), order);
 	return order;
-}
-
-uint16_t ESP_Drivers::T6963C::GetHeight()
-{
-	return 64;
-}
-
-uint16_t ESP_Drivers::T6963C::GetWidth()
-{
-	return 240;
 }
 
 void ESP_Drivers::T6963C::WriteRow(uint32_t y, uint8_t* data, size_t size)

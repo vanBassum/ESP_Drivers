@@ -2,14 +2,13 @@
 #include "esp_system.h"
 #include "esp_com.h"
 #include "esp_base.h"
-#include "glcd.h"
 
 using namespace ESP_Com;
 using namespace ESP_Base;
 
 namespace ESP_Drivers
 {
-    class ST7735 : public GLCD_16
+    class ST7735
     {
         SPIDevice spidev;
 
@@ -49,11 +48,8 @@ namespace ESP_Drivers
         Settings settings;
         esp_err_t Init(SPIBus& spiBus);
         void DrawPixel(uint16_t x, uint16_t y, uint16_t color);
-		uint16_t GetWidth() override {return settings.width;}
-		uint16_t GetHeight() override{return settings.height;}
-
-        void SetWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) override;
-		void WriteWindow(uint8_t* data, size_t size) override;
+        void SetWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
+		void WriteWindow(uint8_t* data, size_t size);
         void ST7735_DrawPixel(uint16_t x, uint16_t y, uint16_t color) ;
     };
 }
