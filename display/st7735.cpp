@@ -184,8 +184,9 @@ void ESP_Drivers::ST7735::WriteWindow(uint16_t *colors, size_t size)
 	while (i < bytes)
 	{
 		size_t wrt = bytes - i;
-		if (wrt > 64)
-			wrt = 64;
+
+		if (wrt > 1024)
+			wrt = 1024;
 		ST7735_WriteData(&buf[i], wrt);
 		i += wrt;
 	}
@@ -236,7 +237,7 @@ void ESP_Drivers::ST7735::Transmit(uint8_t *data, size_t size)
 		memset(&SPITransaction, 0, sizeof(spi_transaction_t));
 		SPITransaction.length = size * 8;
 		SPITransaction.tx_buffer = data;
-		ret = spidev.PollingTransmit(&SPITransaction);
+		ret = spidev.Transmit(&SPITransaction);
 		assert(ret == ESP_OK); 
 	}
 }
