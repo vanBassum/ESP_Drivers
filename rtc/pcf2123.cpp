@@ -92,7 +92,7 @@ ESP_Drivers::PCF2123::bcd_encode(uint8_t dec)
 }
 
 
-esp_err_t ESP_Drivers::PCF2123::Init(SPIBus& spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
+esp_err_t ESP_Drivers::PCF2123::Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
 {
 	this->cs = cs;
 	this->irq = irq;

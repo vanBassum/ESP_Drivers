@@ -59,7 +59,7 @@ namespace ESP_Drivers
 		uint16_t pinDirBuffer = 0xFFFF;
 
 	public:
-		esp_err_t Init(SPIBus& spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb);
+		esp_err_t Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb);
 		void SetPinsMode(mcp23s17_pins_t mask, mcp23s17_pinmodes_t mode);
 		void SetPins(mcp23s17_pins_t mask, mcp23s17_pins_t value);
 		mcp23s17_pins_t GetPins(mcp23s17_pins_t mask);

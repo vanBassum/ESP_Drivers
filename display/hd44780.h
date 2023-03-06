@@ -8,7 +8,7 @@ namespace ESP_Drivers
 {
 	class HD44780
 	{
-		MCP23S17 expander;
+		MCP23S17* expander;
 
 		void SetCursor(int x, int row);
 		void LCD_cmd(unsigned char cmd);
@@ -16,7 +16,7 @@ namespace ESP_Drivers
 		void LCD_Data(unsigned char cmd);
 		
 	public:
-		esp_err_t Init(MCP23S17& expander);
+		esp_err_t Init(MCP23S17* expander);
 		void SetBacklight(bool enabled);
 		void Write(std::string message);
 		void Write(std::string message, int x, int y);

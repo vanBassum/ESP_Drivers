@@ -90,7 +90,7 @@ namespace ESP_Drivers
 			max14830_uart_port_t port;
 			StreamBuffer inputBuffer;
 			StreamBuffer outputBuffer;
-			void OnWritten(StreamBuffer* buffer);
+			void OnDataReady(IStream* buffer);
 		protected:
 			void HandleIRQ(max14830_pins_t* changes);
 			void HandleOutputBuffer();
@@ -104,7 +104,7 @@ namespace ESP_Drivers
 	
 	
 	protected:
-		void IrqTaskWork(Task& task, void* args);
+		void IrqTaskWork(Task* task, void* args);
 		esp_err_t Detect();
 		esp_err_t SetRefClock();
 		esp_err_t Max14830_WriteBufferPolled(uint8_t cmd, const uint8_t * cmdData, uint8_t count);
@@ -121,8 +121,8 @@ namespace ESP_Drivers
 	
 		friend Uart;
 	public:
-		Event<MAX14830&, max14830_pins_t> OnPinsChanged;
-		esp_err_t Init(SPIBus& spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb  = NULL, transaction_cb_t post_cb = NULL);
+		Event<MAX14830*, max14830_pins_t> OnPinsChanged;
+		esp_err_t Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb  = NULL, transaction_cb_t post_cb = NULL);
 		void SetPinsMode(max14830_pins_t mask, max14830_pinmodes_t mode);
 		void SetPins(max14830_pins_t mask, max14830_pins_t value);
 		void SetInterrupts(max14830_pins_t mask, max14830_pins_t value);

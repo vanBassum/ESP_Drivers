@@ -148,7 +148,7 @@ static const uint8_t
 
 
 
-esp_err_t ESP_Drivers::ST7735::Init(SPIBus &spiBus)
+esp_err_t ESP_Drivers::ST7735::Init(SPIBus* spiBus)
 {
     esp_err_t result = ESP_FAIL;
 	gpio_pad_select_gpio(settings.dc);

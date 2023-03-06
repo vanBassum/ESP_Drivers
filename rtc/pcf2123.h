@@ -181,7 +181,7 @@ namespace ESP_Drivers
 		};
 
 	
-		esp_err_t Init(SPIBus& spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb  = NULL, transaction_cb_t post_cb = NULL);
+		esp_err_t Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb  = NULL, transaction_cb_t post_cb = NULL);
 	
 	
 		/**

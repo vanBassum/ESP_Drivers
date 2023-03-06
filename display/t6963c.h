@@ -15,7 +15,7 @@ namespace ESP_Drivers
 
 	class T6963C
 	{
-		MCP23S17 expander;
+		MCP23S17* expander;
 		uint8_t rows = 0;
 		uint8_t columns = 0;
 		void WriteByte(bool cd, uint8_t data);
@@ -47,7 +47,7 @@ namespace ESP_Drivers
 		};
 
 		Settings settings;
-		esp_err_t Init(MCP23S17& expander);
+		esp_err_t Init(MCP23S17* expander);
 		void SetBacklight(t6963c_backlight_t value);
 		void WriteRow(uint32_t y, uint8_t* data, size_t size);
 	};

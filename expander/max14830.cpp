@@ -8,7 +8,7 @@
 static const char *TAG = "MAX14830";
 
 
-esp_err_t ESP_Drivers::MAX14830::Init(SPIBus& spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
+esp_err_t ESP_Drivers::MAX14830::Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
 {
 	memset(gpioConfBuffer, 0, sizeof(gpioConfBuffer));
 	memset(gpioDataBuffer, 0, sizeof(gpioDataBuffer));
@@ -399,7 +399,7 @@ void ESP_Drivers::MAX14830::Uart::Init(uint32_t baudrate, uint8_t useCTS, uint8_
 	inputBuffer.Init(64, 1);
 	outputBuffer.Init(64, 1);
 	
-	outputBuffer.OnWritten.Bind(this, &ESP_Drivers::MAX14830::Uart::OnWritten);
+	outputBuffer.OnDataReady.Bind(this, &ESP_Drivers::MAX14830::Uart::OnDataReady);
 	
 	parent->spidev.AcquireBus();
 	uint8_t flowCtrlRegVal = 0;
@@ -466,7 +466,7 @@ void ESP_Drivers::MAX14830::gpio_isr_handler(void* arg)
 	parent->irqTask.NotifyFromISR(MAX14830_EVENT_IRQ);	
 }
 
-void ESP_Drivers::MAX14830::IrqTaskWork(Task& task, void* args)
+void ESP_Drivers::MAX14830::IrqTaskWork(Task* task, void* args)
 {
 	//Configure GPIO interrupts.
 	gpio_config_t io_conf;
@@ -484,7 +484,7 @@ void ESP_Drivers::MAX14830::IrqTaskWork(Task& task, void* args)
 	while (true)
 	{
 		gpio_set_intr_type(irqPin, GPIO_INTR_LOW_LEVEL);	//Re enable interrupt.
-		if (task.NotifyWait((uint32_t*)&notifications))
+		if (task->NotifyWait((uint32_t*)&notifications))
 		{
 			max14830_pins_t changedPins = MAX14830_PIN_NONE;
 			spidev.AcquireBus();
@@ -512,7 +512,7 @@ void ESP_Drivers::MAX14830::IrqTaskWork(Task& task, void* args)
 			
 			spidev.ReleaseBus();
 			
-			if (changedPins) OnPinsChanged.Invoke(*this, changedPins);
+			if (changedPins) OnPinsChanged.Invoke(this, changedPins);
 		}
 	}
 }
@@ -559,7 +559,7 @@ void ESP_Drivers::MAX14830::Uart::HandleIRQ(max14830_pins_t* changes)
 }
 
 
-void ESP_Drivers::MAX14830::Uart::OnWritten(StreamBuffer* buffer)
+void ESP_Drivers::MAX14830::Uart::OnDataReady(IStream* buffer)
 {
 	switch (port)
 	{

@@ -1,8 +1,10 @@
 #pragma once
 #include "esp_system.h"
 #include "esp_drivers.h"
+#include "esp_com.h"
 
 using namespace ESP_Drivers;
+using namespace ESP_Com;
 
 typedef enum {
     INA3221_ADDR40_GND = 0b1000000, // A0 pin -> GND
