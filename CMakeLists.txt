@@ -11,6 +11,6 @@ idf_component_register(
 		"rtc/pcf2123.cpp"
 		"mcu/esp32.cpp"
 		"measure/ina3221.cpp"
-	INCLUDE_DIRS "." "display" "expander" "rtc" "mcu" "measure"
+	INCLUDE_DIRS "." "display" "expander" "rtc" "mcu" "measure" "flash"
 	REQUIRES ESP_Base ESP_Com
 	PRIV_REQUIRES esp_wifi)

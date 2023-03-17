@@ -9,3 +9,5 @@
 #include "mcu/esp32.h"
 #include "rtc/pcf2123.h"
 #include "measure/ina3221.h"
+#include "flash/partition.h"
+#include "flash/esppartition.h"
