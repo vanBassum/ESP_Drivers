@@ -48,7 +48,7 @@ typedef enum
 
 
 
-esp_err_t MCP23S17::Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
+bool MCP23S17::Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
 {
 	irqPin = irq;
 	
@@ -76,7 +76,7 @@ esp_err_t MCP23S17::Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transact
 	
 	
 	
-	return result;
+	return result == ESP_OK;
 }
 
 

@@ -46,7 +46,7 @@ public:
 	};
 
 	Settings settings;
-	esp_err_t Init(MCP23S17* expander);
+	bool Init(MCP23S17* expander);
 	void SetBacklight(t6963c_backlight_t value);
 	void WriteRow(uint32_t y, uint8_t* data, size_t size);
 };

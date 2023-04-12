@@ -25,8 +25,8 @@
 
 /* https://github.com/PaulStoffregen/Time */
 //https://github.com/torvalds/linux/blob/master/drivers/rtc/rtc-pcf2123.c
-#include "misc/datetime.h"
-#include "spi/device.h"
+#include "mtime.h"
+#include "spi.h"
 #include "driver/gpio.h"
 
 
@@ -109,7 +109,7 @@ class PCF2123
 private:
 	enum RxtMode { RXT_READ, RXT_WRITE } ;
 
-	SPIDevice spi; 
+	SPI::Device spi; 
 	gpio_num_t cs = GPIO_NUM_NC;
 	gpio_num_t irq = GPIO_NUM_NC;
 	
@@ -175,7 +175,7 @@ public:
 	};
 
 	
-	esp_err_t Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb  = NULL, transaction_cb_t post_cb = NULL);
+	bool Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb  = NULL, transaction_cb_t post_cb = NULL);
 	
 	
 	/**

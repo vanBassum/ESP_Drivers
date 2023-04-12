@@ -15,7 +15,7 @@ class HD44780
 	void LCD_Data(unsigned char cmd);
 		
 public:
-	esp_err_t Init(MCP23S17* expander);
+	bool Init(MCP23S17* expander);
 	void SetBacklight(bool enabled);
 	void Write(std::string message);
 	void Write(std::string message, int x, int y);

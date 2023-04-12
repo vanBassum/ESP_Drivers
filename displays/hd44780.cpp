@@ -1,5 +1,5 @@
 #include "hd44780.h"
-#include "rtos/task.h"
+#include "kernel.h"
 
 #define	LCD_PIN_NONE	MCP23S17_PIN_NONE
 #define	LCD_PIN_RW		MCP23S17_PIN_NONE
@@ -49,13 +49,13 @@
 #define HD44780_ROW2_START      0x40
 #define HD44780_ROW2_END        HD44780_COLS
 
-ESP_Drivers::mcp23s17_pins_t FromData(uint8_t data)
+mcp23s17_pins_t FromData(uint8_t data)
 {
-	return (ESP_Drivers::mcp23s17_pins_t)data;
+	return (mcp23s17_pins_t)data;
 }
 
 
-esp_err_t ESP_Drivers::HD44780::Init(MCP23S17* expander)
+bool HD44780::Init(MCP23S17* expander)
 {
 	this->expander = expander;
 	expander->SetPinsMode(LCD_ALL_PINS, MCP23S17_PINMODE_OUTPUT);
@@ -115,14 +115,14 @@ esp_err_t ESP_Drivers::HD44780::Init(MCP23S17* expander)
 	//WaitBFClear();
 	
 	
-	return ESP_OK;
+	return true;
 }
 
 
 
 
 
-void ESP_Drivers::HD44780::SetBacklight(bool enabled)
+void HD44780::SetBacklight(bool enabled)
 {
 	if (enabled)
 		expander->SetPins(LCD_PIN_BL, LCD_PIN_BL);
@@ -132,7 +132,7 @@ void ESP_Drivers::HD44780::SetBacklight(bool enabled)
 }
 
 
-void ESP_Drivers::HD44780::SetCursor(int x, int row)
+void HD44780::SetCursor(int x, int row)
 {
 	x %= 16;
 	row %= 2;
@@ -141,7 +141,7 @@ void ESP_Drivers::HD44780::SetCursor(int x, int row)
 }
 
 
-void ESP_Drivers::HD44780::LCD_cmd(unsigned char cmd)
+void HD44780::LCD_cmd(unsigned char cmd)
 {
 	expander->SetPins(LCD_PIN_E | LCD_PIN_RW | LCD_PIN_RS, LCD_PIN_E);
 	vTaskDelay(pdMS_TO_TICKS(10));	
@@ -151,14 +151,14 @@ void ESP_Drivers::HD44780::LCD_cmd(unsigned char cmd)
 }
 
 
-void ESP_Drivers::HD44780::WaitBFClear()
+void HD44780::WaitBFClear()
 {
 	vTaskDelay(pdMS_TO_TICKS(1));
 	//ets_delay_us(100);	//TODO
 }
 
 
-void ESP_Drivers::HD44780::LCD_Data(unsigned char cmd)
+void HD44780::LCD_Data(unsigned char cmd)
 {
 	expander->SetPins(LCD_PIN_E | LCD_PIN_RW | LCD_PIN_RS, LCD_PIN_RS | LCD_PIN_E);
 	expander->SetPins(LCD_DATA_PINS, FromData(cmd));
@@ -169,14 +169,14 @@ void ESP_Drivers::HD44780::LCD_Data(unsigned char cmd)
 }
 
 
-void ESP_Drivers::HD44780::Write(std::string message, int x, int y)
+void HD44780::Write(std::string message, int x, int y)
 {
 	SetCursor(x, y);
 	Write(message);
 }
 
 
-void ESP_Drivers::HD44780::Write(std::string message)
+void HD44780::Write(std::string message)
 {
 	for (int i = 0; i < message.length(); i++)
 	{

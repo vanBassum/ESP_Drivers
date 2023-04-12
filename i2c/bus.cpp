@@ -1,7 +1,7 @@
 #include "bus.h"
 
 
-esp_err_t I2C::Bus::Init(i2c_port_t host, gpio_num_t scl, gpio_num_t sda)
+bool I2C::Bus::Init(i2c_port_t host, gpio_num_t scl, gpio_num_t sda)
 {
     this->host = host;
     i2c_config_t conf;
@@ -13,7 +13,7 @@ esp_err_t I2C::Bus::Init(i2c_port_t host, gpio_num_t scl, gpio_num_t sda)
     conf.scl_io_num = scl;
     conf.clk_flags = 0;
     i2c_param_config(host, &conf);
-    return i2c_driver_install(host, conf.mode, 0, 0, 0);
+    return i2c_driver_install(host, conf.mode, 0, 0, 0) == ESP_OK;
 }
 
 

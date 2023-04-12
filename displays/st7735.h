@@ -1,11 +1,12 @@
 #pragma once
 #include "esp_system.h"
 #include "esp_base.h"
+#include "spi.h"
 #include <vector>
 
 class ST7735
 {
-    SPIDevice spidev;
+	SPI::Device spidev;
 
     void CreateInitList(std::vector<uint8_t>* list);
     void ST7735_WriteCommand(uint8_t cmd);
@@ -41,7 +42,7 @@ public:
     };
 
     Settings settings;
-    esp_err_t Init(SPIBus* spiBus);
+	bool Init(SPI::Bus* spiBus);
     void DrawPixel(uint16_t x, uint16_t y, uint16_t color);
     void SetWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
 	void WriteWindow(uint16_t* colors, size_t size);

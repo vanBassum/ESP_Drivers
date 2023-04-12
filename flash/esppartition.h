@@ -17,15 +17,15 @@ class Partition : public IPartition
 	const esp_partition_t * handle = NULL;
 public:
 		
-	esp_err_t Init(const PartitionSettings* settings) 
+	bool Init(const PartitionSettings* settings) 
 	{
 		handle = esp_partition_find_first(settings->type, settings->subtype, settings->label);
 		if (handle == NULL)
-			return ESP_FAIL;
+			return false;
 			
 		totalSize = handle->size;
 		sectorSize = handle->erase_size;
-		return ESP_OK;
+		return true;
 	}
 		
 	virtual esp_err_t EraseRange(size_t offset, size_t size) override

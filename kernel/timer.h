@@ -2,8 +2,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
-#include "../misc/action.h"
-#include "../misc/timespan.h"
+#include "esp_base.h"
 
 
 class Timer
@@ -41,12 +40,13 @@ public:
 		callback.Bind(fp);
 	}
 		
-	void Init(const std::string name, TimeSpan period, bool autoReload = true)
+	bool Init(const std::string name, TimeSpan period, bool autoReload = true)
 	{
 		TickType_t rtosTicks = period.GetMiliSeconds() / portTICK_PERIOD_MS;
 		if (rtosTicks < 1)
 			rtosTicks = 1;
 		xTimer = xTimerCreate(name.c_str(), rtosTicks, autoReload, this, &tCallback);
+		return xTimer != NULL;
 	}
 		
 	bool Start(int timeout = portMAX_DELAY)

@@ -1,11 +1,11 @@
 #include "device.h"
 #include "bus.h"
 
-esp_err_t I2C::Device::Init(Bus *bus, uint16_t device_address)
+bool I2C::Device::Init(Bus *bus, uint16_t device_address)
 {
     this->address = device_address;
     this->bus = bus;
-    return ESP_OK;
+    return true;
 }
 
 esp_err_t I2C::Device::ReadWrite(const uint8_t *write_buffer, size_t write_size, uint8_t *read_buffer, size_t read_size)

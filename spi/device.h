@@ -10,10 +10,10 @@ namespace SPI
 		spi_device_handle_t handle = NULL;
 	public:
 	
-		esp_err_t Init(Bus* bus, spi_device_interface_config_t* config);
-		esp_err_t PollingTransmit(spi_transaction_t* transaction);
-		esp_err_t Transmit(spi_transaction_t* transaction);
-		esp_err_t AcquireBus();
+		bool Init(Bus* bus, spi_device_interface_config_t* config);
+		bool PollingTransmit(spi_transaction_t* transaction);
+		bool Transmit(spi_transaction_t* transaction);
+		bool AcquireBus();
 		void ReleaseBus();
 	};
 }

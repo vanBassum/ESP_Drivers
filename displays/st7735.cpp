@@ -1,6 +1,8 @@
 #include "st7735.h"
+#include "kernel.h"
 #include <vector>
 #include "rom/gpio.h"
+
 
 #define DELAY 0x80
 #define HAL_MAX_DELAY	  100
@@ -148,7 +150,7 @@ static const uint8_t
 
 
 
-esp_err_t ST7735::Init(SPIBus* spiBus)
+bool ST7735::Init(SPI::Bus* spiBus)
 {
     esp_err_t result = ESP_FAIL;
 	gpio_pad_select_gpio(settings.dc);
@@ -172,7 +174,7 @@ esp_err_t ST7735::Init(SPIBus* spiBus)
     //std::vector<uint8_t> initList;
     //CreateInitList(&initList);
     //ST7735_ExecuteCommandList(&initList[0]);
-    return result;
+    return result == ESP_OK;
 }
 
 void ST7735::WriteWindow(uint16_t *colors, size_t size)

@@ -54,7 +54,7 @@
 #define ADDR(col, row)	(col + (row * 30))
 
 
-esp_err_t T6963C::Init(MCP23S17* expander)
+bool T6963C::Init(MCP23S17* expander)
 {
 	this->expander = expander;
 	this->columns = settings.width / 8;
@@ -76,7 +76,7 @@ esp_err_t T6963C::Init(MCP23S17* expander)
 	WriteCmd(T6963_MODE_SET);
 	
 	Clear();
-	return ESP_OK;
+	return true;
 }
 
 void T6963C::WriteCmd(uint8_t cmd, uint8_t data1)

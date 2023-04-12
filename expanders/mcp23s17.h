@@ -1,7 +1,7 @@
 #pragma once
-#include "spi/bus.h"
-#include "rtos/mutex.h"
+#include "kernel.h"
 #include "esp_base.h"
+#include "spi/bus.h"
 
 //https://github.com/RobTillaart/MCP23S17/blob/master/MCP23S17.cpp
 //https://www.esp32.com/viewtopic.php?t=9309
@@ -40,7 +40,7 @@
 	class MCP23S17
 	{
 		Mutex mutex;
-		SPIDevice spidev;
+		SPI::Device spidev;
 		gpio_num_t irqPin = GPIO_NUM_NC;
 		uint8_t devAddr = 0;
 	
@@ -55,7 +55,7 @@
 		uint16_t pinDirBuffer = 0xFFFF;
 
 	public:
-		esp_err_t Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb);
+		bool Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb);
 		void SetPinsMode(mcp23s17_pins_t mask, mcp23s17_pinmodes_t mode);
 		void SetPins(mcp23s17_pins_t mask, mcp23s17_pins_t value);
 		mcp23s17_pins_t GetPins(mcp23s17_pins_t mask);

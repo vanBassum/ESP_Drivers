@@ -1,21 +1,21 @@
 #include "device.h"
 
-esp_err_t SPI::Device::Init(Bus* bus, spi_device_interface_config_t* config)
+bool SPI::Device::Init(Bus* bus, spi_device_interface_config_t* config)
 {
-	return spi_bus_add_device(bus->_host, config, &handle);
+	return spi_bus_add_device(bus->_host, config, &handle) == ESP_OK;
 }
 
 
 
-esp_err_t SPI::Device::PollingTransmit(spi_transaction_t* transaction)
+bool SPI::Device::PollingTransmit(spi_transaction_t* transaction)
 {
-	return spi_device_polling_transmit(handle, transaction);  	//Transmit!
+	return spi_device_polling_transmit(handle, transaction) == ESP_OK;  	//Transmit!
 }
 
 
-esp_err_t SPI::Device::Transmit(spi_transaction_t* transaction)
+bool SPI::Device::Transmit(spi_transaction_t* transaction)
 {
-	return spi_device_transmit(handle, transaction);
+	return spi_device_transmit(handle, transaction) == ESP_OK;
 }
 
 
@@ -27,7 +27,7 @@ void SPI::Device::ReleaseBus()
 }
 
 
-esp_err_t SPI::Device::AcquireBus()
+bool SPI::Device::AcquireBus()
 {
-	return spi_device_acquire_bus(handle, portMAX_DELAY);
+	return spi_device_acquire_bus(handle, portMAX_DELAY) == ESP_OK;
 }

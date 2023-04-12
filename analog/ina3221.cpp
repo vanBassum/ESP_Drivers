@@ -37,7 +37,7 @@ void INA3221::_write(ina3221_reg_t reg, uint16_t *val) {
     device.Write(data, sizeof(data));
 }
 
-esp_err_t INA3221::Init(I2CBus *bus, ina3221_addr_t addr)
+bool INA3221::Init(I2C::Bus *bus, ina3221_addr_t addr)
 {
     esp_err_t result = this->device.Init(bus, (uint16_t) addr);
     if(result == ESP_OK)
@@ -51,7 +51,7 @@ esp_err_t INA3221::Init(I2CBus *bus, ina3221_addr_t addr)
         _filterRes[2] = 0;
         reset();
     }
-    return result;
+    return result == ESP_OK;
 }
 
 

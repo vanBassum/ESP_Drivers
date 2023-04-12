@@ -7,6 +7,7 @@
 #include "esp_log.h"
 #include "esp_base.h"
 #include "endpoint.h"
+#include "istream.h"
 
 
 class Socket : public IStream

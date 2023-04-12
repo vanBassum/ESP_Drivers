@@ -92,7 +92,7 @@ PCF2123::bcd_encode(uint8_t dec)
 }
 
 
-esp_err_t PCF2123::Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
+bool PCF2123::Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
 {
 	this->cs = cs;
 	this->irq = irq;
@@ -109,7 +109,7 @@ esp_err_t PCF2123::Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transacti
 	spi_devcfg.post_cb = post_cb;
 	result = spi.Init(spiBus, &spi_devcfg);	
 	if (result != ESP_OK)
-		return result;
+		return false;
 	
 	reset();
 	
@@ -125,7 +125,7 @@ esp_err_t PCF2123::Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transacti
 	spi.ReleaseBus();
 	
 	
-	return result;
+	return result == ESP_OK;
 }
 
 

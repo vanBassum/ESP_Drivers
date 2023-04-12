@@ -8,7 +8,7 @@
 static const char *TAG = "MAX14830";
 
 
-esp_err_t ESP_Drivers::MAX14830::Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
+bool MAX14830::Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
 {
 	memset(gpioConfBuffer, 0, sizeof(gpioConfBuffer));
 	memset(gpioDataBuffer, 0, sizeof(gpioDataBuffer));
@@ -45,13 +45,13 @@ esp_err_t ESP_Drivers::MAX14830::Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t 
 	//Its optional, don't start the task if interupts aren't required.
 	irqPin = irq;
 	irqTask.Init("MAX14830", 10, 1048 * 2);
-	irqTask.Bind(this, &ESP_Drivers::MAX14830::IrqTaskWork);
+	irqTask.Bind(this, &MAX14830::IrqTaskWork);
 	irqTask.Run();
-	return result;
+	return result == ESP_OK;
 }
 
 
-esp_err_t ESP_Drivers::MAX14830::Detect()
+esp_err_t MAX14830::Detect()
 {
 	esp_err_t ret = regmap_write(MAX310X_GLOBALCMD_REG, MAX310X_EXTREG_ENBL);
 	if (ret == ESP_OK)
@@ -70,20 +70,20 @@ esp_err_t ESP_Drivers::MAX14830::Detect()
 }
 
 
-esp_err_t ESP_Drivers::MAX14830::regmap_write(uint8_t cmd, uint8_t value)
+esp_err_t MAX14830::regmap_write(uint8_t cmd, uint8_t value)
 {
 	return Max14830_WriteBufferPolled(cmd, &value, 1);
 }
 
 
-esp_err_t ESP_Drivers::MAX14830::regmap_read(uint8_t cmd, uint8_t * value)
+esp_err_t MAX14830::regmap_read(uint8_t cmd, uint8_t * value)
 {
 	uint8_t cmdData[1];
 	return Max14830_ReadBufferPolled(cmd, cmdData, value, 1);
 }
 
 
-uint8_t ESP_Drivers::MAX14830::max310x_port_read(max14830_uart_port_t port, uint8_t cmd)
+uint8_t MAX14830::max310x_port_read(max14830_uart_port_t port, uint8_t cmd)
 {
 	uint8_t value = 0;
 	cmd = (port << 5) | cmd;
@@ -92,14 +92,14 @@ uint8_t ESP_Drivers::MAX14830::max310x_port_read(max14830_uart_port_t port, uint
 }
 
 
-void ESP_Drivers::MAX14830::max310x_port_write(max14830_uart_port_t port, uint8_t cmd, uint8_t value)
+void MAX14830::max310x_port_write(max14830_uart_port_t port, uint8_t cmd, uint8_t value)
 {
 	cmd = (port << 5) | cmd;
 	regmap_write(cmd, value);
 }
 
 
-void ESP_Drivers::MAX14830::max310x_port_update(max14830_uart_port_t port, uint8_t cmd, uint8_t mask, uint8_t value)
+void MAX14830::max310x_port_update(max14830_uart_port_t port, uint8_t cmd, uint8_t mask, uint8_t value)
 {
 	uint8_t val = max310x_port_read(port, cmd);
 	val &= ~mask;
@@ -108,7 +108,7 @@ void ESP_Drivers::MAX14830::max310x_port_update(max14830_uart_port_t port, uint8
 }
 
 
-esp_err_t ESP_Drivers::MAX14830::Max14830_WriteBufferPolled(uint8_t cmd, const uint8_t * cmdData, uint8_t count)
+esp_err_t MAX14830::Max14830_WriteBufferPolled(uint8_t cmd, const uint8_t * cmdData, uint8_t count)
 {
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));       				//Zero out the transaction
@@ -119,7 +119,7 @@ esp_err_t ESP_Drivers::MAX14830::Max14830_WriteBufferPolled(uint8_t cmd, const u
 }
 
 
-esp_err_t ESP_Drivers::MAX14830::Max14830_ReadBufferPolled(uint8_t cmd, uint8_t * cmdData, uint8_t * replyData, uint8_t count)
+esp_err_t MAX14830::Max14830_ReadBufferPolled(uint8_t cmd, uint8_t * cmdData, uint8_t * replyData, uint8_t count)
 {
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));       				//Zero out the transaction
@@ -130,7 +130,7 @@ esp_err_t ESP_Drivers::MAX14830::Max14830_ReadBufferPolled(uint8_t cmd, uint8_t 
 	return spidev.PollingTransmit(&t);  			//Transmit!
 }
 
-uint32_t ESP_Drivers::MAX14830::max310x_set_ref_clk()
+uint32_t MAX14830::max310x_set_ref_clk()
 {
 	uint32_t div, clksrc, pllcfg = 0;
 	int64_t besterr = -1;
@@ -235,7 +235,7 @@ uint32_t ESP_Drivers::MAX14830::max310x_set_ref_clk()
 }
 
 
-uint8_t ESP_Drivers::MAX14830::max310x_update_best_err(uint64_t f, int64_t *besterr)
+uint8_t MAX14830::max310x_update_best_err(uint64_t f, int64_t *besterr)
 {
 	/* Use baudrate 115200 for calculate error */
 	int64_t err = f % (115200 * 16);
@@ -247,7 +247,7 @@ uint8_t ESP_Drivers::MAX14830::max310x_update_best_err(uint64_t f, int64_t *best
 	return 1;
 }
 
-uint32_t ESP_Drivers::MAX14830::max310x_get_ref_clk()
+uint32_t MAX14830::max310x_get_ref_clk()
 {
 	uint64_t clk = MAX14830_CLK;	//we only need 64bits for calculation..
 	uint8_t value = max310x_port_read(MAX14830_UART_NUM_0, MAX310X_PLLCFG_REG);
@@ -265,7 +265,7 @@ uint32_t ESP_Drivers::MAX14830::max310x_get_ref_clk()
 	return clk;
 }
 
-uint32_t ESP_Drivers::MAX14830::max310x_set_baud(max14830_uart_port_t port, uint32_t baud)
+uint32_t MAX14830::max310x_set_baud(max14830_uart_port_t port, uint32_t baud)
 {
 	uint8_t mode = 0;
 	uint32_t fref = max310x_get_ref_clk();
@@ -297,7 +297,7 @@ uint32_t ESP_Drivers::MAX14830::max310x_set_baud(max14830_uart_port_t port, uint
 	return clk / div; //actual baudrate, this will never be exactly the value requested..
 }
 
-void ESP_Drivers::MAX14830::SetPinsMode(max14830_pins_t mask, max14830_pinmodes_t mode)
+void MAX14830::SetPinsMode(max14830_pins_t mask, max14830_pinmodes_t mode)
 {
 	spidev.AcquireBus();
 	for (int i = 0; i < 4; i++)
@@ -329,7 +329,7 @@ void ESP_Drivers::MAX14830::SetPinsMode(max14830_pins_t mask, max14830_pinmodes_
 	spidev.ReleaseBus();
 }
 
-void ESP_Drivers::MAX14830::SetPins(max14830_pins_t mask, max14830_pins_t value)
+void MAX14830::SetPins(max14830_pins_t mask, max14830_pins_t value)
 {
 	spidev.AcquireBus();
 	for (int i = 0; i < 4; i++)
@@ -348,7 +348,7 @@ void ESP_Drivers::MAX14830::SetPins(max14830_pins_t mask, max14830_pins_t value)
 	spidev.ReleaseBus();
 }
 
-void ESP_Drivers::MAX14830::SetInterrupts(max14830_pins_t mask, max14830_pins_t value)
+void MAX14830::SetInterrupts(max14830_pins_t mask, max14830_pins_t value)
 {
 	spidev.AcquireBus();
 	for (int i = 0; i < 4; i++)
@@ -367,7 +367,7 @@ void ESP_Drivers::MAX14830::SetInterrupts(max14830_pins_t mask, max14830_pins_t 
 	spidev.ReleaseBus();
 }
 
-ESP_Drivers::max14830_pins_t ESP_Drivers::MAX14830::GetPins(max14830_pins_t mask)
+max14830_pins_t MAX14830::GetPins(max14830_pins_t mask)
 {
 	spidev.AcquireBus();
 	max14830_pins_t result = MAX14830_PIN_NONE;
@@ -387,19 +387,19 @@ ESP_Drivers::max14830_pins_t ESP_Drivers::MAX14830::GetPins(max14830_pins_t mask
 
 
 
-ESP_Drivers::MAX14830::Uart::Uart(MAX14830* parent, 	max14830_uart_port_t port)
+MAX14830::Uart::Uart(MAX14830* parent, 	max14830_uart_port_t port)
 {
 	this->parent = parent;
 	this->port = port;
 }
 
 
-void ESP_Drivers::MAX14830::Uart::Init(uint32_t baudrate, uint8_t useCTS, uint8_t useRS485)
+void MAX14830::Uart::Init(uint32_t baudrate, uint8_t useCTS, uint8_t useRS485)
 {
 	inputBuffer.Init(64, 1);
 	outputBuffer.Init(64, 1);
 	
-	outputBuffer.OnDataReady.Bind(this, &ESP_Drivers::MAX14830::Uart::OnDataReady);
+	outputBuffer.OnDataReady.Bind(this, &MAX14830::Uart::OnDataReady);
 	
 	parent->spidev.AcquireBus();
 	uint8_t flowCtrlRegVal = 0;
@@ -449,24 +449,24 @@ void ESP_Drivers::MAX14830::Uart::Init(uint32_t baudrate, uint8_t useCTS, uint8_
 }
 
 
-size_t ESP_Drivers::MAX14830::Uart::Write(const void* data, size_t size)
+size_t MAX14830::Uart::Write(const void* data, size_t size)
 {
 	return outputBuffer.Write(data, size);
 }
 
-size_t ESP_Drivers::MAX14830::Uart::Read(void* data, size_t size)
+size_t MAX14830::Uart::Read(void* data, size_t size)
 {	
 	return inputBuffer.Read(data, size);
 }
 
-void ESP_Drivers::MAX14830::gpio_isr_handler(void* arg)
+void MAX14830::gpio_isr_handler(void* arg)
 {
 	MAX14830* parent = (MAX14830 *)arg;
 	gpio_set_intr_type(parent->irqPin, GPIO_INTR_DISABLE);	//Stop interrupts, let task handle stuff and re-enable the interrupts.
 	parent->irqTask.NotifyFromISR(MAX14830_EVENT_IRQ);	
 }
 
-void ESP_Drivers::MAX14830::IrqTaskWork(Task* task, void* args)
+void MAX14830::IrqTaskWork(Task* task, void* args)
 {
 	//Configure GPIO interrupts.
 	gpio_config_t io_conf;
@@ -518,7 +518,7 @@ void ESP_Drivers::MAX14830::IrqTaskWork(Task* task, void* args)
 }
 
 
-void ESP_Drivers::MAX14830::Uart::HandleIRQ(max14830_pins_t* changes)
+void MAX14830::Uart::HandleIRQ(max14830_pins_t* changes)
 {
 	//BUS is already aquired!
 	uint8_t isr = parent->max310x_port_read(port, MAX310X_IRQSTS_REG);							
@@ -559,7 +559,7 @@ void ESP_Drivers::MAX14830::Uart::HandleIRQ(max14830_pins_t* changes)
 }
 
 
-void ESP_Drivers::MAX14830::Uart::OnDataReady(IStream* buffer)
+void MAX14830::Uart::OnDataReady(IStream* buffer)
 {
 	switch (port)
 	{
@@ -581,7 +581,7 @@ void ESP_Drivers::MAX14830::Uart::OnDataReady(IStream* buffer)
 }
 
 
-void ESP_Drivers::MAX14830::Uart::HandleOutputBuffer()
+void MAX14830::Uart::HandleOutputBuffer()
 {
 	//BUS is already aquired!
 	uint8_t buffer[32];
