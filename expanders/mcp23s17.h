@@ -3,13 +3,9 @@
 #include "rtos/mutex.h"
 #include "esp_base.h"
 
-using namespace ESP_Base;
-using namespace ESP_Com;
 //https://github.com/RobTillaart/MCP23S17/blob/master/MCP23S17.cpp
 //https://www.esp32.com/viewtopic.php?t=9309
 
-namespace ESP_Drivers
-{
 	enum mcp23s17_pins_t
 	{
 		MCP23S17_PIN_NONE = 0,
@@ -66,6 +62,3 @@ namespace ESP_Drivers
 		void ConsecutivePinWriting(mcp23s17_pins_t mask, mcp23s17_pins_t* values, size_t size);
 	
 	};
-
-
-}

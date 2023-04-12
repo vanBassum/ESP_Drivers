@@ -2,21 +2,21 @@
 
 #define TAG "Socket"
 
-ESP_Com::Socket::~Socket()
+Socket::~Socket()
 {
 	if (handle < 0) return;
 	Close();
 }
 
 
-void ESP_Com::Socket::Shutdown(int how)
+void Socket::Shutdown(int how)
 {
 	if (handle < 0) return;
 	shutdown(handle, how);
 }
 
 
-void ESP_Com::Socket::Close()
+void Socket::Close()
 {
 	if (handle < 0) return;
 	close(handle);
@@ -26,7 +26,7 @@ void ESP_Com::Socket::Close()
 
 
 
-void ESP_Com::Socket::SetKeepAlive(int enable, int idle, int interval, int count)
+void Socket::SetKeepAlive(int enable, int idle, int interval, int count)
 {
 	if (handle < 0) return;
 	//https://stackoverflow.com/questions/74053375/should-the-values-set-with-setsockopt-stay-valid-during-lifetime-of-the-socket
@@ -37,7 +37,7 @@ void ESP_Com::Socket::SetKeepAlive(int enable, int idle, int interval, int count
 	setsockopt(handle, IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof(int));
 }
 
-int ESP_Com::Socket::Receive(void* buffer, size_t size, int flags /* = 0 */)
+int Socket::Receive(void* buffer, size_t size, int flags /* = 0 */)
 {
 	if (handle < 0) return 0;
 	int result =  recv(handle, buffer, size, flags);
@@ -50,7 +50,7 @@ int ESP_Com::Socket::Receive(void* buffer, size_t size, int flags /* = 0 */)
 	return result;
 }
 
-int ESP_Com::Socket::Send(const void* buffer, size_t size, int flags /* = 0 */)
+int Socket::Send(const void* buffer, size_t size, int flags /* = 0 */)
 {
 	if (handle < 0) return 0;
 	size_t toWrite = size;
@@ -69,7 +69,7 @@ int ESP_Com::Socket::Send(const void* buffer, size_t size, int flags /* = 0 */)
 	return size;
 }
 
-int ESP_Com::Socket::SendTo(Endpoint* endpoint, const void* buffer, size_t size, int flags /* = 0 */)
+int Socket::SendTo(Endpoint* endpoint, const void* buffer, size_t size, int flags /* = 0 */)
 {
 	if (handle < 0) return 0;
 	int send = sendto(handle, buffer, size, flags, endpoint->GetSockAddr(), endpoint->Size());
@@ -82,7 +82,7 @@ int ESP_Com::Socket::SendTo(Endpoint* endpoint, const void* buffer, size_t size,
 
 
 
-bool ESP_Com::Socket::Connect(Endpoint* endpoint)
+bool Socket::Connect(Endpoint* endpoint)
 {
 	int err = connect(handle, endpoint->GetSockAddr(), endpoint->Size());
 	if (err != 0) {
@@ -93,7 +93,7 @@ bool ESP_Com::Socket::Connect(Endpoint* endpoint)
 }
 
 
-bool ESP_Com::Socket::Init(int domain, int type, int protocol)
+bool Socket::Init(int domain, int type, int protocol)
 {
 	handle = socket(domain, type, protocol);
 	if (handle < 0) 
@@ -107,7 +107,7 @@ bool ESP_Com::Socket::Init(int domain, int type, int protocol)
 }
 
 
-bool ESP_Com::Socket::Bind(Endpoint* endpoint)
+bool Socket::Bind(Endpoint* endpoint)
 {
 	int err = bind(handle, endpoint->GetSockAddr(), endpoint->Size());
 	if (err != 0) {
@@ -121,7 +121,7 @@ bool ESP_Com::Socket::Bind(Endpoint* endpoint)
 
 
 
-bool ESP_Com::Socket::Accept(Socket* client)
+bool Socket::Accept(Socket* client)
 {
 	if (handle < 0) return false;
 	struct sockaddr_storage source_addr; // Large enough for both IPv4 or IPv6
@@ -146,7 +146,7 @@ bool ESP_Com::Socket::Accept(Socket* client)
 	return true;
 }
 
-bool ESP_Com::Socket::Listen(int backlog)
+bool Socket::Listen(int backlog)
 {
 	int err = listen(handle, backlog);
 	if (err != 0) {
@@ -160,7 +160,7 @@ bool ESP_Com::Socket::Listen(int backlog)
 
 
 
-void ESP_Com::Socket::SetTimeout(TimeSpan timespan)
+void Socket::SetTimeout(TimeSpan timespan)
 {
 	struct timeval timeout;
 	timeout.tv_sec = timespan.GetSeconds();
@@ -170,7 +170,7 @@ void ESP_Com::Socket::SetTimeout(TimeSpan timespan)
 }
 
 
-size_t ESP_Com::Socket::Read(void* data, size_t size)
+size_t Socket::Read(void* data, size_t size)
 {
 	int result = Receive(data, size);
 	if (result < 0)
@@ -179,7 +179,7 @@ size_t ESP_Com::Socket::Read(void* data, size_t size)
 }
 
 
-size_t ESP_Com::Socket::Write(const void* data, size_t size)
+size_t Socket::Write(const void* data, size_t size)
 {
 	int result = Send(data, size);
 	if (result < 0)

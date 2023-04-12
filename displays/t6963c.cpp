@@ -54,7 +54,7 @@
 #define ADDR(col, row)	(col + (row * 30))
 
 
-esp_err_t ESP_Drivers::T6963C::Init(MCP23S17* expander)
+esp_err_t T6963C::Init(MCP23S17* expander)
 {
 	this->expander = expander;
 	this->columns = settings.width / 8;
@@ -79,7 +79,7 @@ esp_err_t ESP_Drivers::T6963C::Init(MCP23S17* expander)
 	return ESP_OK;
 }
 
-void ESP_Drivers::T6963C::WriteCmd(uint8_t cmd, uint8_t data1)
+void T6963C::WriteCmd(uint8_t cmd, uint8_t data1)
 {
 	StatusCheck();
 	WriteByte(0, data1);
@@ -88,7 +88,7 @@ void ESP_Drivers::T6963C::WriteCmd(uint8_t cmd, uint8_t data1)
 }
 
 
-void ESP_Drivers::T6963C::WriteCmd(uint8_t cmd, uint8_t data1, uint8_t data2)
+void T6963C::WriteCmd(uint8_t cmd, uint8_t data1, uint8_t data2)
 {
 	StatusCheck();
 	WriteByte(0, data1);
@@ -98,14 +98,14 @@ void ESP_Drivers::T6963C::WriteCmd(uint8_t cmd, uint8_t data1, uint8_t data2)
 	WriteByte(1, cmd);
 }
 
-void ESP_Drivers::T6963C::WriteCmd(uint8_t cmd)
+void T6963C::WriteCmd(uint8_t cmd)
 {
 	StatusCheck();
 	WriteByte(1, cmd);
 }
 
 
-void ESP_Drivers::T6963C::WriteByte(bool cd, uint8_t data)
+void T6963C::WriteByte(bool cd, uint8_t data)
 {
 	SetDataPins(data);
 	SetCtrlPins(0, 1, cd, 0);
@@ -115,7 +115,7 @@ void ESP_Drivers::T6963C::WriteByte(bool cd, uint8_t data)
 }
 
 
-void ESP_Drivers::T6963C::SetCtrlPins(bool wr, bool rd, bool cd, bool ce)
+void T6963C::SetCtrlPins(bool wr, bool rd, bool cd, bool ce)
 {
 	mcp23s17_pins_t pins = MCP23S17_PIN_NONE;
 	if (wr) pins |= GLCD_PIN_WR;
@@ -126,27 +126,27 @@ void ESP_Drivers::T6963C::SetCtrlPins(bool wr, bool rd, bool cd, bool ce)
 }
 
 
-void ESP_Drivers::T6963C::SetDataPins(uint8_t data)
+void T6963C::SetDataPins(uint8_t data)
 {
 	expander->SetPins(GLCD_DATA_PINS, (mcp23s17_pins_t)data);
 }
 
 
 
-void ESP_Drivers::T6963C::SetAddress(uint8_t col, uint8_t row)
+void T6963C::SetAddress(uint8_t col, uint8_t row)
 {
 	uint16_t address = ADDR(col, row);
 	WriteCmd(0x24, address & 0xff, ((address >> 8) & 0xff));
 }
 
 
-void ESP_Drivers::T6963C::SetCursor(uint8_t col, uint8_t row)
+void T6963C::SetCursor(uint8_t col, uint8_t row)
 {
 	WriteCmd(0x21, col, row);
 }
 
 
-void ESP_Drivers::T6963C::Clear()
+void T6963C::Clear()
 {
 	uint16_t i;
 	SetAddress(0, 0);
@@ -165,21 +165,21 @@ void ESP_Drivers::T6963C::Clear()
 }
 
 
-void ESP_Drivers::T6963C::StartAutoWrite()
+void T6963C::StartAutoWrite()
 {
 	WriteCmd(0xb0);
 	//delay 120us
 }
 
 
-void ESP_Drivers::T6963C::StopAutoWrite()
+void T6963C::StopAutoWrite()
 {
 	WriteCmd(0xb2);
 	//delay 120us
 }
 
 
-void ESP_Drivers::T6963C::AutoWrite(uint8_t data)
+void T6963C::AutoWrite(uint8_t data)
 {
 	SetDataPins(data);
 	SetCtrlPins(0, 1, 0, 0);
@@ -188,12 +188,12 @@ void ESP_Drivers::T6963C::AutoWrite(uint8_t data)
 }
 
 
-void ESP_Drivers::T6963C::AutoWriteChar(char data)
+void T6963C::AutoWriteChar(char data)
 {
 	AutoWrite(data - 0x20);
 }
 
-void ESP_Drivers::T6963C::SetBacklight(t6963c_backlight_t value)
+void T6963C::SetBacklight(t6963c_backlight_t value)
 {
 	
 	switch (value)
@@ -215,7 +215,7 @@ void ESP_Drivers::T6963C::SetBacklight(t6963c_backlight_t value)
 }
 
 //--------------------------------------------------------------//
-void ESP_Drivers::T6963C::OSet(uint8_t data, bool wr, bool rd, bool cd, bool ce, mcp23s17_pins_t* order)
+void T6963C::OSet(uint8_t data, bool wr, bool rd, bool cd, bool ce, mcp23s17_pins_t* order)
 {
 	*order = GLCD_PIN_NONE;
 	if (wr) (*order) |= GLCD_PIN_WR;
@@ -227,14 +227,14 @@ void ESP_Drivers::T6963C::OSet(uint8_t data, bool wr, bool rd, bool cd, bool ce,
 
 
 
-ESP_Drivers::mcp23s17_pins_t* ESP_Drivers::T6963C::OWriteByte(bool cd, uint8_t data, mcp23s17_pins_t* order)
+mcp23s17_pins_t* T6963C::OWriteByte(bool cd, uint8_t data, mcp23s17_pins_t* order)
 {
 	OSet(data, 0, 1, cd, 0, order++);
 	OSet(data, 1, 1, cd, 1, order++);
 	return order;
 }
 
-ESP_Drivers::mcp23s17_pins_t* ESP_Drivers::T6963C::OWriteCmd(uint8_t cmd, uint8_t data1, mcp23s17_pins_t* order)
+mcp23s17_pins_t* T6963C::OWriteCmd(uint8_t cmd, uint8_t data1, mcp23s17_pins_t* order)
 {
 	order = OWriteByte(0, data1, order);
 	order = OWriteByte(1, cmd, order);
@@ -242,7 +242,7 @@ ESP_Drivers::mcp23s17_pins_t* ESP_Drivers::T6963C::OWriteCmd(uint8_t cmd, uint8_
 }
 
 
-ESP_Drivers::mcp23s17_pins_t* ESP_Drivers::T6963C::OWriteCmd(uint8_t cmd, uint8_t data1, uint8_t data2, mcp23s17_pins_t* order)
+mcp23s17_pins_t* T6963C::OWriteCmd(uint8_t cmd, uint8_t data1, uint8_t data2, mcp23s17_pins_t* order)
 {
 	order = OWriteByte(0, data1, order);
 	order = OWriteByte(0, data2, order);
@@ -250,20 +250,20 @@ ESP_Drivers::mcp23s17_pins_t* ESP_Drivers::T6963C::OWriteCmd(uint8_t cmd, uint8_
 	return order;
 }
 
-ESP_Drivers::mcp23s17_pins_t* ESP_Drivers::T6963C::OWriteCmd(uint8_t cmd, mcp23s17_pins_t* order)
+mcp23s17_pins_t* T6963C::OWriteCmd(uint8_t cmd, mcp23s17_pins_t* order)
 {
 	order = OWriteByte(1, cmd, order);
 	return order;
 }
 
-ESP_Drivers::mcp23s17_pins_t* ESP_Drivers::T6963C::OSetAddress(uint8_t col, uint8_t row, mcp23s17_pins_t* order)
+mcp23s17_pins_t* T6963C::OSetAddress(uint8_t col, uint8_t row, mcp23s17_pins_t* order)
 {
 	uint16_t address = ADDR(col, row);
 	order = OWriteCmd(0x24, address, (address >> 8), order);
 	return order;
 }
 
-void ESP_Drivers::T6963C::WriteRow(uint32_t y, uint8_t* data, size_t size)
+void T6963C::WriteRow(uint32_t y, uint8_t* data, size_t size)
 {
 	mcp23s17_pins_t pinOrder[70];	//6 SetAddr + 2 StartAW + 60 AW + 2 StopAW
 	mcp23s17_pins_t* wrPtr = pinOrder;

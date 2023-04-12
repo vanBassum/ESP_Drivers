@@ -39,13 +39,13 @@
 
 
 bool
-	ESP_Drivers::PCF2123_CtrlRegs::get(int bit)
+	PCF2123_CtrlRegs::get(int bit)
 {
 	return this->ctrl[bit / 8] & (1 << (bit % 8));
 }
 
 bool
-ESP_Drivers::PCF2123_CtrlRegs::set(int bit, bool value)
+PCF2123_CtrlRegs::set(int bit, bool value)
 {
 	bool old = this->get(bit);
 
@@ -56,7 +56,7 @@ ESP_Drivers::PCF2123_CtrlRegs::set(int bit, bool value)
 }
 
 void
-ESP_Drivers::PCF2123_CtrlRegs::mask_alarms()
+PCF2123_CtrlRegs::mask_alarms()
 {
 	this->set(MSF, true);
 	this->set(AF, true);
@@ -64,7 +64,7 @@ ESP_Drivers::PCF2123_CtrlRegs::mask_alarms()
 }
 
 void
-ESP_Drivers::PCF2123::rxt(uint8_t addr, uint8_t rw, uint8_t *buf, size_t sz)
+PCF2123::rxt(uint8_t addr, uint8_t rw, uint8_t *buf, size_t sz)
 {
 	if (sz < 1)
 		return;
@@ -80,19 +80,19 @@ ESP_Drivers::PCF2123::rxt(uint8_t addr, uint8_t rw, uint8_t *buf, size_t sz)
 
 
 uint8_t
-ESP_Drivers::PCF2123::bcd_decode(uint8_t bcd)
+PCF2123::bcd_decode(uint8_t bcd)
 {
 	return (bcd >> 4) * 10 + (bcd & 0x0F);
 }
 
 uint8_t
-ESP_Drivers::PCF2123::bcd_encode(uint8_t dec)
+PCF2123::bcd_encode(uint8_t dec)
 {
 	return ((dec / 10) << 4) | (dec % 10);
 }
 
 
-esp_err_t ESP_Drivers::PCF2123::Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
+esp_err_t PCF2123::Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
 {
 	this->cs = cs;
 	this->irq = irq;
@@ -130,7 +130,7 @@ esp_err_t ESP_Drivers::PCF2123::Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t i
 
 
 bool
-ESP_Drivers::PCF2123::time_get(DateTime *now)
+PCF2123::time_get(DateTime *now)
 {
 	uint8_t buf[7];
 	spi.AcquireBus();
@@ -153,7 +153,7 @@ ESP_Drivers::PCF2123::time_get(DateTime *now)
 }
 
 void
-ESP_Drivers::PCF2123::time_set(DateTime& new_time)
+PCF2123::time_set(DateTime& new_time)
 {
 	uint8_t buf[7];
 	struct tm time;
@@ -174,7 +174,7 @@ ESP_Drivers::PCF2123::time_set(DateTime& new_time)
 }
 
 void
-ESP_Drivers::PCF2123::reset()
+PCF2123::reset()
 {
 	spi.AcquireBus();
 	uint8_t buf = 0x58;
@@ -272,7 +272,7 @@ ESP_Drivers::PCF2123::reset()
 //	return true;
 //}
 
-ESP_Drivers::PCF2123_CtrlRegs ESP_Drivers::PCF2123::ctrl_get()
+PCF2123_CtrlRegs PCF2123::ctrl_get()
 {
 	uint8_t buf[2];
 	PCF2123_CtrlRegs regs;
@@ -282,7 +282,7 @@ ESP_Drivers::PCF2123_CtrlRegs ESP_Drivers::PCF2123::ctrl_get()
 	return regs;
 }
 
-void ESP_Drivers::PCF2123::ctrl_set(PCF2123_CtrlRegs *regs,
+void PCF2123::ctrl_set(PCF2123_CtrlRegs *regs,
 	bool set_ctrl1,
 	bool set_ctrl2,
 	bool mask_alarms)

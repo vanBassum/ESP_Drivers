@@ -1,7 +1,7 @@
 #include "bus.h"
 #include "string.h"
 
-esp_err_t ESP_Com::SPIBus::Init(spi_host_device_t host, gpio_num_t clk, gpio_num_t mosi, gpio_num_t miso, gpio_num_t qwp, gpio_num_t qhd, spi_dma_chan_t dma)
+esp_err_t SPI::Bus::Init(spi_host_device_t host, gpio_num_t clk, gpio_num_t mosi, gpio_num_t miso, gpio_num_t qwp, gpio_num_t qhd, spi_dma_chan_t dma)
 {
 	spi_bus_config_t spiConfig;
 	memset(&spiConfig, 0, sizeof(spi_bus_config_t));

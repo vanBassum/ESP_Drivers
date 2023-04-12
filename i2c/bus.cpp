@@ -1,7 +1,7 @@
 #include "bus.h"
 
 
-esp_err_t ESP_Drivers::I2CBus::Init(i2c_port_t host, gpio_num_t scl, gpio_num_t sda)
+esp_err_t I2C::Bus::Init(i2c_port_t host, gpio_num_t scl, gpio_num_t sda)
 {
     this->host = host;
     i2c_config_t conf;

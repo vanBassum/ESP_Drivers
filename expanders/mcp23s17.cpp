@@ -48,7 +48,7 @@ typedef enum
 
 
 
-esp_err_t ESP_Drivers::MCP23S17::Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
+esp_err_t MCP23S17::Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
 {
 	irqPin = irq;
 	
@@ -80,7 +80,7 @@ esp_err_t ESP_Drivers::MCP23S17::Init(SPIBus* spiBus, gpio_num_t cs, gpio_num_t 
 }
 
 
-esp_err_t ESP_Drivers::MCP23S17::Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count)
+esp_err_t MCP23S17::Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count)
 {
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));       			
@@ -90,7 +90,7 @@ esp_err_t ESP_Drivers::MCP23S17::Transmit(uint8_t * txData, uint8_t * rxData, ui
 	return spidev.PollingTransmit(&t);  		
 }
 
-uint8_t ESP_Drivers::MCP23S17::Read8(uint8_t reg)
+uint8_t MCP23S17::Read8(uint8_t reg)
 {
 	uint8_t txData[3];
 	uint8_t rxData[3];	
@@ -101,7 +101,7 @@ uint8_t ESP_Drivers::MCP23S17::Read8(uint8_t reg)
 	return rxData[2];
 }
 
-void ESP_Drivers::MCP23S17::Write8(uint8_t reg, uint8_t value)
+void MCP23S17::Write8(uint8_t reg, uint8_t value)
 {
 	uint8_t txData[3];
 	txData[0] = MCP23S17_MANUF_CHIP_ADDRESS | (devAddr << 1);
@@ -111,7 +111,7 @@ void ESP_Drivers::MCP23S17::Write8(uint8_t reg, uint8_t value)
 }
 
 	
-uint16_t ESP_Drivers::MCP23S17::Read16(uint8_t reg)
+uint16_t MCP23S17::Read16(uint8_t reg)
 {
 	uint8_t txData[4];
 	uint8_t rxData[4];	
@@ -123,7 +123,7 @@ uint16_t ESP_Drivers::MCP23S17::Read16(uint8_t reg)
 	return (rxData[3] << 8) | rxData[2];
 }
 
-void ESP_Drivers::MCP23S17::Write16(uint8_t reg, uint16_t value)
+void MCP23S17::Write16(uint8_t reg, uint16_t value)
 {
 	uint8_t txData[4];
 	txData[0] = MCP23S17_MANUF_CHIP_ADDRESS | (devAddr << 1);
@@ -136,7 +136,7 @@ void ESP_Drivers::MCP23S17::Write16(uint8_t reg, uint16_t value)
 
 
 
-void ESP_Drivers::MCP23S17::SetPins(ESP_Drivers::mcp23s17_pins_t mask, ESP_Drivers::mcp23s17_pins_t value)
+void MCP23S17::SetPins(mcp23s17_pins_t mask, mcp23s17_pins_t value)
 {
 	mutex.Take();
 	pinBuffer = (pinBuffer & ~mask) | (value & mask);
@@ -148,7 +148,7 @@ void ESP_Drivers::MCP23S17::SetPins(ESP_Drivers::mcp23s17_pins_t mask, ESP_Drive
 }
 
 
-ESP_Drivers::mcp23s17_pins_t ESP_Drivers::MCP23S17::GetPins(ESP_Drivers::mcp23s17_pins_t mask)
+mcp23s17_pins_t MCP23S17::GetPins(mcp23s17_pins_t mask)
 {
 	mutex.Take();
 	spidev.AcquireBus();
@@ -159,7 +159,7 @@ ESP_Drivers::mcp23s17_pins_t ESP_Drivers::MCP23S17::GetPins(ESP_Drivers::mcp23s1
 }
 
 
-void ESP_Drivers::MCP23S17::SetPinsMode(ESP_Drivers::mcp23s17_pins_t mask, ESP_Drivers::mcp23s17_pinmodes_t mode)
+void MCP23S17::SetPinsMode(mcp23s17_pins_t mask, mcp23s17_pinmodes_t mode)
 {
 	mutex.Take();
 	if (mode == MCP23S17_PINMODE_INPUT)
@@ -173,7 +173,7 @@ void ESP_Drivers::MCP23S17::SetPinsMode(ESP_Drivers::mcp23s17_pins_t mask, ESP_D
 	mutex.Give();
 }
 
-void ESP_Drivers::MCP23S17::ConsecutivePinWriting(ESP_Drivers::mcp23s17_pins_t mask, ESP_Drivers::mcp23s17_pins_t* values, size_t size)
+void MCP23S17::ConsecutivePinWriting(mcp23s17_pins_t mask, mcp23s17_pins_t* values, size_t size)
 {
 	mutex.Take();
 	size_t totSize = 2 + size * 2;

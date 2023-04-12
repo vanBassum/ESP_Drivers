@@ -148,7 +148,7 @@ static const uint8_t
 
 
 
-esp_err_t ESP_Drivers::ST7735::Init(SPIBus* spiBus)
+esp_err_t ST7735::Init(SPIBus* spiBus)
 {
     esp_err_t result = ESP_FAIL;
 	gpio_pad_select_gpio(settings.dc);
@@ -175,7 +175,7 @@ esp_err_t ESP_Drivers::ST7735::Init(SPIBus* spiBus)
     return result;
 }
 
-void ESP_Drivers::ST7735::WriteWindow(uint16_t *colors, size_t size)
+void ST7735::WriteWindow(uint16_t *colors, size_t size)
 {
 	size_t bytes = size * 2;
 	uint8_t* buf = (uint8_t*)colors;
@@ -194,7 +194,7 @@ void ESP_Drivers::ST7735::WriteWindow(uint16_t *colors, size_t size)
 
 
 
-void ESP_Drivers::ST7735::SetWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
+void ST7735::SetWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
 {
     // column address set
     ST7735_WriteCommand(ST7735_CASET);
@@ -215,7 +215,7 @@ void ESP_Drivers::ST7735::SetWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t 
 }
 
 
-void ESP_Drivers::ST7735::ST7735_WriteCommand(uint8_t cmd)
+void ST7735::ST7735_WriteCommand(uint8_t cmd)
 {
     gpio_set_level(settings.dc, 0);
     Transmit(&cmd, sizeof(cmd));
@@ -223,13 +223,13 @@ void ESP_Drivers::ST7735::ST7735_WriteCommand(uint8_t cmd)
 
 
 
-void ESP_Drivers::ST7735::ST7735_WriteData(uint8_t *buff, size_t buff_size)
+void ST7735::ST7735_WriteData(uint8_t *buff, size_t buff_size)
 {
     gpio_set_level(settings.dc, 1);
     Transmit(buff, buff_size);
 }
 
-void ESP_Drivers::ST7735::Transmit(uint8_t *data, size_t size)
+void ST7735::Transmit(uint8_t *data, size_t size)
 {
     spi_transaction_t SPITransaction;
 	esp_err_t ret;
@@ -242,7 +242,7 @@ void ESP_Drivers::ST7735::Transmit(uint8_t *data, size_t size)
 	}
 }
 
-void ESP_Drivers::ST7735::ST7735_ExecuteCommandList(const uint8_t *addr)
+void ST7735::ST7735_ExecuteCommandList(const uint8_t *addr)
 {
     uint8_t numCommands, numArgs;
     uint16_t ms;
@@ -269,7 +269,7 @@ void ESP_Drivers::ST7735::ST7735_ExecuteCommandList(const uint8_t *addr)
     }
 }
 
-void ESP_Drivers::ST7735::Reset()
+void ST7735::Reset()
 {
     gpio_set_level(settings.rst, 0);
     vTaskDelay(pdMS_TO_TICKS(5));
@@ -278,7 +278,7 @@ void ESP_Drivers::ST7735::Reset()
 
 
 
-void ESP_Drivers::ST7735::DrawPixel(uint16_t x, uint16_t y, uint16_t color)
+void ST7735::DrawPixel(uint16_t x, uint16_t y, uint16_t color)
 {
 	if ((x >= settings.width) || (y >= settings.height))
 		return;
@@ -293,7 +293,7 @@ void ESP_Drivers::ST7735::DrawPixel(uint16_t x, uint16_t y, uint16_t color)
 
 }
 
-void ESP_Drivers::ST7735::CreateInitList(std::vector<uint8_t> *list)
+void ST7735::CreateInitList(std::vector<uint8_t> *list)
 {
 
     static const uint8_t init_cmds1[] = {            // Init for 7735R, part 1 (red or green tab)
