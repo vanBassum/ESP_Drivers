@@ -3,14 +3,49 @@
 idf_component_register(
 	SRCS
 		"esp_drivers.cpp"
-		"display/hd44780.cpp"
-		"display/t6963c.cpp"
-		"display/st7735.cpp"
-		"expander/max14830.cpp"
-		"expander/mcp23s17.cpp"
-		"rtc/pcf2123.cpp"
-		"mcu/esp32.cpp"
-		"measure/ina3221.cpp"
-	INCLUDE_DIRS "." "display" "expander" "rtc" "mcu" "measure" "flash"
-	REQUIRES ESP_Base ESP_Com
-	PRIV_REQUIRES esp_wifi)
+		"displays\hd44780.cpp"
+		"rtc\pcf2123.cpp"
+		"expanders\mcp23s17.cpp"
+		"displays\st7735.cpp"
+		"measure\ina3221.cpp"
+		"mcu\esp32.cpp"
+		"spi\bus.cpp"
+		"syslog\syslog.cpp"
+		"eth\socket.cpp"
+		"spi\device.cpp"
+		"i2c\device.cpp"
+		"i2c\bus.cpp"
+		"expanders\max14830.cpp"
+		"displays\t6963c.cpp"
+	INCLUDE_DIRS 
+		"." 
+		"kernel"
+		"mcu"	
+		"measure"	
+		"rtc"	
+		"spi"	
+		"syslog"	
+		"displays"	
+		"eth"	
+		"expanders"	
+		"flash"	
+		"i2c"	
+		"interfaces"	
+	REQUIRES 
+		ESP_Base
+	PRIV_REQUIRES 
+		esp_wifi)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
