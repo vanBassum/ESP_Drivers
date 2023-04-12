@@ -16,6 +16,7 @@ idf_component_register(
 		"displays/t6963c.cpp"
 		"ethernet/socket.cpp"
 		"netif/wifi.cpp"
+		netif/lan8742a.cpp
 	INCLUDE_DIRS
 		"."
 		"analog"
