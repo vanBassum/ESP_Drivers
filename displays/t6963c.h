@@ -41,8 +41,8 @@ class T6963C
 public:
 	struct Settings
 	{
-		uint16_t width = 128;
-		uint16_t height = 128;
+		uint16_t width = 240;
+		uint16_t height = 64;
 	};
 
 	Settings settings;
