@@ -1,14 +1,15 @@
 #pragma once
-
+#include "netmanager.h"
+#include <string>
 
 class Wifi
 {
 	
 public:
 	
-	bool Init();
+	bool Init(NetManager* netManager);
 	
-	void Connect(const char* ssid, const char* pwd);
+	bool Connect(const std::string ssid, const std::string pwd);
 	
 	
 };
