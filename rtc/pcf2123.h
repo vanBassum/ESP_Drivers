@@ -193,7 +193,7 @@ public:
 		*
 		* @param   new_time      New time to set
 		*/
-	void time_set(DateTime& value);
+	void time_set(DateTime* value);
 
 	/**
 		* Reset the RTC.

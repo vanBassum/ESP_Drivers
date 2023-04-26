@@ -97,7 +97,7 @@ bool PCF2123::Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_
 	this->cs = cs;
 	this->irq = irq;
 	
-	esp_err_t result;
+	bool result;
 	spi_device_interface_config_t spi_devcfg;
 	memset(&spi_devcfg, 0, sizeof(spi_devcfg));
 	spi_devcfg.clock_speed_hz = SPI_MAX_SPEED;
@@ -108,29 +108,26 @@ bool PCF2123::Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_
 	spi_devcfg.pre_cb = pre_cb;
 	spi_devcfg.post_cb = post_cb;
 	result = spi.Init(spiBus, &spi_devcfg);	
-	if (result != ESP_OK)
-		return false;
+	if (result)
+	{
+		reset();
+		spi.AcquireBus();
+		// /* Make sure the clock is in 24h mode */
+		// PCF2123_CtrlRegs regs = this->ctrl_get();
+		// regs.set(PCF2123_CtrlRegs::HOUR_MODE, 0);
+		// this->ctrl_set(&regs, true, false, true);
 	
-	reset();
-	
-	spi.AcquireBus();
-	// /* Make sure the clock is in 24h mode */
-	// PCF2123_CtrlRegs regs = this->ctrl_get();
-	// regs.set(PCF2123_CtrlRegs::HOUR_MODE, 0);
-	// this->ctrl_set(&regs, true, false, true);
-	
-	PCF2123_CtrlRegs regs = this->ctrl_get();
-	regs.ClearAll();
-	this->ctrl_set(&regs, true, true, false);
-	spi.ReleaseBus();
-	
-	
-	return result == ESP_OK;
+		PCF2123_CtrlRegs regs = this->ctrl_get();
+		regs.ClearAll();
+		this->ctrl_set(&regs, true, true, false);
+		spi.ReleaseBus();
+	}
+	return result;
 }
 
 
 bool
-PCF2123::time_get(DateTime *now)
+PCF2123::time_get(DateTime* now)
 {
 	uint8_t buf[7];
 	spi.AcquireBus();
@@ -153,11 +150,11 @@ PCF2123::time_get(DateTime *now)
 }
 
 void
-PCF2123::time_set(DateTime& new_time)
+PCF2123::time_set(DateTime* new_time)
 {
 	uint8_t buf[7];
 	struct tm time;
-	new_time.Get(&time);
+	new_time->Get(&time);
 
 	buf[0] = bcd_encode(time.tm_sec);
 	buf[1] = bcd_encode(time.tm_min);
