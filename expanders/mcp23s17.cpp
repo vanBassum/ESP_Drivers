@@ -52,7 +52,7 @@ bool MCP23S17::Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction
 {
 	irqPin = irq;
 	
-	esp_err_t result;
+	bool result;
 	spi_device_interface_config_t spi_devcfg;
 	memset(&spi_devcfg, 0, sizeof(spi_devcfg));
 	spi_devcfg.address_bits = 0;
@@ -73,10 +73,8 @@ bool MCP23S17::Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction
 	spidev.AcquireBus();
 	Write8(MCP23S17_REG_IOCON_A, 0x08);    					// Set up ICON A,B to auto increment
 	spidev.ReleaseBus();
-	
-	
-	
-	return result == ESP_OK;
+
+	return result;
 }
 
 

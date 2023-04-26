@@ -590,7 +590,3 @@ void MAX14830::WritePins(uint32_t bank, uint32_t mask, uint32_t value)
 	spidev.ReleaseBus();
 }
 
-
-uint32_t MAX14830::WaitForChange(uint32_t bank, uint32_t mask)
-{
-}

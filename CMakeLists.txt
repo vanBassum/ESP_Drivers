@@ -13,10 +13,12 @@ idf_component_register(
 		i2c/bus.cpp
 		i2c/device.cpp
 		netif/lan8742a.cpp
+		netif/netmanager.cpp
 		netif/wifi.cpp
 		rtc/pcf2123.cpp
 		spi/bus.cpp
 		spi/device.cpp
+		rtc/ntp.cpp
 	INCLUDE_DIRS
 		.
 		analog
