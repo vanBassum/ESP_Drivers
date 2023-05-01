@@ -24,3 +24,9 @@ void NTP::SetSystemTime(DateTime* value)
 	value->Get(&now);
 	settimeofday(&now, NULL);
 }
+
+void NTP::SetTimeZone(std::string timeZone)
+{
+	setenv("TZ", timeZone.c_str(), 1);
+	tzset();
+}
