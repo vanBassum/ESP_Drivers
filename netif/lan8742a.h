@@ -8,6 +8,5 @@ public:
 	
 	bool Init();
 	
-	
 };
 

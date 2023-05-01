@@ -32,8 +32,7 @@ idf_component_register(
 		netif
 		rtc
 		spi
-	REQUIRES ESP_Base driver
-	PRIV_REQUIRES esp_wifi)
+	REQUIRES ESP_Base driver esp_wifi)
 
 
 
