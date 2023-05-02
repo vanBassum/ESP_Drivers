@@ -145,7 +145,7 @@ PCF2123::time_get(DateTime* now)
 	time.tm_year	= bcd_decode(buf[6]) + 100;		//1900 + 100 + PCF.year value 
 	//PCF year = 0 - 99 
 	//struct tm year = since 1900
-	now->Set(&time);
+	now->SetFromLocalTime(&time);
 	return !(buf[0] & 0x80);
 }
 
@@ -154,7 +154,7 @@ PCF2123::time_set(DateTime* new_time)
 {
 	uint8_t buf[7];
 	struct tm time;
-	new_time->Get(&time);
+	new_time->GetAsLocalTime(&time);
 
 	buf[0] = bcd_encode(time.tm_sec);
 	buf[1] = bcd_encode(time.tm_min);

@@ -23,7 +23,7 @@ void NTP::OnSyncCallback(struct timeval* tv)
 void NTP::SetSystemTime(DateTime* value)
 {
 	struct timeval now;
-	value->Get(&now);
+	value->GetAsUTC(&now);
 	settimeofday(&now, NULL);
 }
 
