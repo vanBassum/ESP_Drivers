@@ -10,15 +10,16 @@ idf_component_register(
 		ethernet/socket.cpp
 		expanders/max14830.cpp
 		expanders/mcp23s17.cpp
+		flash/nvs.cpp
 		i2c/bus.cpp
 		i2c/device.cpp
 		netif/lan8742a.cpp
 		netif/netmanager.cpp
 		netif/wifi.cpp
+		rtc/ntp.cpp
 		rtc/pcf2123.cpp
 		spi/bus.cpp
 		spi/device.cpp
-		rtc/ntp.cpp
 	INCLUDE_DIRS
 		.
 		analog

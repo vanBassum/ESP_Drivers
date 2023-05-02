@@ -1,6 +1,7 @@
 #include "ntp.h"
 
 Event<struct timeval*> NTP::OnSync; 
+bool NTP::NtpReceived = false;
 
 bool NTP::Init(const std::string host)
 {
@@ -15,6 +16,7 @@ bool NTP::Init(const std::string host)
 
 void NTP::OnSyncCallback(struct timeval* tv)
 {
+	NtpReceived = true;
 	OnSync.Invoke(tv);
 }
 
@@ -29,4 +31,9 @@ void NTP::SetTimeZone(std::string timeZone)
 {
 	setenv("TZ", timeZone.c_str(), 1);
 	tzset();
+}
+
+bool NTP::Received()
+{
+	return NtpReceived;
 }
