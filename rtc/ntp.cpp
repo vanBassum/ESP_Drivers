@@ -22,7 +22,9 @@ void NTP::OnSyncCallback(struct timeval* tv)
 
 void NTP::SetSystemTime(DateTime* value)
 {
+	//struct timezone tz;
 	struct timeval now;
+	//gettimeofday(&now, &tz);	//Just to get the timezone
 	value->GetAsUTC(&now);
 	settimeofday(&now, NULL);
 }
