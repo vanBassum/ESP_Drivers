@@ -98,5 +98,9 @@ public:
 		
 #endif // configUSE_TASK_NOTIFICATIONS
 
+	static int GetCurrentCoreID()
+	{
+		return xPortGetCoreID();
+	}
 		
 };
