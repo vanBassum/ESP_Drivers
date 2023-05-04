@@ -1,5 +1,5 @@
 #pragma once
 
-#include "esppartition.h"
 #include "nvs.h"
+#include "partition.h"
 

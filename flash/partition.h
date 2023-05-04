@@ -4,22 +4,14 @@
 #include "esp_partition.h"
 #include "ipartition.h"
 
-	
-struct PartitionSettings
-{
-	esp_partition_type_t type;
-	esp_partition_subtype_t subtype;
-	const char *label;
-};
-
 class Partition : public IPartition
 {
-	const esp_partition_t * handle = NULL;
+	
 public:
-		
-	bool Init(const PartitionSettings* settings) 
+	const esp_partition_t * handle = NULL;
+	bool Init(const char* label, const esp_partition_type_t type, const esp_partition_subtype_t subtype) 
 	{
-		handle = esp_partition_find_first(settings->type, settings->subtype, settings->label);
+		handle = esp_partition_find_first(type, subtype, label);
 		if (handle == NULL)
 			return false;
 			

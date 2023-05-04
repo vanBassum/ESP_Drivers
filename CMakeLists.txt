@@ -10,7 +10,6 @@ idf_component_register(
 		ethernet/socket.cpp
 		expanders/max14830.cpp
 		expanders/mcp23s17.cpp
-		flash/nvs.cpp
 		i2c/bus.cpp
 		i2c/device.cpp
 		netif/lan8742a.cpp
