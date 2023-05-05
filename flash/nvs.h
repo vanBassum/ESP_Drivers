@@ -1,6 +1,7 @@
 #pragma once
 #include "partition.h"
 #include "nvs_flash.h"
+#include "esp_log.h"
 
 class NVS
 {
@@ -22,10 +23,20 @@ class NVSPartition
 	nvs_handle_t handle;
 		
 public:
-
+	bool Init(const std::string& partitionLabel, const std::string& nvsNamespace)											
+	{ 
+		esp_err_t err = nvs_flash_init_partition(partitionLabel.c_str());
+		if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+			// NVS partition was truncated and needs to be erased
+			// Retry nvs_flash_init
+			ESP_ERROR_CHECK(nvs_flash_erase());
+			err = nvs_flash_init_partition(partitionLabel.c_str());
+		}
+		if (err == ESP_OK)
+			err = nvs_open(nvsNamespace.c_str(), NVS_READWRITE, &handle);
+		return err == ESP_OK; 
+	}
 	
-	
-	bool Init(Partition* partition)												{ return nvs_flash_init_partition_ptr(partition->handle) == ESP_OK; }
 	bool SetI8(const std::string& key, int8_t value)                            { return nvs_set_i8(handle, key.c_str(), value) == ESP_OK; }
 	bool SetU8(const std::string& key, uint8_t value)                           { return nvs_set_u8(handle, key.c_str(), value) == ESP_OK; }
 	bool SetI16(const std::string& key, int16_t value)                          { return nvs_set_i16(handle, key.c_str(), value) == ESP_OK; }
