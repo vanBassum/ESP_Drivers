@@ -33,7 +33,7 @@ public:
 			err = nvs_flash_init_partition(partitionLabel.c_str());
 		}
 		if (err == ESP_OK)
-			err = nvs_open(nvsNamespace.c_str(), NVS_READWRITE, &handle);
+			err = nvs_open_from_partition(partitionLabel.c_str(), nvsNamespace.c_str(), NVS_READWRITE, &handle);
 		return err == ESP_OK; 
 	}
 	
