@@ -46,11 +46,11 @@ bool Wifi::Init(NetManager* netManager)
 }
 
 
-bool Wifi::Connect(const std::string ssid, const std::string pass)
+bool Wifi::Connect(const std::string& ssid, const std::string& pwd)
 {
 	wifi_config_t wifi_config = { };
 	memcpy(wifi_config.sta.ssid, ssid.c_str(), ssid.size());
-	memcpy(wifi_config.sta.password, pass.c_str(), pass.size());
+	memcpy(wifi_config.sta.password, pwd.c_str(), pwd.size());
 	
 	INIT_OR_RETURN(TAG, "Set WIFI mode", esp_wifi_set_mode(WIFI_MODE_STA) == ESP_OK);
 	INIT_OR_RETURN(TAG, "Set WIFI config", esp_wifi_set_config(WIFI_IF_STA, &wifi_config) == ESP_OK);

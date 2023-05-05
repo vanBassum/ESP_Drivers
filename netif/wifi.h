@@ -11,7 +11,7 @@ public:
 	
 	bool Init(NetManager* netManager);
 	
-	bool Connect(const std::string ssid, const std::string pwd);
+	bool Connect(const std::string& ssid, const std::string& pwd);
 	
 	void GetIpInfo(esp_netif_ip_info_t* ip_info)
 	{

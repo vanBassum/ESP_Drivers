@@ -10,9 +10,9 @@ class NTP
 public:
 	
 	static Event<struct timeval*> OnSync; 
-	static bool Init(const std::string host);
+	static bool Init(const std::string& host);
 	static void SetSystemTime(DateTime* value);
-	static void SetTimeZone(std::string timeZone);
+	static void SetTimeZone(const std::string& timeZone);
 	static bool Received();
 };
 

@@ -3,7 +3,7 @@
 Event<struct timeval*> NTP::OnSync; 
 bool NTP::NtpReceived = false;
 
-bool NTP::Init(const std::string host)
+bool NTP::Init(const std::string& host)
 {
 	//setenv("TZ", timezone.c_str(), 1);
 		//tzset();
@@ -29,7 +29,7 @@ void NTP::SetSystemTime(DateTime* value)
 	settimeofday(&now, NULL);
 }
 
-void NTP::SetTimeZone(std::string timeZone)
+void NTP::SetTimeZone(const std::string& timeZone)
 {
 	setenv("TZ", timeZone.c_str(), 1);
 	tzset();
