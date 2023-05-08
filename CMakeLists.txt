@@ -27,7 +27,6 @@ idf_component_register(
 		expanders
 		flash
 		i2c
-		interfaces
 		kernel
 		netif
 		rtc

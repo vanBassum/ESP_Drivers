@@ -1,14 +1,15 @@
 #pragma once
 
-#include "interfaces/istream.h"
 #include "freertos/stream_buffer.h"
+#include "esp_base.h"
 
-
-class StreamBuffer : public IStream
+class StreamBuffer
 {
 	StreamBufferHandle_t handle = NULL;
 		
 public:	
+	Event<StreamBuffer*> OnDataReady;
+	
 	~StreamBuffer()
 	{
 		if (handle != NULL)
@@ -35,13 +36,13 @@ public:
 		return xStreamBufferSpacesAvailable(handle);
 	}
 		
-	size_t Read(void* data, size_t size) override
+	size_t Read(void* data, size_t size)
 	{
 		if (handle == NULL) return 0;
 		return xStreamBufferReceive(handle, data, size, portMAX_DELAY);
 	}
 		
-	size_t Write(const void* data, size_t size) override
+	size_t Write(const void* data, size_t size)
 	{
 		if (handle == NULL) return 0;
 		size_t result = xStreamBufferSend(handle, data, size, portMAX_DELAY);

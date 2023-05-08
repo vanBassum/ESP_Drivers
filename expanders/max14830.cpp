@@ -297,6 +297,93 @@ uint32_t MAX14830::max310x_set_baud(max14830_uart_port_t port, uint32_t baud)
 	return clk / div; //actual baudrate, this will never be exactly the value requested..
 }
 
+void MAX14830::SetPinsMode(max14830_pins_t mask, max14830_pinmodes_t mode)
+{
+	spidev.AcquireBus();
+	for (int i = 0; i < 4; i++)
+	{
+		uint8_t minimask = (mask >> (4*i)) & 0xF;
+		if (minimask > 0)
+		{
+			uint8_t od = (gpioConfBuffer[i] >> 4) & 0xf;
+			uint8_t ou = (gpioConfBuffer[i]) & 0xf;
+			switch (mode)
+			{
+			case MAX14830_PINMODE_INPUT:
+				ou &= ~minimask;
+				break;
+			case MAX14830_PINMODE_PUSHPULL:
+				ou |= minimask;
+				od &= ~minimask;
+				break;
+			case MAX14830_PINMODE_OPENDRAIN:
+				ou |= minimask;
+				od |= minimask;
+				break;
+			}
+			
+			gpioConfBuffer[i] = (od << 4) | ou;
+			max310x_port_write((max14830_uart_port_t)i, MAX310X_GPIOCFG_REG, gpioConfBuffer[i]);
+		}
+	}
+	spidev.ReleaseBus();
+}
+
+void MAX14830::SetPins(max14830_pins_t mask, max14830_pins_t value)
+{
+	spidev.AcquireBus();
+	for (int i = 0; i < 4; i++)
+	{
+		uint8_t minimask = (mask >> (4*i)) & 0xF;
+		uint8_t minivalue = (value >> (4*i)) & 0xF;
+		if (minimask > 0)
+		{
+			uint8_t ou = (gpioDataBuffer[i]) & 0xf;
+			ou &= ~minimask;
+			ou |= minivalue & minimask;
+			gpioDataBuffer[i] = ou;
+			max310x_port_write((max14830_uart_port_t)i, MAX310X_GPIODATA_REG, gpioDataBuffer[i]);
+		}
+	}
+	spidev.ReleaseBus();
+}
+
+void MAX14830::SetInterrupts(max14830_pins_t mask, max14830_pins_t value)
+{
+	spidev.AcquireBus();
+	for (int i = 0; i < 4; i++)
+	{
+		uint8_t minimask = (mask >> (4*i)) & 0xF;
+		uint8_t minivalue = (value >> (4*i)) & 0xF;
+		if (minimask > 0)
+		{
+			uint8_t ou = (gpioIRQBuffer[i]) & 0xf;
+			ou &= ~minimask;
+			ou |= minivalue & minimask;
+			gpioIRQBuffer[i] = ou;
+			max310x_port_write((max14830_uart_port_t)i, MAX310X_STS_IRQEN_REG, gpioIRQBuffer[i]);
+		}
+	}
+	spidev.ReleaseBus();
+}
+
+max14830_pins_t MAX14830::GetPins(max14830_pins_t mask)
+{
+	spidev.AcquireBus();
+	max14830_pins_t result = MAX14830_PIN_NONE;
+	for (int i = 0; i < 4; i++)
+	{
+		uint8_t minimask = (mask >> (4*i)) & 0xF;
+		if (minimask > 0)
+		{
+			uint8_t reg = max310x_port_read((max14830_uart_port_t)i, MAX310X_GPIODATA_REG);
+			reg = (reg >> 4) & minimask;
+			result |= (max14830_pins_t)(reg << (i * 4));
+		}
+	}
+	spidev.ReleaseBus();
+	return result;
+}
 
 
 
@@ -399,8 +486,9 @@ void MAX14830::IrqTaskWork(Task* task, void* args)
 		gpio_set_intr_type(irqPin, GPIO_INTR_LOW_LEVEL);	//Re enable interrupt.
 		if (task->NotifyWait((uint32_t*)&notifications))
 		{
-			uint32_t changedPins = 0;
+			max14830_pins_t changedPins = MAX14830_PIN_NONE;
 			spidev.AcquireBus();
+			
 			if (HAS_BIT(notifications, MAX14830_EVENT_IRQ))
 			{
 				//ESP_LOGI(TAG, "IRQ handeling");
@@ -412,6 +500,7 @@ void MAX14830::IrqTaskWork(Task* task, void* args)
 				Uart3.HandleIRQ(&changedPins);
 			}
 			
+			
 			if (HAS_BIT(notifications, MAX14830_EVENT_PORT0_TX))
 				Uart0.HandleOutputBuffer();
 			if (HAS_BIT(notifications, MAX14830_EVENT_PORT1_TX))
@@ -420,27 +509,23 @@ void MAX14830::IrqTaskWork(Task* task, void* args)
 				Uart2.HandleOutputBuffer();
 			if (HAS_BIT(notifications, MAX14830_EVENT_PORT3_TX))
 				Uart3.HandleOutputBuffer();
+			
 			spidev.ReleaseBus();
 			
-			for (int i = 0; i < 4; i++)
-			{
-				uint32_t changes = (changedPins >> (i * 4)) & 0xF;
-				if (changes)
-					OnPinChange.Invoke(this, i, changes);
-			}
+			if (changedPins) OnPinsChanged.Invoke(this, changedPins);
 		}
 	}
 }
 
 
-void MAX14830::Uart::HandleIRQ(uint32_t* changes)
+void MAX14830::Uart::HandleIRQ(max14830_pins_t* changes)
 {
 	//BUS is already aquired!
 	uint8_t isr = parent->max310x_port_read(port, MAX310X_IRQSTS_REG);							
 	if (HAS_BIT(isr, MAX310X_IRQ_STS_BIT))
 	{
 		uint8_t sts = parent->max310x_port_read(port, MAX310X_STS_IRQSTS_REG);		//For GPIO	last 4 bits
-		*changes |= (uint32_t)((sts & 0xf) << (port * 4));
+		*changes |= (max14830_pins_t)((sts & 0xf) << (port * 4));
 	}
 				
 	//Im missing data, so this bit seems to be unreliable. 
@@ -474,7 +559,7 @@ void MAX14830::Uart::HandleIRQ(uint32_t* changes)
 }
 
 
-void MAX14830::Uart::OnDataReady(IStream* buffer)
+void MAX14830::Uart::OnDataReady(StreamBuffer* buffer)
 {
 	switch (port)
 	{
@@ -519,74 +604,3 @@ void MAX14830::Uart::HandleOutputBuffer()
 		parent->Max14830_WriteBufferPolled((port << 5), (uint8_t*)buffer, txLen);
 	
 }
-
-uint32_t MAX14830::ReadPins(uint32_t bank, uint32_t mask)
-{
-	if (bank > 3)	//4 banks, 4 IO per bank
-		return 0;
-	
-	spidev.AcquireBus();
-	uint32_t result = 0;
-	uint8_t minimask = (mask >> (4*bank)) & 0xF;
-	if (minimask > 0)
-	{
-		uint8_t reg = max310x_port_read((max14830_uart_port_t)bank, MAX310X_GPIODATA_REG);
-		reg = (reg >> 4) & minimask;
-		result |= (reg << (bank * 4));
-	}
-	spidev.ReleaseBus();
-	return result;
-}
-
-
-void MAX14830::SetMode(uint32_t bank, uint32_t mask, Mode mode)
-{
-	if (bank > 3)	//4 banks, 4 IO per bank
-		return;
-	
-	spidev.AcquireBus();
-	uint8_t minimask = (mask >> (4*bank)) & 0xF;
-	if (minimask > 0)
-	{
-		uint8_t od = (gpioConfBuffer[bank] >> 4) & 0xf;
-		uint8_t ou = (gpioConfBuffer[bank]) & 0xf;
-		switch (mode)
-		{
-		case IGPIO::Input:
-			ou &= ~minimask;
-			break;
-		case IGPIO::Output:		//Push pull
-			ou |= minimask;
-			od &= ~minimask;
-			break;
-		//case MAX14830_PINMODE_OPENDRAIN:
-		//	ou |= minimask;
-		//	od |= minimask;
-		//	break;
-		}
-			
-		gpioConfBuffer[bank] = (od << 4) | ou;
-		max310x_port_write((max14830_uart_port_t)bank, MAX310X_GPIOCFG_REG, gpioConfBuffer[bank]);
-	}
-	spidev.ReleaseBus();
-}
-
-void MAX14830::WritePins(uint32_t bank, uint32_t mask, uint32_t value)
-{
-	if (bank > 3)	//4 banks, 4 IO per bank
-		return;
-	
-	spidev.AcquireBus();
-	uint8_t minimask = (mask >> (4*bank)) & 0xF;
-	uint8_t minivalue = (value >> (4*bank)) & 0xF;
-	if (minimask > 0)
-	{
-		uint8_t ou = (gpioDataBuffer[bank]) & 0xf;
-		ou &= ~minimask;
-		ou |= minivalue & minimask;
-		gpioDataBuffer[bank] = ou;
-		max310x_port_write((max14830_uart_port_t)bank, MAX310X_GPIODATA_REG, gpioDataBuffer[bank]);
-	}
-	spidev.ReleaseBus();
-}
-
