@@ -34,6 +34,10 @@ public:
 		}
 		if (err == ESP_OK)
 			err = nvs_open_from_partition(partitionLabel.c_str(), nvsNamespace.c_str(), NVS_READWRITE, &handle);
+		
+		if(err != ESP_OK)
+			ESP_LOGE("NVSPartition", "Failed to init %s", esp_err_to_name(err));
+
 		return err == ESP_OK; 
 	}
 	
