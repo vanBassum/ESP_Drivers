@@ -170,7 +170,7 @@ void Socket::SetTimeout(TimeSpan timespan)
 }
 
 
-size_t Socket::Read(void* data, size_t size)
+size_t Socket::Read(uint8_t* data, size_t size)
 {
 	int result = Receive(data, size);
 	if (result < 0)
@@ -179,7 +179,7 @@ size_t Socket::Read(void* data, size_t size)
 }
 
 
-size_t Socket::Write(const void* data, size_t size)
+size_t Socket::Write(const uint8_t* data, size_t size)
 {
 	int result = Send(data, size);
 	if (result < 0)

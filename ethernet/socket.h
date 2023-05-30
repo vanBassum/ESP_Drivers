@@ -7,8 +7,9 @@
 #include "esp_log.h"
 #include "esp_base.h"
 #include "endpoint.h"
+#include "istream.h"
 
-class Socket
+class Socket : public IStream
 {
 	int handle = -1;
 
@@ -32,7 +33,7 @@ public:
 	bool Bind(Endpoint* endpoint);
 	bool Accept(Socket* client);
 	bool Listen(int backlog);
-	size_t Read(void* data, size_t size);
-	size_t Write(const void* data, size_t size);
+	size_t Read(uint8_t* buffer, size_t size) override;
+	size_t Write(const uint8_t* buffer, size_t size) override;
 };
 	
