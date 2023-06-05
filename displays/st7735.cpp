@@ -158,12 +158,14 @@ bool ST7735::Init(SPI::Bus* spiBus)
     gpio_set_direction(settings.dc, GPIO_MODE_OUTPUT);
     gpio_set_direction(settings.rst, GPIO_MODE_OUTPUT);
     Reset();
-    spi_device_interface_config_t devcfg =  {
-      .clock_speed_hz = 20000000,
-      .spics_io_num = settings.cs,
-      .flags = SPI_DEVICE_NO_DUMMY,
-      .queue_size = 7,
-    };
+	spi_device_interface_config_t devcfg;
+	memset(&devcfg, 0, sizeof(spi_device_interface_config_t));
+	
+	devcfg.clock_speed_hz = 20000000;
+	devcfg.spics_io_num = settings.cs;
+	devcfg.flags = SPI_DEVICE_NO_DUMMY;
+	devcfg.queue_size = 7;
+    
 
     result = spidev.Init(spiBus, &devcfg);	
 

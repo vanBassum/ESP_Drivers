@@ -285,8 +285,6 @@ void PCF2123::ctrl_set(PCF2123_CtrlRegs *regs,
 	bool mask_alarms)
 {
 	uint8_t buf[2];
-	int wrsz;
-
 	if (mask_alarms)
 		regs->mask_alarms();
 

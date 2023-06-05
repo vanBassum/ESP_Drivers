@@ -3,7 +3,7 @@
 #include "esp_log.h"
 #include "freertos/task.h"
 
-static const char *TAG = "MCP23S17";
+//static const char *TAG = "MCP23S17";
 #define MCP23S17_MANUF_CHIP_ADDRESS	0x40	// Default Address
 
 typedef enum
