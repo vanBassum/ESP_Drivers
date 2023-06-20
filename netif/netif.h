@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lan8742a.h"
+#include "lan87xx.h"
 #include "netmanager.h"
 #include "wifi.h"
 
