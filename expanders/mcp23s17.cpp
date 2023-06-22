@@ -62,7 +62,7 @@ bool MCP23S17::Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction
 	spi_devcfg.duty_cycle_pos = 0;
 	spi_devcfg.cs_ena_posttrans = 0;
 	spi_devcfg.cs_ena_pretrans = 0;
-	spi_devcfg.clock_speed_hz = 9 * 1000 * 1000;			//@10MHz the glcd shows artifacts.
+	spi_devcfg.clock_speed_hz = 6 * 1000 * 1000;			//@10MHz the glcd shows artifacts. was 9
 	spi_devcfg.flags = 0;
 	spi_devcfg.queue_size = 7;
 	spi_devcfg.spics_io_num = cs;
