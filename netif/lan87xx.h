@@ -11,9 +11,9 @@
 #include "esp_event.h"
 
 class Lan87xx
-{
-	esp_netif_config_t cfg = ESP_NETIF_DEFAULT_ETH();
-	esp_netif_t* eth_netif = esp_netif_new(&cfg);
+{	
+	esp_netif_t* eth_netif;
+
 public:
 	
 	bool Init(NetManager* netManager);
