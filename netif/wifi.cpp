@@ -18,15 +18,13 @@ static const char *TAG	= "Wifi";
 
 bool Wifi::Init(NetManager* netManager)
 {
-	NetManager Nm;
-	esp_netif_t *sta_netif=0;	
-	//sta_netif = esp_netif_create_default_wifi_sta();
-	esp_netif_config_t cfg = ESP_NETIF_DEFAULT_WIFI_STA();
-	//esp_netif_t *netif = esp_netif_new(&cfg);
-	Nm.Config(sta_netif, &cfg);
-	assert(sta_netif);
-	esp_netif_attach_wifi_station(sta_netif);
-	esp_wifi_set_default_wifi_sta_handlers();
+	sta_netif = esp_netif_create_default_wifi_sta();
+//	esp_netif_config_t cfg = ESP_NETIF_DEFAULT_WIFI_STA();
+//	esp_netif_t *netif = esp_netif_new(&cfg);
+//	netManager->Config(sta_netif, &cfg);
+//	assert(sta_netif);
+//	esp_netif_attach_wifi_station(sta_netif);
+//	esp_wifi_set_default_wifi_sta_handlers();
 	
 	INIT_OR_RETURN(TAG, "Create STA", sta_netif != NULL);
 	

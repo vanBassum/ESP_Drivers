@@ -34,8 +34,7 @@ static void eth_event_handler(void* arg, esp_event_base_t event_base,
 
 bool Lan87xx::Init(NetManager* netManager)
 {
-	NetManager Nm;
-	esp_netif_t *eth_netif = 0;
+	//esp_netif_t *eth_netif = NULL;
     // Initialize TCP/IP network interface (should be called only once in application)
 //    INIT_OR_RETURN(TAG, "netif_init", esp_netif_init() == ESP_OK); !!!!!!!!!!!!!!!!!!!!!!!
 	
@@ -44,8 +43,8 @@ bool Lan87xx::Init(NetManager* netManager)
 
     // Create new default instance of esp-netif for Ethernet
     esp_netif_config_t cfg = ESP_NETIF_DEFAULT_ETH();
-    //esp_netif_t* eth_netif = esp_netif_new(&cfg);
-	Nm.Config(eth_netif, &cfg);
+	eth_netif = esp_netif_new(&cfg);
+	//netManager->Config(netif_pointer, &cfg);
     // Init MAC and PHY configs to default
     eth_mac_config_t mac_config = ETH_MAC_DEFAULT_CONFIG();
     eth_phy_config_t phy_config = ETH_PHY_DEFAULT_CONFIG();
