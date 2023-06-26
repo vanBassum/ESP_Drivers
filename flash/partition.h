@@ -3,12 +3,20 @@
 #include "esp_base.h"
 #include "esp_partition.h"
 
-class Partition
+class IPartition
 {
 public:
-	size_t totalSize;
 	size_t sectorSize;
+	size_t totalSize;
 	
+	virtual bool Read(void* dst, size_t offset, size_t length) = 0;
+	virtual bool Write(const void* src, size_t offset, size_t length) = 0;
+	virtual bool Erase(size_t offset, size_t length) = 0;
+};
+
+class Partition : public IPartition
+{
+public:	
 	const esp_partition_t * handle = NULL;
 	bool Init(const char* label, const esp_partition_type_t type, const esp_partition_subtype_t subtype) 
 	{
@@ -21,19 +29,55 @@ public:
 		return true;
 	}
 		
-	esp_err_t EraseRange(size_t offset, size_t size)
+	bool Erase(size_t offset, size_t length) override
 	{
-		return esp_partition_erase_range(handle, offset, size);
+		return esp_partition_erase_range(handle, offset, length) == ESP_OK;
 	}
 		
-	esp_err_t Read(size_t offset, void* dst, size_t size)
+	bool Read(void* dst, size_t offset, size_t length) override
 	{
-		return esp_partition_read(handle, offset, dst, size);
+		return esp_partition_read(handle, offset, dst, length) == ESP_OK;
 	}
 		
-	esp_err_t Write(size_t offset, const void* src, size_t size)
+	bool Write(const void* src, size_t offset, size_t length) override
 	{
-		return esp_partition_write(handle, offset, src, size);
+		return esp_partition_write(handle, offset, src, length) == ESP_OK;
 	}
 };
 	
+
+class PartitionRange : public IPartition
+{
+	IPartition* parent;
+	size_t start;
+public:
+	bool Init(IPartition* parent, const size_t start, const size_t length)
+	{
+		this->start = start;
+		this->parent = parent;
+		this->sectorSize = parent->sectorSize;
+		this->totalSize = length;
+		return true;
+	}
+	
+	
+	bool Read(void* dst, size_t offset, size_t length)
+	{
+		if (offset + start + length > parent->totalSize) 
+			return false;
+		return parent->Read(dst, offset + start, length);
+	}
+	bool Write(const void* src, size_t offset, size_t length)
+	{
+		if (offset + start + length > parent->totalSize)	
+			return false;
+		
+		return parent->Write(src, offset + start, length);
+	}
+	bool Erase(size_t offset, size_t length)
+	{
+		if (offset + start + length > parent->totalSize)	
+			return false;
+		return parent->Erase(offset + start, length);
+	}
+};
