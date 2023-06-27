@@ -12,6 +12,7 @@ idf_component_register(
 		expanders/mcp23s17.cpp
 		i2c/bus.cpp
 		i2c/device.cpp
+		mifare/pn512.cpp
 		netif/lan87xx.cpp
 		netif/netmanager.cpp
 		netif/wifi.cpp
@@ -19,7 +20,19 @@ idf_component_register(
 		rtc/pcf2123.cpp
 		spi/bus.cpp
 		spi/device.cpp
-	INCLUDE_DIRS . analog displays ethernet expanders flash i2c kernel netif rtc spi
+	INCLUDE_DIRS
+		.
+		analog
+		displays
+		ethernet
+		expanders
+		flash
+		i2c
+		kernel
+		mifare
+		netif
+		rtc
+		spi
 	REQUIRES ESP_Base driver esp_wifi esp_eth)
 
 
