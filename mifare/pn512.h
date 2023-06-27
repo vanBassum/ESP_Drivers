@@ -113,6 +113,15 @@
 #define	MF_PN512_REG_RFT2			0x3E
 #define	MF_PN512_REG_RFT3			0x3F
 
+typedef struct {
+	//		carddata_struct carddata;
+	unsigned char uid[10];
+	unsigned char madKeys; // Hierin staat of de kaart is uitgelezen met behulp van de MAD keys
+	int CardReadStatus; // bit array of non readable known sectors (in other words: this says which known sectors are available to work with) 	
+}card_struct;
+
+card_struct CARD;
+
 class PN512
 {
 	SPI::Device spidev;
@@ -152,4 +161,7 @@ public:
 	uint16_t Request(uint8_t request, uint8_t * atq);
 	uint16_t Read(uint8_t cmd, uint8_t addr, uint8_t datalen, uint8_t *data);
 	uint16_t Write(uint8_t cmd, uint8_t addr, uint8_t datalen, uint8_t *data);
+	
+	uint16_t CheckCardLogics(card_struct *card_data);
+	uint16_t MF_HandleSAK(uint8_t sak);
 };

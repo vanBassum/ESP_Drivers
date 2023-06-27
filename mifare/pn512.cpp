@@ -625,3 +625,294 @@ uint16_t PN512::Write(uint8_t cmd, uint8_t addr, uint8_t datalen, uint8_t *data)
 	}
 	return errors;
 }
+
+
+/////////////// ----------- hoort eigenlijk niet hier maar voor testen wel leuk ----------------
+
+/*****************************************************************************
+** Function name:		 CheckCardLogics( unsigned char SPIBus, unsigned char DeviceNmr )
+**
+** Descriptions:		Kijkt of er een Mifare 1K kaart in het veld is
+**
+** parameters:			
+**
+** Returned value:		int : 	0x00 card found
+**								0x01 wrong card found
+**								0x02 Carderror (N.U.)
+**								0x03 no cards found
+**								0x10 error
+**								0x20 Request error
+**								0x30 CascSel error
+** 
+*****************************************************************************/
+	#define PICC_REQIDL        0x26         //!< request idle
+	#define PICC_REQALL        0x52         //!< request all
+	#define PICC_ANTICOLL1     0x93         //!< anticollision level 1 106 kBaud
+	#define PICC_ANTICOLL11    0x92         //!< anticollision level 1 212 kBaud
+	#define PICC_ANTICOLL12    0x94         //!< anticollision level 1 424 kBaud
+	#define PICC_ANTICOLL13    0x98         //!< anticollision level 1 848 kBaud
+	#define PICC_ANTICOLL2     0x95         //!< anticollision level 2
+	#define PICC_ANTICOLL3     0x97         //!< anticollision level 3
+	#define PICC_AUTHENT1A     0x60         //!< authentication using key A
+	#define PICC_AUTHENT1B     0x61         //!< authentication using key B
+	#define PICC_READ16        0x30         //!< read 16 byte block
+	#define PICC_WRITE16       0xA0         //!< write 16 byte block
+	#define PICC_WRITE4        0xA2         //!< write 4 byte block
+	#define PICC_DECREMENT     0xC0         //!< decrement value
+	#define PICC_INCREMENT     0xC1         //!< increment value
+	#define PICC_RESTORE       0xC2         //!< restore command code
+	#define PICC_TRANSFER      0xB0         //!< transfer command code
+	#define PICC_HALT          0x50         //!< halt
+
+#define MF_CL1 	0x93
+#define MF_CL2 	0x95
+#define MF_CL3 	0x97
+
+//MIFARE Kaartlees errors voor getsector en setsector
+#define CHECKCARD_OKE				0x00
+#define CHECKCARD_WRONGCARD			0x01000
+#define CHECKCARD_NOCARD			0x03000
+#define CHECKCARD_ERROR				0x10000
+#define CHECKCARD_ERROR_REQUEST		0x20000
+#define CHECKCARD_ERROR_ANTICOL		0x30000
+#define CHECKCARD_ERROR_CASCSEL		0x40000
+
+//MIFARE Kaartlees errors voor getsector en setsector
+#define CARDERROR_CARDID_PART1			0x00008000
+#define CARDERROR_CARDID_PART2			0x00004000
+#define CARDERROR_SALDO_PART1			0x00002000
+#define CARDERROR_DOORLOCK_PART1		0x00001000
+#define CARDERROR_DOORLOCK_PART2		0x00000800
+#define CARDERROR_GOUPLOGITEMS_PART1	0x00000400
+#define CARDERROR_OJMAR_PART1			0x00000200
+#define CARDERROR_ZONE_ALG_CID			0x00000100
+#define CARDERROR_ALL_SECTOR			0xFFFFFFFF
+
+//Algemene kaartfouten
+#define CARDERROR_NO_SECTOR_DEFINED		0x00000080
+#define CARDERROR_WRONG_MODE			0x00000040
+//
+#define CARDERROR_NOSECTOR				0x00000020
+#define CARDERROR_NOCARD				0x00000010
+#define CARDERROR_ADDRESS				0x00000001
+#define CARDERROR_AUTH					0x00000002
+#define CARDERROR_WRITE					0x00000004
+#define CARDERROR_READ					0x00000008
+#define CARDERROR_ALL					0x000000FF
+
+uint16_t PN512::CheckCardLogics(card_struct *card_data)
+{	
+	uint8_t atq[2];
+	uint8_t sak = 0;
+	uint8_t uid[11];
+	uint16_t resultaat = 0;
+	RFoff();							
+	memset(atq,0x00,2);	
+	
+	memset(card_data->uid,0x00,10);	
+	
+	memset(uid,0x00,11);
+	resultaat = Request(PICC_REQALL,&atq[0]); // request for a card	REQ_ALL
+	if (resultaat == 0)
+	{	if(atq[0] != 0)	//atq = Answer to Request
+		{
+			resultaat = AntiColl(MF_CL1,uid);	//uid van de kaart opvragen met behulp van anticoll	
+			if (resultaat == 0)
+			{
+				resultaat = Select(MF_CL1,uid,&sak);	// select card met behulp van UID
+				if(resultaat == 0)		
+				{	
+					uid[4] = 0;	
+					//******************************************************
+					//*** 
+					//*** 7 en 10 bytes UID afhandeling
+					//*** 
+					//*** AN10927
+					//*** 
+					//******************************************************					
+					if (uid[0] == 0x88) //start byte voor langere UID
+					{
+						uid[0] = uid[1];
+						uid[1] = uid[2];
+						uid[2] = uid[3];
+						uid[3] = 0;
+						resultaat = AntiColl(MF_CL2,&uid[3]);	//uid van de kaart opvragen met behulp van anticoll	
+						if (resultaat == 0)
+						{							
+							resultaat = Select(MF_CL2,&uid[3],&sak);	// select card met behulp van UID
+							if(resultaat == 0)		
+							{				
+								uid[7] = 0;									
+								if (uid[3] == 0x88) //start byte voor langere UID
+								{
+									//Bij langere UIDs is UID[0] altijd de manufactor ID welke te vinden is op:
+									//http://www.kartenbezogene-identifier.de/de/chiphersteller-kennungen.html
+									uid[3] = uid[4];
+									uid[4] = uid[5];
+									uid[5] = uid[6];
+									uid[6] = 0;
+									resultaat =AntiColl(MF_CL3,&uid[6]);	//uid van de kaart opvragen met behulp van anticoll	
+									if (resultaat == 0)
+									{
+										resultaat = Select(MF_CL3,&uid[6],&sak);	// select card met behulp van UID
+										if(resultaat == 0)		
+										{	
+											resultaat = MF_HandleSAK(sak);	//10 bytes UID
+										} else 
+										{	
+											resultaat |= CHECKCARD_ERROR_CASCSEL;
+											//debugOutput(DEBUG_MIFARE,"PiccCascSel 3 fail",18,resultaat);   
+										}
+									} else
+									{	
+										resultaat |= CHECKCARD_ERROR_ANTICOL;
+										//debugOutput(DEBUG_MIFARE,"Anticoll 3 fail",18,resultaat);   
+									}	
+								} else
+								{
+									resultaat = MF_HandleSAK(sak);	//7 bytes UID
+								}
+							} else 
+							{	
+								resultaat |= CHECKCARD_ERROR_CASCSEL;
+								//debugOutput(DEBUG_MIFARE,"PiccCascSel 2 fail",18,resultaat);   
+							}
+						} else
+						{	
+							resultaat |= CHECKCARD_ERROR_ANTICOL;
+							//debugOutput(DEBUG_MIFARE,"Anticoll 2 fail",18,resultaat);   
+						}	
+					} else
+					{
+						resultaat = MF_HandleSAK(sak);	//4 bytes UID
+					}
+				} else 
+				{	resultaat |= CHECKCARD_ERROR_CASCSEL;
+					//debugOutput(DEBUG_MIFARE,"PiccCascSel failed",18,resultaat);   
+				}
+			} else
+			{	resultaat |= CHECKCARD_ERROR_ANTICOL;
+				//debugOutput(DEBUG_MIFARE,"Anticoll failed",18,resultaat);   
+			}
+		} else
+		{	resultaat |= CHECKCARD_ERROR_REQUEST;
+			//debugOutput(DEBUG_MIFARE,"PiccRequest failed",18,resultaat); 
+		}
+	} else
+	{	if (resultaat == 0xFF)
+		{	resultaat = CHECKCARD_NOCARD;						
+		} else
+		{	resultaat |= CHECKCARD_ERROR_REQUEST;
+			//debugOutput(DEBUG_MIFARE,"PiccRequest failed",18,resultaat); 
+		}
+	}
+	if (resultaat == CHECKCARD_OKE) 
+	{
+		memcpy(card_data->uid,uid,10);
+		
+//		if ((onCardChange != NULL) && (useEvents == 1)) onCardChange(OKE,card_data->madKeys);				
+		return resultaat;
+	} else
+	{
+		RFoff(); // rf field off	 als we niks met de kaart kunnen
+//		if ((onCardChange != NULL) && (useEvents == 1)) onCardChange(NOCARD,card_data->madKeys);		
+		return resultaat;		// Geen geldige kaart gevonden of errors
+	}																					// Geen geldige kaart gevonden of errors
+}
+
+uint16_t PN512::MF_HandleSAK(uint8_t sak)
+{
+	//int derror = 0;
+  // http://www.nxp.com/documents/application_note/130830.pdf blz 7
+	if ((sak & 0x2) > 0) 									//sak bit 2
+	{} 																		//reserved for future use (RFU)
+	else
+	{
+		if ((sak & 0x8) > 0) 								//sak bit 4
+	 	{if ((sak & 0x10) > 0) 						//sak bit 5
+			{																//mifare 4k card
+				return CHECKCARD_OKE;
+			} 
+			else
+			{
+				if ((sak & 0x1) > 0) 						//sak bit 1
+				{																//mifare mini															
+					return CHECKCARD_OKE;
+				} 
+				else
+				{																//mifare 1k																
+					return CHECKCARD_OKE;
+				}
+			}
+		} 
+//		else
+//		{ if ((sak & 0x10) > 0) 						//sak bit 5
+//			{if ((sak & 0x1) > 0) 						//sak bit 1
+//				{} 															//mifare plus 4k																
+//				else
+//				{}															//mifare plus 2k
+//			}else
+//			{
+//			  if ((sak & 0x20) > 0) 					//sak bit 6
+//				{
+//					unsigned char rats[] = { 0xE0, 
+//											 0x50 };  				// The PN512 can has a buffer of 64 bytes and we set the cid to 0
+//					unsigned char ats[64];				// PN512 buffer size bigger is not needed
+//					memset(ats,0x00,50);   				// Just to easy up debugging, is not needed
+//																				//mifare desfire we need to RATS = request ATS
+//					derror = Mifare_HW_Rats(SPIBus,DeviceNmr,rats,ats);
+//					if (derror == 0)
+//					{
+//						// ats[0] = length																		
+//						// ats[1] = format type ( if (ats[0] > 1) then the format type is present )
+//						//				- b8 		= 0x00 RFU
+//						//				- b7 		= interface byte T(a) present
+//						//				- b6		= interface byte T(b) present
+//						//				- b5		= interface byte T(c) present
+//						//				- b4 .. b1 	= buffer size of the card
+//						// ats[2] = T(a) 
+//						//				- b8 		= Same divisors support for different directions 0 = no; 1 = yes
+//						//				- b7 ..	B5	= bitrate from card to PN512
+//						//					* b6		= DS=8 supported								
+//						//					* b6		= DS=4 supported
+//						//					* b5		= DS=2 supported
+//						//				- b4 		= 0x00 RFU
+//						//				- b3 .. B1  = bitrate support from PN512 to card
+//						//					* b3		= DR=8 supported
+//						//					* b2		= DR=4 supported
+//						//					* b1 		= DR=2 supported
+//						// ats[3] = T(b) 
+//						//				- b8 .. b5	= SWT  wait time: the time the card needs before it can reply on received data.
+//						//				- b4 .. b1	= SFGI The time the card needs before it can receive data after sending data. calcultated as: (256 x 16 / fc) x 2^SFGI
+//						// ats[4] = T(c)
+//						//				- b8 .. b3  = 0x00 RFU
+//						//				- b2		= CID supported
+//						//				- b1		= NAD supported
+//						// ats[5] .. rest = historical bytes ISO/IEC 7816-4
+//						if (ats[0] > 1)
+//						{
+//							if ((ats[1] & 0x40) > 0)	//T(a) present?
+//							{
+//								
+//								if (ats[2] > 0) //can we choose the data rates?
+//								{												
+//									//PPSS request
+////									unsigned char ppss[] = { 	0xD0, 	//CID is set to 0
+////																0x11,
+////																0x00	//for now we set the data rate to 1 as they are always supported
+////															 };
+//																					
+//								}
+//							}
+//						}
+//					}
+//				} else
+//				{
+//				 	//mifare UL card (nexus_s for nfc)
+
+//				}					 	
+//			}
+//		}
+	}
+	return CHECKCARD_ERROR;
+}
