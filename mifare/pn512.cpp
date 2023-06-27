@@ -11,8 +11,9 @@
 ** 
 *****************************************************************************/
 
-bool PN512::Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
+bool PN512::Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb, MCP23S17* expander)
 {
+	this->expander = expander;
 	irqPin = irq;
 	
 	bool result;
@@ -25,7 +26,7 @@ bool PN512::Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb
 	spi_devcfg.duty_cycle_pos = 0;
 	spi_devcfg.cs_ena_posttrans = 0;
 	spi_devcfg.cs_ena_pretrans = 0;
-	spi_devcfg.clock_speed_hz = 10 * 1000 * 1000; 
+	spi_devcfg.clock_speed_hz = 2 * 1000 * 1000; 
 	spi_devcfg.flags = 0;
 	spi_devcfg.queue_size = 7;
 	spi_devcfg.spics_io_num = cs;
@@ -37,10 +38,16 @@ bool PN512::Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb
 
 	// TODO
 	// Reset pin is connected to MCP23S17 highest bit
-	
-	RESET_MIFARE();
+	expander->SetPinsMode(MCP23S17_PIN_B5, MCP23S17_PINMODE_OUTPUT);
+	expander->SetPinsMode(MCP23S17_PIN_B6, MCP23S17_PINMODE_OUTPUT);
+	expander->SetPinsMode(MCP23S17_PIN_B7, MCP23S17_PINMODE_OUTPUT);
+	expander->SetPins(MCP23S17_PIN_B5, MCP23S17_PIN_B5); //	RESET_MIFARE();
+	expander->SetPins(MCP23S17_PIN_B6, MCP23S17_PIN_B6); //	RESET_MIFARE();
+	expander->SetPins(MCP23S17_PIN_B7, MCP23S17_PIN_B7); //	RESET_MIFARE();
 	vTaskDelay(pdMS_TO_TICKS(10)); //SleepMs(10); // wacht even
-	START_MIFARE();
+	expander->SetPins(MCP23S17_PIN_B5, MCP23S17_PIN_NONE); //START_MIFARE();
+	expander->SetPins(MCP23S17_PIN_B6, MCP23S17_PIN_NONE);
+	expander->SetPins(MCP23S17_PIN_B7, MCP23S17_PIN_NONE);
 	vTaskDelay(pdMS_TO_TICKS(1));  //SleepUs(100); // Wacht tot het IC is opgestart
 	return result;
 }
@@ -68,14 +75,14 @@ esp_err_t PN512::Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count)
 *****************************************************************************/
 uint8_t PN512::ReadRC(uint8_t address)
 {
-	spidev.AcquireBus();
+//	spidev.AcquireBus();
 	uint8_t txData[2];
 	uint8_t rxData[2];	
 	txData[0] = (((address << 1) | 0x80) & 0xFE);
 	txData[1] = 0x00;
 	Transmit(txData, rxData, 2);
 	return rxData[1];
-	spidev.ReleaseBus();
+//	spidev.ReleaseBus();
 }  
 
 /*****************************************************************************
@@ -226,8 +233,8 @@ void PN512::ConfigAsInitiator(void)
 	WriteRC(MF_PN512_REG_COMMAND, MF_PN512_CMD_SOFTRESET); // Soft reset
 	vTaskDelay(pdMS_TO_TICKS(1)); //SleepUs(50); // Wacht tot het IC is opgestart
 #ifdef PN512_FORCE_DEFAULT_VALUES	
-	PN512_WriteRC MF_PN512_REG_TXCONTROL, 0x80); // default value
-	PN512_WriteRC( MF_PN512_REG_STATUS2, 0x00); // default value
+	WriteRC MF_PN512_REG_TXCONTROL, 0x80); // default value
+	WriteRC( MF_PN512_REG_STATUS2, 0x00); // default value
 #endif	
 	WriteRC(MF_PN512_REG_TXMODE, 0x80); // Enable CRC
 	WriteRC(MF_PN512_REG_RXMODE, 0x80); // Enable CRC

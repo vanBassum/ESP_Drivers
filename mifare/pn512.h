@@ -1,6 +1,7 @@
 #pragma once
 #include "spi/bus.h"
 #include "driver/gpio.h"
+#include "mcp23s17.h"
 
 #define MF_PN512_POWERUP_DELAY			100			// Dit is de tijd die de kaart krijgt om op te laden
 #define MF_PN512_REG_RFCCFG_VALUE 		0x49
@@ -120,6 +121,7 @@ class PN512
 	gpio_num_t irqPin = GPIO_NUM_NC;
 	
 private:
+	MCP23S17* expander;
 	uint16_t AntiColl(uint8_t antiCollCode, uint8_t * snr);
 	uint16_t Select(uint8_t antiCollCode, uint8_t * snr, uint8_t * sak);
 	uint16_t AuthKey(uint8_t auth_mode, uint8_t *snr, uint8_t *keys, uint8_t block);
@@ -139,7 +141,7 @@ private:
 	esp_err_t Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count);
 	
 public:
-	bool Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb);
+	bool Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb, MCP23S17* expander);
 	uint8_t GetVersion(void);
 	//
 	void RFon(void);
