@@ -1,6 +1,8 @@
 #include "pn512.h"
 #include "task.h"
 
+static const char *TAG = "PN512";
+
 /*****************************************************************************
 ** Function name:		void MF_PN512_Init()
 **
@@ -700,16 +702,17 @@ uint16_t PN512::Write(uint8_t cmd, uint8_t addr, uint8_t datalen, uint8_t *data)
 #define CARDERROR_READ					0x00000008
 #define CARDERROR_ALL					0x000000FF
 
-uint16_t PN512::CheckCardLogics(card_struct *card_data)
+uint16_t PN512::CheckCardLogics(/*card_struct *card_data*/)
 {	
 	uint8_t atq[2];
 	uint8_t sak = 0;
 	uint8_t uid[11];
 	uint16_t resultaat = 0;
+	uint32_t hex_num=0;
 	RFoff();							
 	memset(atq,0x00,2);	
 	
-	memset(card_data->uid,0x00,10);	
+	//memset(card_data->uid,0x00,10);	
 	
 	memset(uid,0x00,11);
 	resultaat = Request(PICC_REQALL,&atq[0]); // request for a card	REQ_ALL
@@ -808,8 +811,13 @@ uint16_t PN512::CheckCardLogics(card_struct *card_data)
 	}
 	if (resultaat == CHECKCARD_OKE) 
 	{
-		memcpy(card_data->uid,uid,10);
-		
+	//	memcpy(card_data->uid,uid,10);
+		hex_num = uid[0] << 24;
+		hex_num += uid[1] << 16;
+		hex_num += uid[2] << 8;
+		hex_num += uid[3];
+		ESP_LOGI(TAG, "UID = %ld", hex_num);
+		resultaat = hex_num & 0xFFFF;   // this is dirty !! Just check it works
 //		if ((onCardChange != NULL) && (useEvents == 1)) onCardChange(OKE,card_data->madKeys);				
 		return resultaat;
 	} else

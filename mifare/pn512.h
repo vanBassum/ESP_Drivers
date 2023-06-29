@@ -115,12 +115,12 @@
 
 typedef struct {
 	//		carddata_struct carddata;
-	unsigned char uid[10];
-	unsigned char madKeys; // Hierin staat of de kaart is uitgelezen met behulp van de MAD keys
-	int CardReadStatus; // bit array of non readable known sectors (in other words: this says which known sectors are available to work with) 	
+	uint8_t uid[10];
+	uint8_t madKeys; // Hierin staat of de kaart is uitgelezen met behulp van de MAD keys
+	uint16_t CardReadStatus; // bit array of non readable known sectors (in other words: this says which known sectors are available to work with) 	
 }card_struct;
 
-card_struct CARD;
+//card_struct CARD;
 
 class PN512
 {
@@ -162,6 +162,6 @@ public:
 	uint16_t Read(uint8_t cmd, uint8_t addr, uint8_t datalen, uint8_t *data);
 	uint16_t Write(uint8_t cmd, uint8_t addr, uint8_t datalen, uint8_t *data);
 	
-	uint16_t CheckCardLogics(card_struct *card_data);
+	uint16_t CheckCardLogics(/*card_struct* card_data*/);
 	uint16_t MF_HandleSAK(uint8_t sak);
 };
