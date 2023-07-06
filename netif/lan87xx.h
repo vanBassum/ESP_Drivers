@@ -16,7 +16,7 @@ class Lan87xx
 
 public:
 	
-	bool Init(NetManager* netManager);
+	Lan87xx(NetManager& netManager);
 
 	void GetIpInfo(esp_netif_ip_info_t* ip_info)
 	{

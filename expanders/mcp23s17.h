@@ -40,7 +40,7 @@
 	class MCP23S17
 	{
 		Mutex mutex;
-		SPI::Device spidev;
+		SPIDevice& spidev;
 		gpio_num_t irqPin = GPIO_NUM_NC;
 		uint8_t devAddr = 0;
 	
@@ -55,7 +55,8 @@
 		uint16_t pinDirBuffer = 0xFFFF;
 
 	public:
-		bool Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb);
+		
+		MCP23S17(SPIDevice& spiDev, gpio_num_t irq);
 		void SetPinsMode(mcp23s17_pins_t mask, mcp23s17_pinmodes_t mode);
 		void SetPins(mcp23s17_pins_t mask, mcp23s17_pins_t value);
 		mcp23s17_pins_t GetPins(mcp23s17_pins_t mask);

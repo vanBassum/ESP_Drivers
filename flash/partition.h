@@ -16,17 +16,17 @@ public:
 
 class Partition : public IPartition
 {
-public:	
 	const esp_partition_t * handle = NULL;
-	bool Init(const char* label, const esp_partition_type_t type, const esp_partition_subtype_t subtype) 
+public:	
+	
+	Partition(const char* label, const esp_partition_type_t type, const esp_partition_subtype_t subtype)
 	{
 		handle = esp_partition_find_first(type, subtype, label);
 		if (handle == NULL)
-			return false;
+			return;
 			
 		totalSize = handle->size;
 		sectorSize = handle->erase_size;
-		return true;
 	}
 		
 	bool Erase(size_t offset, size_t length) override
@@ -57,45 +57,45 @@ public:
 
 class PartitionRange : public IPartition
 {
-	IPartition* parent;
+	const char* TAG = "PartitionRange";
+	IPartition& parent;
 	size_t start;
 public:
-	bool Init(IPartition* parent, const size_t start, const size_t length)
+	PartitionRange(IPartition& _parent, const size_t start, const size_t length)
+		: parent(_parent)
 	{
+		ESP_LOGI(TAG, "Initializing start = %08x, length = %08x", start, length);
 		this->start = start;
-		this->parent = parent;
-		this->sectorSize = parent->sectorSize;
+		this->sectorSize = parent.sectorSize;
 		this->totalSize = length;
-		return true;
 	}
-	
-	
+		
 	bool Read(void* dst, size_t offset, size_t length)
 	{
-		if (offset + start + length > parent->totalSize) 
+		if (offset + start + length > parent.totalSize) 
 		{
-			ESP_LOGE("PartitionRange", "Read Out of range: %d + %d + %d > %d", offset, start, length, parent->totalSize);
+			ESP_LOGE("PartitionRange", "Read Out of range: %d + %d + %d > %d", offset, start, length, parent.totalSize);
 			return false;
 		}
-		return parent->Read(dst, offset + start, length);
+		return parent.Read(dst, offset + start, length);
 	}
 	bool Write(const void* src, size_t offset, size_t length)
 	{
-		if (offset + start + length > parent->totalSize)	
+		if (offset + start + length > parent.totalSize)	
 		{
-			ESP_LOGE("PartitionRange", "Write Out of range: %d + %d + %d > %d", offset, start, length, parent->totalSize);
+			ESP_LOGE("PartitionRange", "Write Out of range: %d + %d + %d > %d", offset, start, length, parent.totalSize);
 			return false;
 		}
 		
-		return parent->Write(src, offset + start, length);
+		return parent.Write(src, offset + start, length);
 	}
 	bool Erase(size_t offset, size_t length)
 	{
-		if (offset + start + length > parent->totalSize)	
+		if (offset + start + length > parent.totalSize)	
 		{
-			ESP_LOGE("PartitionRange", "Erase Out of range: %d + %d + %d > %d", offset, start, length, parent->totalSize);
+			ESP_LOGE("PartitionRange", "Erase Out of range: %d + %d + %d > %d", offset, start, length, parent.totalSize);
 			return false;
 		}
-		return parent->Erase(offset + start, length);
+		return parent.Erase(offset + start, length);
 	}
 };

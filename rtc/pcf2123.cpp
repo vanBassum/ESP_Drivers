@@ -91,38 +91,21 @@ PCF2123::bcd_encode(uint8_t dec)
 	return ((dec / 10) << 4) | (dec % 10);
 }
 
-
-bool PCF2123::Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
+PCF2123::PCF2123(SPIDevice& spiDev, gpio_num_t irq)
+	: spi(spiDev)
+	, irq(irq)
 {
-	this->cs = cs;
-	this->irq = irq;
+	reset();
+	spi.AcquireBus();
+	// /* Make sure the clock is in 24h mode */
+	// PCF2123_CtrlRegs regs = this->ctrl_get();
+	// regs.set(PCF2123_CtrlRegs::HOUR_MODE, 0);
+	// this->ctrl_set(&regs, true, false, true);
 	
-	bool result;
-	spi_device_interface_config_t spi_devcfg;
-	memset(&spi_devcfg, 0, sizeof(spi_devcfg));
-	spi_devcfg.clock_speed_hz = SPI_MAX_SPEED;
-	spi_devcfg.mode = 0;
-	spi_devcfg.queue_size = 7;
-	spi_devcfg.command_bits = 8;
-	spi_devcfg.spics_io_num = cs;
-	spi_devcfg.pre_cb = pre_cb;
-	spi_devcfg.post_cb = post_cb;
-	result = spi.Init(spiBus, &spi_devcfg);	
-	if (result)
-	{
-		reset();
-		spi.AcquireBus();
-		// /* Make sure the clock is in 24h mode */
-		// PCF2123_CtrlRegs regs = this->ctrl_get();
-		// regs.set(PCF2123_CtrlRegs::HOUR_MODE, 0);
-		// this->ctrl_set(&regs, true, false, true);
-	
-		PCF2123_CtrlRegs regs = this->ctrl_get();
-		regs.ClearAll();
-		this->ctrl_set(&regs, true, true, false);
-		spi.ReleaseBus();
-	}
-	return result;
+	PCF2123_CtrlRegs regs = this->ctrl_get();
+	regs.ClearAll();
+	this->ctrl_set(&regs, true, true, false);
+	spi.ReleaseBus();
 }
 
 

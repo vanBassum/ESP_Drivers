@@ -109,8 +109,7 @@ class PCF2123
 private:
 	enum RxtMode { RXT_READ, RXT_WRITE } ;
 
-	SPI::Device spi; 
-	gpio_num_t cs = GPIO_NUM_NC;
+	SPIDevice& spi; 
 	gpio_num_t irq = GPIO_NUM_NC;
 	
 	/**
@@ -175,8 +174,7 @@ public:
 	};
 
 	
-	bool Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb  = NULL, transaction_cb_t post_cb = NULL);
-	
+	PCF2123(SPIDevice& spiDev, gpio_num_t irq);
 	
 	/**
 		* Get current time of the RTC.

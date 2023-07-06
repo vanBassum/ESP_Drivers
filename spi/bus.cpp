@@ -1,17 +1,24 @@
 #include "bus.h"
-#include "string.h"
+#include "device.h"
 
-bool SPI::Bus::Init(spi_host_device_t host, gpio_num_t clk, gpio_num_t mosi, gpio_num_t miso, gpio_num_t qwp, gpio_num_t qhd, spi_dma_chan_t dma)
+SPIBus::SPIBus(spi_host_device_t _host, spi_bus_config_t _config, int _dmaChannel) 
+	: host(_host)
+	, config(_config)
+	, dmaChannel(_dmaChannel)
 {
-	spi_bus_config_t spiConfig;
-	memset(&spiConfig, 0, sizeof(spi_bus_config_t));
-	spiConfig.sclk_io_num = clk;
-	spiConfig.mosi_io_num = mosi;
-	spiConfig.miso_io_num = miso;
-	spiConfig.quadwp_io_num = qwp;
-	spiConfig.quadhd_io_num = qhd;
-	spiConfig.max_transfer_sz = 1024;
-	_host = host;
-	return spi_bus_initialize(host, &spiConfig, dma) == ESP_OK;
+	config.flags = 0;
+	config.intr_flags = 0;
+	ESP_ERROR_CHECK(spi_bus_initialize(host, &config, dmaChannel));
 }
-
+	
+SPIBus::~SPIBus()
+{
+	devices.clear(); //By calling devices.clear() in the destructor, it will remove all the SPIDevice objects from the vector, triggering their destructors and ensuring proper cleanup.
+	spi_bus_free(host);
+}
+	
+SPIDevice& SPIBus::addDevice(const spi_device_interface_config_t& devConfig)
+{
+	devices.emplace_back(host, devConfig);
+	return devices.back();
+}

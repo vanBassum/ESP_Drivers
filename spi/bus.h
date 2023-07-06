@@ -2,20 +2,23 @@
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
 #include "device.h"
+#include <vector>
 
-namespace SPI
+
+class SPIDevice;
+
+class SPIBus
 {
-	class Device;
+	std::vector<SPIDevice> devices;
+	spi_host_device_t host;
+	spi_bus_config_t config;
+	int dmaChannel;
 	
-	class Bus
-	{
-	protected:
-		spi_host_device_t _host;
-		friend Device;
-	public:
-		bool Init(spi_host_device_t host, gpio_num_t clk, gpio_num_t mosi, gpio_num_t miso, gpio_num_t qwp = GPIO_NUM_NC, gpio_num_t qhd = GPIO_NUM_NC, spi_dma_chan_t dma = 0);
-	};
-}
+public:
+	SPIBus(spi_host_device_t _host, spi_bus_config_t _config, int _dmaChannel);
+	~SPIBus();
+	SPIDevice& addDevice(const spi_device_interface_config_t& devConfig);
+};
 
 
 

@@ -16,34 +16,15 @@ static const char *TAG	= "Wifi";
 //	}
 //}
 
-bool Wifi::Init(NetManager* netManager)
+
+Wifi::Wifi(NetManager& netManager)
 {
-	sta_netif = esp_netif_create_default_wifi_sta();
-	
-	INIT_OR_RETURN(TAG, "Create STA", sta_netif != NULL);
-	
 	wifi_init_config_t cfg2 = WIFI_INIT_CONFIG_DEFAULT();
-	INIT_OR_RETURN(TAG, "Init", esp_wifi_init(&cfg2) == ESP_OK);
-	INIT_OR_RETURN(TAG, "Set storage RAM", esp_wifi_set_storage(WIFI_STORAGE_RAM) == ESP_OK);
 	
-	//sta_netif = esp_netif_create_default_wifi_sta();
-	//INIT_OR_RETURN(TAG, "Create STA", sta_netif != NULL);
-	
-	//esp_event_handler_instance_t instance_any_id;
-	//esp_event_handler_instance_t instance_got_ip;
-	//ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
-	//	ESP_EVENT_ANY_ID,
-	//	&event_handler,
-	//	NULL,
-	//	&instance_any_id));
-	//ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
-	//	IP_EVENT_STA_GOT_IP,
-	//	&event_handler,
-	//	NULL,
-	//	&instance_got_ip));
-	
-	
-	return true;
+	sta_netif = esp_netif_create_default_wifi_sta();
+	ESP_ERROR_CHECK(esp_wifi_init(&cfg2));
+	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM)); 
+
 }
 
 

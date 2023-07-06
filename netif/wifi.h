@@ -9,8 +9,8 @@ class Wifi
 	esp_netif_t *sta_netif;
 public:
 	
-	bool Init(NetManager* netManager);
-	
+	Wifi(NetManager& netManager);
+		
 	bool Connect(const std::string& ssid, const std::string& pwd);
 	
 	void GetIpInfo(esp_netif_ip_info_t* ip_info)

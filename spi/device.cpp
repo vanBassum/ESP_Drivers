@@ -1,33 +1,37 @@
 #include "device.h"
 
-bool SPI::Device::Init(Bus* bus, spi_device_interface_config_t* config)
+
+SPIDevice::SPIDevice(spi_host_device_t host, const spi_device_interface_config_t& devConfig)
 {
-	return spi_bus_add_device(bus->_host, config, &handle) == ESP_OK;
+	ESP_ERROR_CHECK(spi_bus_add_device(host, &devConfig, &spi));
+}
+	
+void SPIDevice::transfer(uint8_t* txData, uint8_t* rxData, size_t length)
+{
+	spi_transaction_t transaction {}
+	;
+	transaction.length = length * 8; // In bits
+	transaction.tx_buffer = txData;
+	transaction.rx_buffer = rxData;
+	ESP_ERROR_CHECK(spi_device_transmit(spi, &transaction));
 }
 
-
-
-bool SPI::Device::PollingTransmit(spi_transaction_t* transaction)
+void SPIDevice::PollingTransmit(spi_transaction_t* transaction)
 {
-	return spi_device_polling_transmit(handle, transaction) == ESP_OK;  	//Transmit!
+	ESP_ERROR_CHECK(spi_device_polling_transmit(spi, transaction) ) ;  	//Transmit!
 }
 
-
-bool SPI::Device::Transmit(spi_transaction_t* transaction)
+void SPIDevice::Transmit(spi_transaction_t* transaction)
 {
-	return spi_device_transmit(handle, transaction) == ESP_OK;
+	ESP_ERROR_CHECK(spi_device_transmit(spi, transaction) ) ;
 }
 
-
-
-
-void SPI::Device::ReleaseBus()
+void SPIDevice::ReleaseBus()
 {
-	spi_device_release_bus(handle);
+	spi_device_release_bus(spi);
 }
 
-
-bool SPI::Device::AcquireBus()
+void SPIDevice::AcquireBus()
 {
-	return spi_device_acquire_bus(handle, portMAX_DELAY) == ESP_OK;
+	ESP_ERROR_CHECK(spi_device_acquire_bus(spi, portMAX_DELAY));
 }

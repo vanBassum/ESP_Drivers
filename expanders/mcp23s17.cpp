@@ -46,35 +46,13 @@ typedef enum
 	MCP23S17_IOCR_NI		   = 0x01,   //  Not implemented.
 }mcp23s17_iocr_t;
 
-
-
-bool MCP23S17::Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
-{
-	irqPin = irq;
-	
-	bool result;
-	spi_device_interface_config_t spi_devcfg;
-	memset(&spi_devcfg, 0, sizeof(spi_devcfg));
-	spi_devcfg.address_bits = 0;
-	spi_devcfg.command_bits = 0;
-	spi_devcfg.dummy_bits = 0;
-	spi_devcfg.mode = 0;
-	spi_devcfg.duty_cycle_pos = 0;
-	spi_devcfg.cs_ena_posttrans = 0;
-	spi_devcfg.cs_ena_pretrans = 0;
-	spi_devcfg.clock_speed_hz = 6 * 1000 * 1000;			//@10MHz the glcd shows artifacts. was 9
-	spi_devcfg.flags = 0;
-	spi_devcfg.queue_size = 7;
-	spi_devcfg.spics_io_num = cs;
-	spi_devcfg.pre_cb = pre_cb;
-	spi_devcfg.post_cb = post_cb;
-	result = spidev.Init(spiBus, &spi_devcfg);	
-	
+MCP23S17::MCP23S17(SPIDevice& spiDev, gpio_num_t irq)
+	: spidev(spiDev)
+	, irqPin(irq)
+{	
 	spidev.AcquireBus();
 	Write8(MCP23S17_REG_IOCON_A, 0x08);    					// Set up ICON A,B to auto increment
 	spidev.ReleaseBus();
-
-	return result;
 }
 
 

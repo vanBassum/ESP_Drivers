@@ -7,48 +7,27 @@
 
 static const char *TAG = "MAX14830";
 
-
-bool MAX14830::Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb)
+MAX14830::MAX14830(SPIDevice& device, gpio_num_t irq) : 
+	spidev(device),
+	irqPin(irq)
 {
 	memset(gpioConfBuffer, 0, sizeof(gpioConfBuffer));
 	memset(gpioDataBuffer, 0, sizeof(gpioDataBuffer));
 	memset(gpioIRQBuffer, 0, sizeof(gpioIRQBuffer));
-	esp_err_t result;
-	spi_device_interface_config_t spi_devcfg;
-	memset(&spi_devcfg, 0, sizeof(spi_devcfg));
-	spi_devcfg.clock_speed_hz = 10 * 1000 * 1000;           //Should be able to go higher, for now start low for testing.
-	spi_devcfg.mode = 0;
-	spi_devcfg.queue_size = 7;
-	spi_devcfg.command_bits = 8;
-	spi_devcfg.spics_io_num = cs;
-	spi_devcfg.pre_cb = pre_cb;
-	spi_devcfg.post_cb = post_cb;
-	result = spidev.Init(spiBus, &spi_devcfg);	
-	if (result != ESP_OK)
-		return result;
+
 	
-	result = spidev.AcquireBus();
-	if (result != ESP_OK)
-		return result;
-	
-	result = Detect();	//is there a max14830 available
-	if (result != ESP_OK)
-		return result;
-	
+	spidev.AcquireBus();
+	ESP_ERROR_CHECK(Detect());
 	max310x_set_ref_clk();
 	spidev.ReleaseBus();
-	
-	if (clockErr)
-		return ESP_FAIL;
-	
+
 	//This task will do everything required to handle device interrupts.
 	//Its optional, don't start the task if interupts aren't required.
-	irqPin = irq;
 	irqTask.Init("MAX14830", 10, 1048 * 2);
 	irqTask.Bind(this, &MAX14830::IrqTaskWork);
 	irqTask.Run();
-	return result == ESP_OK;
 }
+
 
 
 esp_err_t MAX14830::Detect()

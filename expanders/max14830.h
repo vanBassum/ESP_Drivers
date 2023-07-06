@@ -72,7 +72,7 @@ class MAX14830
 	uint8_t gpioConfBuffer[4];
 	uint8_t gpioDataBuffer[4];
 	uint8_t gpioIRQBuffer[4];
-	SPI::Device spidev;
+	SPIDevice& spidev;
 	Task irqTask;
 	gpio_num_t irqPin = GPIO_NUM_NC;
 	
@@ -117,7 +117,7 @@ protected:
 	friend Uart;
 public:
 	Event<MAX14830*, max14830_pins_t> OnPinsChanged;
-	bool Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb  = NULL, transaction_cb_t post_cb = NULL);
+	MAX14830(SPIDevice& device, gpio_num_t irq);
 	void SetPinsMode(max14830_pins_t mask, max14830_pinmodes_t mode);
 	void SetPins(max14830_pins_t mask, max14830_pins_t value);
 	void SetInterrupts(max14830_pins_t mask, max14830_pins_t value);
