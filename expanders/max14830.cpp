@@ -30,35 +30,30 @@ MAX14830::MAX14830(SPIDevice& device, gpio_num_t irq) :
 
 
 
-esp_err_t MAX14830::Detect()
+bool MAX14830::Detect()
 {
-	esp_err_t ret = regmap_write(MAX310X_GLOBALCMD_REG, MAX310X_EXTREG_ENBL);
-	if (ret == ESP_OK)
+	regmap_write(MAX310X_GLOBALCMD_REG, MAX310X_EXTREG_ENBL);
+	uint8_t value = max310x_port_read(MAX14830_UART_NUM_0, MAX310X_REVID_EXTREG);
+	regmap_write(MAX310X_GLOBALCMD_REG, MAX310X_EXTREG_DSBL);
+	if (((value & MAX310x_REV_MASK) != MAX14830_REV_ID))
 	{
-		uint8_t value = max310x_port_read(MAX14830_UART_NUM_0, MAX310X_REVID_EXTREG);
-		ret = regmap_write(MAX310X_GLOBALCMD_REG, MAX310X_EXTREG_DSBL);
-		if (((value & MAX310x_REV_MASK) != MAX14830_REV_ID))
-		{
-			ESP_LOGE(TAG, "Chip not found revid %d", value);
-			return ESP_FAIL;
-		}
-		//ESP_LOGI(TAG, "Max14830 chip found revid %d", value);
-		return ESP_OK;
+		ESP_LOGE(TAG, "Chip not found revid %d", value);
+		return false;
 	}
-	return ESP_FAIL;
+	return true;
 }
 
 
-esp_err_t MAX14830::regmap_write(uint8_t cmd, uint8_t value)
+void MAX14830::regmap_write(uint8_t cmd, uint8_t value)
 {
-	return Max14830_WriteBufferPolled(cmd, &value, 1);
+	Max14830_WriteBufferPolled(cmd, &value, 1);
 }
 
 
-esp_err_t MAX14830::regmap_read(uint8_t cmd, uint8_t * value)
+void MAX14830::regmap_read(uint8_t cmd, uint8_t * value)
 {
 	uint8_t cmdData[1];
-	return Max14830_ReadBufferPolled(cmd, cmdData, value, 1);
+	Max14830_ReadBufferPolled(cmd, cmdData, value, 1);
 }
 
 
@@ -87,18 +82,18 @@ void MAX14830::max310x_port_update(max14830_uart_port_t port, uint8_t cmd, uint8
 }
 
 
-esp_err_t MAX14830::Max14830_WriteBufferPolled(uint8_t cmd, const uint8_t * cmdData, uint8_t count)
+void MAX14830::Max14830_WriteBufferPolled(uint8_t cmd, const uint8_t * cmdData, uint8_t count)
 {
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));       				//Zero out the transaction
 	t.length = (count * 8);                   		//amount of bits
 	t.tx_buffer = cmdData;               			//The data is the cmd itself
 	t.cmd = 0x80 | cmd;								//Add write bit
-	return spidev.PollingTransmit(&t);  			//Transmit!
+	spidev.PollingTransmit(&t);  			//Transmit!
 }
 
 
-esp_err_t MAX14830::Max14830_ReadBufferPolled(uint8_t cmd, uint8_t * cmdData, uint8_t * replyData, uint8_t count)
+void MAX14830::Max14830_ReadBufferPolled(uint8_t cmd, uint8_t * cmdData, uint8_t * replyData, uint8_t count)
 {
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));       				//Zero out the transaction
@@ -106,7 +101,7 @@ esp_err_t MAX14830::Max14830_ReadBufferPolled(uint8_t cmd, uint8_t * cmdData, ui
 	t.tx_buffer = cmdData;               			//The data is the cmd itself
 	t.rx_buffer = replyData;
 	t.cmd = cmd;
-	return spidev.PollingTransmit(&t);  			//Transmit!
+	spidev.PollingTransmit(&t);  			//Transmit!
 }
 
 uint32_t MAX14830::max310x_set_ref_clk()

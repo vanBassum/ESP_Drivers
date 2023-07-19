@@ -100,12 +100,12 @@ public:
 	
 protected:
 	void IrqTaskWork(Task* task, void* args);
-	esp_err_t Detect();
+	bool Detect();
 	esp_err_t SetRefClock();
-	esp_err_t Max14830_WriteBufferPolled(uint8_t cmd, const uint8_t * cmdData, uint8_t count);
-	esp_err_t Max14830_ReadBufferPolled(uint8_t cmd, uint8_t * cmdData, uint8_t * replyData, uint8_t count);
-	esp_err_t regmap_write(uint8_t cmd, uint8_t value);
-	esp_err_t regmap_read(uint8_t cmd, uint8_t * value);
+	void Max14830_WriteBufferPolled(uint8_t cmd, const uint8_t * cmdData, uint8_t count);
+	void Max14830_ReadBufferPolled(uint8_t cmd, uint8_t * cmdData, uint8_t * replyData, uint8_t count);
+	void regmap_write(uint8_t cmd, uint8_t value);
+	void regmap_read(uint8_t cmd, uint8_t * value);
 	uint8_t max310x_port_read(max14830_uart_port_t port, uint8_t cmd);
 	void max310x_port_write(max14830_uart_port_t port, uint8_t cmd, uint8_t value);
 	void max310x_port_update(max14830_uart_port_t port, uint8_t cmd, uint8_t mask, uint8_t value);

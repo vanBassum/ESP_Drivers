@@ -44,7 +44,7 @@
 		gpio_num_t irqPin = GPIO_NUM_NC;
 		uint8_t devAddr = 0;
 	
-		esp_err_t Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count);
+		void Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count);
 
 		uint8_t Read8(uint8_t reg);
 		void Write8(uint8_t reg, uint8_t value);

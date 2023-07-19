@@ -6,7 +6,7 @@
 
 class ST7735
 {
-	SPI::Device spidev;
+	SPIDevice& spidev;
 
     void CreateInitList(std::vector<uint8_t>* list);
     void ST7735_WriteCommand(uint8_t cmd);
@@ -42,7 +42,7 @@ public:
     };
 
     Settings settings;
-	bool Init(SPI::Bus* spiBus);
+	ST7735(SPIDevice& spidev);
     void DrawPixel(uint16_t x, uint16_t y, uint16_t color);
     void SetWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
 	void WriteWindow(uint16_t* colors, size_t size);

@@ -53,14 +53,14 @@
 
 #define ADDR(col, row)	(col + (row * 30))
 
-
-bool T6963C::Init(MCP23S17* expander)
+T6963C::T6963C(MCP23S17& expander, const Settings& settings)
+	: expander(expander)
+	, settings(settings)
 {
-	this->expander = expander;
 	this->columns = settings.width / 8;
 	this->rows = settings.height;
-	expander->SetPinsMode(GLCD_ALL_PINS, MCP23S17_PINMODE_OUTPUT);
-	expander->SetPins(GLCD_CTRL_PINS, GLCD_CTRL_PINS);
+	expander.SetPinsMode(GLCD_ALL_PINS, MCP23S17_PINMODE_OUTPUT);
+	expander.SetPins(GLCD_CTRL_PINS, GLCD_CTRL_PINS);
 	//RESET, NOT POSSIBLE
 	
 	SetBacklight(T6963C_BACKLIGHT_MIN);
@@ -76,7 +76,6 @@ bool T6963C::Init(MCP23S17* expander)
 	WriteCmd(T6963_MODE_SET);
 	
 	Clear();
-	return true;
 }
 
 void T6963C::WriteCmd(uint8_t cmd, uint8_t data1)
@@ -122,13 +121,13 @@ void T6963C::SetCtrlPins(bool wr, bool rd, bool cd, bool ce)
 	if (rd) pins |= GLCD_PIN_RD;
 	if (cd) pins |= GLCD_PIN_CD;
 	if (ce) pins |= GLCD_PIN_CE;
-	expander->SetPins(GLCD_CTRL_PINS, pins);
+	expander.SetPins(GLCD_CTRL_PINS, pins);
 }
 
 
 void T6963C::SetDataPins(uint8_t data)
 {
-	expander->SetPins(GLCD_DATA_PINS, (mcp23s17_pins_t)data);
+	expander.SetPins(GLCD_DATA_PINS, (mcp23s17_pins_t)data);
 }
 
 
@@ -200,16 +199,16 @@ void T6963C::SetBacklight(t6963c_backlight_t value)
 	{
 	default:
 	case T6963C_BACKLIGHT_OFF:
-		expander->SetPins(GLCD_PIN_BL1 | GLCD_PIN_BL2, GLCD_PIN_NONE);
+		expander.SetPins(GLCD_PIN_BL1 | GLCD_PIN_BL2, GLCD_PIN_NONE);
 		break;
 	case T6963C_BACKLIGHT_MIN:
-		expander->SetPins(GLCD_PIN_BL1 | GLCD_PIN_BL2, GLCD_PIN_BL1);
+		expander.SetPins(GLCD_PIN_BL1 | GLCD_PIN_BL2, GLCD_PIN_BL1);
 		break;
 	case T6963C_BACKLIGHT_MID:
-		expander->SetPins(GLCD_PIN_BL1 | GLCD_PIN_BL2, GLCD_PIN_BL2);
+		expander.SetPins(GLCD_PIN_BL1 | GLCD_PIN_BL2, GLCD_PIN_BL2);
 		break;
 	case T6963C_BACKLIGHT_MAX:
-		expander->SetPins(GLCD_PIN_BL1 | GLCD_PIN_BL2, GLCD_PIN_BL1 | GLCD_PIN_BL2);
+		expander.SetPins(GLCD_PIN_BL1 | GLCD_PIN_BL2, GLCD_PIN_BL1 | GLCD_PIN_BL2);
 		break;
 	}
 }
@@ -273,5 +272,5 @@ void T6963C::WriteRow(uint32_t y, uint8_t* data, size_t size)
 	for (col = 0; col < size; col++)
 		wrPtr = OWriteByte(0, data[col], wrPtr);	
 	wrPtr = OWriteCmd(T6963_AUTO_RESET, wrPtr);	
-	expander->ConsecutivePinWriting(GLCD_CTRL_PINS | GLCD_DATA_PINS, pinOrder, 70);
+	expander.ConsecutivePinWriting(GLCD_CTRL_PINS | GLCD_DATA_PINS, pinOrder, 70);
 }

@@ -148,27 +148,15 @@ static const uint8_t
     ST7735_DISPON ,    DELAY, //  4: Main screen turn on, no args w/delay
       100 };                  //     100 ms delay
 
-
-
-bool ST7735::Init(SPI::Bus* spiBus)
+ST7735::ST7735(SPIDevice& spidev)
+	: spidev(spidev)
 {
-    esp_err_t result = ESP_FAIL;
 	gpio_pad_select_gpio(settings.dc);
     gpio_set_direction(settings.cs, GPIO_MODE_OUTPUT);
     gpio_set_direction(settings.dc, GPIO_MODE_OUTPUT);
     gpio_set_direction(settings.rst, GPIO_MODE_OUTPUT);
     Reset();
-	spi_device_interface_config_t devcfg;
-	memset(&devcfg, 0, sizeof(spi_device_interface_config_t));
 	
-	devcfg.clock_speed_hz = 20000000;
-	devcfg.spics_io_num = settings.cs;
-	devcfg.flags = SPI_DEVICE_NO_DUMMY;
-	devcfg.queue_size = 7;
-    
-
-    result = spidev.Init(spiBus, &devcfg);	
-
     ST7735_ExecuteCommandList(init_cmds1);
     ST7735_ExecuteCommandList(init_cmds2);
     ST7735_ExecuteCommandList(init_cmds3);
@@ -176,7 +164,6 @@ bool ST7735::Init(SPI::Bus* spiBus)
     //std::vector<uint8_t> initList;
     //CreateInitList(&initList);
     //ST7735_ExecuteCommandList(&initList[0]);
-    return result == ESP_OK;
 }
 
 void ST7735::WriteWindow(uint16_t *colors, size_t size)
@@ -236,13 +223,11 @@ void ST7735::ST7735_WriteData(uint8_t *buff, size_t buff_size)
 void ST7735::Transmit(uint8_t *data, size_t size)
 {
     spi_transaction_t SPITransaction;
-	esp_err_t ret;
 	if (size > 0) {
 		memset(&SPITransaction, 0, sizeof(spi_transaction_t));
 		SPITransaction.length = size * 8;
 		SPITransaction.tx_buffer = data;
-		ret = spidev.Transmit(&SPITransaction);
-		assert(ret == ESP_OK); 
+		spidev.Transmit(&SPITransaction);
 	}
 }
 

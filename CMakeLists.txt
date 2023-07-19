@@ -18,6 +18,7 @@ idf_component_register(
 		netif/wifi.cpp
 		rtc/ntp.cpp
 		rtc/pcf2123.cpp
+		spi/bus.cpp
 		spi/device.cpp
 	INCLUDE_DIRS
 		.

@@ -124,13 +124,11 @@ typedef struct {
 
 class PN512
 {
-	SPI::Device spidev;
+	SPIDevice& spidev;
+	MCP23S17& expander;
 	uint8_t devAddr = 0;
-//	Task irqTask;
 	gpio_num_t irqPin = GPIO_NUM_NC;
-	
-private:
-	MCP23S17* expander;
+
 	uint16_t AntiColl(uint8_t antiCollCode, uint8_t * snr);
 	uint16_t Select(uint8_t antiCollCode, uint8_t * snr, uint8_t * sak);
 	uint16_t AuthKey(uint8_t auth_mode, uint8_t *snr, uint8_t *keys, uint8_t block);
@@ -147,10 +145,10 @@ private:
 	void WriteRC(uint8_t address, uint8_t data);
 	uint8_t ReadRC(uint8_t address);
 	
-	esp_err_t Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count);
+	void Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count);
 	
 public:
-	bool Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb, MCP23S17* expander);
+	PN512(SPIDevice& device, gpio_num_t irq, MCP23S17& expander);
 	uint8_t GetVersion(void);
 	//
 	void RFon(void);

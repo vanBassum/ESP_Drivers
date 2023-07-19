@@ -13,55 +13,38 @@ static const char *TAG = "PN512";
 ** 
 *****************************************************************************/
 
-bool PN512::Init(SPI::Bus* spiBus, gpio_num_t cs, gpio_num_t irq, transaction_cb_t pre_cb, transaction_cb_t post_cb, MCP23S17* expander)
-{
-	this->expander = expander;
-	irqPin = irq;
-	
-	bool result;
-	spi_device_interface_config_t spi_devcfg;
-	memset(&spi_devcfg, 0, sizeof(spi_devcfg));
-	spi_devcfg.address_bits = 0;
-	spi_devcfg.command_bits = 0;
-	spi_devcfg.dummy_bits = 0;
-	spi_devcfg.mode = 0;
-	spi_devcfg.duty_cycle_pos = 0;
-	spi_devcfg.cs_ena_posttrans = 0;
-	spi_devcfg.cs_ena_pretrans = 0;
-	spi_devcfg.clock_speed_hz = 2 * 1000 * 1000; 
-	spi_devcfg.flags = 0;
-	spi_devcfg.queue_size = 7;
-	spi_devcfg.spics_io_num = cs;
-	spi_devcfg.pre_cb = pre_cb;
-	spi_devcfg.post_cb = post_cb;
-	result = spidev.Init(spiBus, &spi_devcfg);	
+PN512::PN512(SPIDevice& device, gpio_num_t irq, MCP23S17& expander)
+	: spidev(device)
+	, expander(expander)
+	, irqPin(irq)
+{	
+
 	
 	//init reset pin
 
 	// TODO
 	// Reset pin is connected to MCP23S17 highest bit
-	expander->SetPinsMode(MCP23S17_PIN_B5, MCP23S17_PINMODE_OUTPUT);
-	expander->SetPinsMode(MCP23S17_PIN_B6, MCP23S17_PINMODE_OUTPUT);
-	expander->SetPinsMode(MCP23S17_PIN_B7, MCP23S17_PINMODE_OUTPUT);
-	expander->SetPins(MCP23S17_PIN_B5, MCP23S17_PIN_B5); //	RESET_MIFARE();
-	expander->SetPins(MCP23S17_PIN_B6, MCP23S17_PIN_B6); //	RESET_MIFARE();
-	expander->SetPins(MCP23S17_PIN_B7, MCP23S17_PIN_B7); //	RESET_MIFARE();
+	expander.SetPinsMode(MCP23S17_PIN_B5, MCP23S17_PINMODE_OUTPUT);
+	expander.SetPinsMode(MCP23S17_PIN_B6, MCP23S17_PINMODE_OUTPUT);
+	expander.SetPinsMode(MCP23S17_PIN_B7, MCP23S17_PINMODE_OUTPUT);
+	expander.SetPins(MCP23S17_PIN_B5, MCP23S17_PIN_B5); //	RESET_MIFARE();
+	expander.SetPins(MCP23S17_PIN_B6, MCP23S17_PIN_B6); //	RESET_MIFARE();
+	expander.SetPins(MCP23S17_PIN_B7, MCP23S17_PIN_B7); //	RESET_MIFARE();
 	vTaskDelay(pdMS_TO_TICKS(10)); //SleepMs(10); // wacht even
-	expander->SetPins(MCP23S17_PIN_B5, MCP23S17_PIN_NONE); //START_MIFARE();
-	expander->SetPins(MCP23S17_PIN_B6, MCP23S17_PIN_NONE);
-	expander->SetPins(MCP23S17_PIN_B7, MCP23S17_PIN_NONE);
+	expander.SetPins(MCP23S17_PIN_B5, MCP23S17_PIN_NONE); //START_MIFARE();
+	expander.SetPins(MCP23S17_PIN_B6, MCP23S17_PIN_NONE);
+	expander.SetPins(MCP23S17_PIN_B7, MCP23S17_PIN_NONE);
 	vTaskDelay(pdMS_TO_TICKS(1));  //SleepUs(100); // Wacht tot het IC is opgestart
-	return result;
 }
 
-esp_err_t PN512::Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count)
+void PN512::Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count)
 {
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));       			
 	t.length = (count * 8);              		
 	t.tx_buffer = txData;               		
 	t.rx_buffer = rxData;
-	return spidev.PollingTransmit(&t);  		
+	spidev.PollingTransmit(&t);  		
 }
 
 

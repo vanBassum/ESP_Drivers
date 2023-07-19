@@ -56,14 +56,14 @@ MCP23S17::MCP23S17(SPIDevice& spiDev, gpio_num_t irq)
 }
 
 
-esp_err_t MCP23S17::Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count)
+void MCP23S17::Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count)
 {
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));       			
 	t.length = (count * 8);              		
 	t.tx_buffer = txData;               		
 	t.rx_buffer = rxData;
-	return spidev.PollingTransmit(&t);  		
+	spidev.PollingTransmit(&t);  		
 }
 
 uint8_t MCP23S17::Read8(uint8_t reg)

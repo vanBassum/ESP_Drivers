@@ -14,7 +14,17 @@ typedef enum
 
 class T6963C
 {
-	MCP23S17* expander;
+	MCP23S17& expander;
+public:
+	struct Settings
+	{
+		uint16_t width = 240;
+		uint16_t height = 64;
+	};
+	const Settings& settings;
+private:
+	
+	
 	uint8_t rows = 0;
 	uint8_t columns = 0;
 	void WriteByte(bool cd, uint8_t data);
@@ -39,14 +49,7 @@ class T6963C
 	mcp23s17_pins_t* OSetAddress(uint8_t col, uint8_t row, mcp23s17_pins_t* order);
 	
 public:
-	struct Settings
-	{
-		uint16_t width = 240;
-		uint16_t height = 64;
-	};
-
-	Settings settings;
-	bool Init(MCP23S17* expander);
+	T6963C(MCP23S17& expander, const Settings& settings);
 	void SetBacklight(t6963c_backlight_t value);
 	void WriteRow(uint32_t y, uint8_t* data, size_t size);
 };
