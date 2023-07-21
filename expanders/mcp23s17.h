@@ -39,6 +39,7 @@
 
 	class MCP23S17
 	{
+		const char* TAG = "MCP23S17";
 		Mutex mutex;
 		SPIDevice& spidev;
 		gpio_num_t irqPin = GPIO_NUM_NC;

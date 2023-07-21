@@ -7,6 +7,7 @@
 
 class HD44780
 {
+	const char* TAG = "HD44780";
 	MCP23S17& expander;
 	void SetCursor(int x, int row);
 	void LCD_cmd(unsigned char cmd);

@@ -5,12 +5,12 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-static const char *TAG = "MAX14830";
 
 MAX14830::MAX14830(SPIDevice& device, gpio_num_t irq) : 
 	spidev(device),
 	irqPin(irq)
 {
+	ESP_LOGI(TAG, "Initializing");
 	memset(gpioConfBuffer, 0, sizeof(gpioConfBuffer));
 	memset(gpioDataBuffer, 0, sizeof(gpioDataBuffer));
 	memset(gpioIRQBuffer, 0, sizeof(gpioIRQBuffer));

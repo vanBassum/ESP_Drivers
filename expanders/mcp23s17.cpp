@@ -50,6 +50,7 @@ MCP23S17::MCP23S17(SPIDevice& spiDev, gpio_num_t irq)
 	: spidev(spiDev)
 	, irqPin(irq)
 {	
+	ESP_LOGI(TAG, "Initializing");
 	spidev.AcquireBus();
 	Write8(MCP23S17_REG_IOCON_A, 0x08);    					// Set up ICON A,B to auto increment
 	spidev.ReleaseBus();

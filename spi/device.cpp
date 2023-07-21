@@ -1,9 +1,9 @@
 #include "device.h"
+#include "bus.h"
 
-
-SPIDevice::SPIDevice(spi_host_device_t host, const spi_device_interface_config_t& devConfig)
+SPIDevice::SPIDevice(SPIBus& bus, const spi_device_interface_config_t& devConfig)
 {
-	ESP_ERROR_CHECK(spi_bus_add_device(host, &devConfig, &spi));
+	ESP_ERROR_CHECK(spi_bus_add_device(bus.host, &devConfig, &spi));
 }
 	
 void SPIDevice::transfer(uint8_t* txData, uint8_t* rxData, size_t length)

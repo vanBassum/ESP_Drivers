@@ -57,6 +57,7 @@ T6963C::T6963C(MCP23S17& expander, const Settings& settings)
 	: expander(expander)
 	, settings(settings)
 {
+	ESP_LOGI(TAG, "Initializing");
 	this->columns = settings.width / 8;
 	this->rows = settings.height;
 	expander.SetPinsMode(GLCD_ALL_PINS, MCP23S17_PINMODE_OUTPUT);

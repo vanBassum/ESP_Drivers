@@ -14,6 +14,7 @@ typedef enum
 
 class T6963C
 {
+	const char* TAG = "T6963C";
 	MCP23S17& expander;
 public:
 	struct Settings

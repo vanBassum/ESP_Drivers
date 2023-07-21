@@ -57,6 +57,7 @@ mcp23s17_pins_t FromData(uint8_t data)
 HD44780::HD44780(MCP23S17& expander)
 	: expander(expander)
 {
+	ESP_LOGI(TAG, "Initializing");
 	expander.SetPinsMode(LCD_ALL_PINS, MCP23S17_PINMODE_OUTPUT);
 	expander.SetPins(LCD_ALL_PINS, LCD_PIN_NONE);				//All pins low
 	vTaskDelay(pdMS_TO_TICKS(100));								//Wait for screen

@@ -68,6 +68,7 @@ DEFINE_ENUM_FLAG_OPERATORS(max14830_events_t)
 	
 class MAX14830
 {
+	const char* TAG = "MAX14830";
 	bool clockErr = false;
 	uint8_t gpioConfBuffer[4];
 	uint8_t gpioDataBuffer[4];
@@ -81,6 +82,7 @@ class MAX14830
 public:
 	class Uart
 	{
+		const char* TAG = "MAX14830::UART";
 		MAX14830* parent;
 		max14830_uart_port_t port;
 		StreamBuffer inputBuffer;
