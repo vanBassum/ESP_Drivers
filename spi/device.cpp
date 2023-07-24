@@ -18,7 +18,8 @@ void SPIDevice::transfer(uint8_t* txData, uint8_t* rxData, size_t length)
 
 void SPIDevice::PollingTransmit(spi_transaction_t* transaction)
 {
-	ESP_ERROR_CHECK(spi_device_polling_transmit(spi, transaction) ) ;  	//Transmit!
+	esp_err_t res = spi_device_polling_transmit(spi, transaction);
+	ESP_ERROR_CHECK(res);  	//Transmit!
 }
 
 void SPIDevice::Transmit(spi_transaction_t* transaction)

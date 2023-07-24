@@ -8,8 +8,6 @@ SPIBus::SPIBus(spi_host_device_t _host, spi_bus_config_t _config, int _dmaChanne
 	, dmaChannel(_dmaChannel)
 {
 	ESP_LOGI(TAG, "Initializing");
-	config.flags = 0;
-	config.intr_flags = 0;
 	ESP_ERROR_CHECK(spi_bus_initialize(host, &config, dmaChannel));
 }
 	
