@@ -95,6 +95,7 @@ PCF2123::PCF2123(SPIDevice& spiDev, gpio_num_t irq)
 	: spi(spiDev)
 	, irq(irq)
 {
+	ESP_LOGI(TAG, "Initializing");
 	reset();
 	spi.AcquireBus();
 	// /* Make sure the clock is in 24h mode */
@@ -106,6 +107,7 @@ PCF2123::PCF2123(SPIDevice& spiDev, gpio_num_t irq)
 	regs.ClearAll();
 	this->ctrl_set(&regs, true, true, false);
 	spi.ReleaseBus();
+	
 }
 
 

@@ -107,6 +107,7 @@ struct PCF2123_CtrlRegs
 class PCF2123
 {
 private:
+	const char* TAG = "PCF2123";
 	enum RxtMode { RXT_READ, RXT_WRITE } ;
 
 	SPIDevice& spi; 

@@ -15,17 +15,17 @@ MAX14830::MAX14830(SPIDevice& device, gpio_num_t irq) :
 	memset(gpioDataBuffer, 0, sizeof(gpioDataBuffer));
 	memset(gpioIRQBuffer, 0, sizeof(gpioIRQBuffer));
 
-	
 	spidev.AcquireBus();
-	ESP_ERROR_CHECK(Detect());
+	assert(Detect());
 	max310x_set_ref_clk();
 	spidev.ReleaseBus();
-
+	
 	//This task will do everything required to handle device interrupts.
 	//Its optional, don't start the task if interupts aren't required.
-	irqTask.Init("MAX14830", 10, 1048 * 2);
-	irqTask.Bind(this, &MAX14830::IrqTaskWork);
-	irqTask.Run();
+	
+	//irqTask.Init("MAX14830", 10, 1048 * 2);
+	//irqTask.Bind(this, &MAX14830::IrqTaskWork);
+	//irqTask.Run();
 }
 
 

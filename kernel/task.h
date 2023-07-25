@@ -11,7 +11,7 @@
 
 class Task
 {
-	void* arg;
+	void* arg = NULL;
 	std::string name = "New task";
 	portBASE_TYPE priority = 0;
 	portSHORT stackDepth = configMINIMAL_STACK_SIZE;
