@@ -1,24 +1,13 @@
 #pragma once
+#include <esp_system.h>
 
-
-#include "driver/i2c.h"
-
-
-namespace I2C
+class I2CBus;
+class I2CDevice
 {
-    class Bus;
-	class Device
-	{
-        Bus* bus;
-        uint16_t address;
-	public:
-		bool Init(Bus* bus, uint16_t device_address);
-        esp_err_t ReadWrite(const uint8_t *write_buffer, size_t write_size, uint8_t *read_buffer, size_t read_size);
-        esp_err_t Write(const uint8_t *write_buffer, size_t write_size);
-	};
-
-}
-
-
-
-
+	I2CBus& bus;
+	uint16_t address;
+public:
+	I2CDevice(I2CBus& bus, const uint16_t device_address);
+	void Write(const uint8_t *txData, size_t length);
+	void ReadWrite(const uint8_t *txData, size_t txSize, uint8_t *rxData, size_t rxSize);
+};

@@ -1,19 +1,23 @@
 #include "bus.h"
+#include "esp_log.h"
 
-
-bool I2C::Bus::Init(i2c_port_t host, gpio_num_t scl, gpio_num_t sda)
+I2CBus::I2CBus(i2c_port_t host, const i2c_config_t& config)
 {
-    this->host = host;
-    i2c_config_t conf;
-    conf.mode = I2C_MODE_MASTER;
-    conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
-    conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
-    conf.master.clk_speed = 400000;
-    conf.sda_io_num = sda;
-    conf.scl_io_num = scl;
-    conf.clk_flags = 0;
-    i2c_param_config(host, &conf);
-    return i2c_driver_install(host, conf.mode, 0, 0, 0) == ESP_OK;
+	ESP_LOGI(TAG, "Initializing");
+	this->host = host;
+	ESP_ERROR_CHECK(i2c_param_config(host, &config));
+	ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, config.mode, 0, 0, 0));
 }
 
 
+I2CBus::~I2CBus()
+{
+	devices.clear(); //By calling devices.clear() in the destructor, it will remove all the SPIDevice objects from the vector, triggering their destructors and ensuring proper cleanup.
+}
+
+
+I2CDevice& I2CBus::CreateDevice(const uint16_t device_address)
+{
+	devices.emplace_back(new I2CDevice(*this, device_address));
+	return *devices.back();
+}

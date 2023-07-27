@@ -1,19 +1,23 @@
 #include "device.h"
 #include "bus.h"
 
-bool I2C::Device::Init(Bus *bus, uint16_t device_address)
+
+I2CDevice::I2CDevice(I2CBus& bus, const uint16_t device_address)
+	: bus(bus)
+	, address(device_address)
 {
-    this->address = device_address;
-    this->bus = bus;
-    return true;
+	
 }
 
-esp_err_t I2C::Device::ReadWrite(const uint8_t *write_buffer, size_t write_size, uint8_t *read_buffer, size_t read_size)
+
+void I2CDevice::Write(const uint8_t *txData, size_t length)
 {
-    return i2c_master_write_read_device(bus->host, address, write_buffer, write_size, read_buffer, read_size, portMAX_DELAY);
+	ESP_ERROR_CHECK(i2c_master_write_to_device(bus.host, address, txData, length, portMAX_DELAY));
 }
 
-esp_err_t I2C::Device::Write(const uint8_t *write_buffer, size_t write_size)
+
+void I2CDevice::ReadWrite(const uint8_t *txData, size_t txSize, uint8_t *rxData, size_t rxSize)
 {
-    return i2c_master_write_to_device(bus->host, address, write_buffer, write_size, 1000 / portTICK_PERIOD_MS);
+	ESP_ERROR_CHECK(i2c_master_write_read_device(bus.host, address, txData, txSize, rxData, rxSize, portMAX_DELAY));
 }
+

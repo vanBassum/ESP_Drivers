@@ -37,22 +37,19 @@ void INA3221::_write(ina3221_reg_t reg, uint16_t *val) {
     device.Write(data, sizeof(data));
 }
 
-bool INA3221::Init(I2C::Bus *bus, ina3221_addr_t addr)
+INA3221::INA3221(I2CDevice& device)
+	: device(device)
 {
-    esp_err_t result = this->device.Init(bus, (uint16_t) addr);
-    if(result == ESP_OK)
-    {
-        _shuntRes[0] = 10;
-        _shuntRes[1] = 10;
-        _shuntRes[2] = 10;
+	_shuntRes[0] = 10;
+	_shuntRes[1] = 10;
+	_shuntRes[2] = 10;
 
-        _filterRes[0] = 0;
-        _filterRes[1] = 0;
-        _filterRes[2] = 0;
-        reset();
-    }
-    return result == ESP_OK;
+	_filterRes[0] = 0;
+	_filterRes[1] = 0;
+	_filterRes[2] = 0;
+	reset();
 }
+
 
 
 void INA3221::setShuntRes(uint32_t res_ch1, uint32_t res_ch2, uint32_t res_ch3) {
@@ -521,3 +518,4 @@ float INA3221::getVoltage(ina3221_ch_t channel) {
 
     return voltage_V;
 }
+

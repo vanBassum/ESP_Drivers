@@ -1,6 +1,6 @@
 #pragma once
 #include "esp_system.h"
-#include "i2c.h"
+#include "i2c/device.h"
 
 typedef enum {
     INA3221_ADDR40_GND = 0b1000000, // A0 pin -> GND
@@ -101,7 +101,7 @@ class INA3221 {
         uint16_t reserved:1;
     } masken_reg_t;
 
-	I2C::Device device;
+	I2CDevice& device;
 
     // Shunt resistance in mOhm
     uint32_t _shuntRes[INA3221_CH_NUM];
@@ -120,7 +120,7 @@ class INA3221 {
 
 public:
 
-    bool Init(I2C::Bus* bus, ina3221_addr_t addr);
+	INA3221(I2CDevice& device);
 
     // Sets shunt resistor value in mOhm
     void setShuntRes(uint32_t res_ch1, uint32_t res_ch2, uint32_t res_ch3);
