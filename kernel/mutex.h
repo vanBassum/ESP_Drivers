@@ -20,7 +20,7 @@ public:
 			vSemaphoreDelete(handle);
 	}
 		
-	bool Take(int timeout = portMAX_DELAY)
+	bool Take(TickType_t timeout = portMAX_DELAY)
 	{
 		bool suc = xSemaphoreTake(handle, timeout) == pdTRUE;
 		if (!suc)
@@ -36,4 +36,9 @@ public:
 		return xSemaphoreGive(handle) == pdTRUE;
 	}
 
+	bool IsTaken(void) 
+	{
+		TaskHandle_t holderTask = xSemaphoreGetMutexHolder(handle);
+		return holderTask != NULL;
+	}
 };
