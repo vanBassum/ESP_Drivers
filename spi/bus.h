@@ -9,7 +9,7 @@ class SPIBus
 	const char* TAG = "SPIBus";
 	std::vector<SPIDevice*> devices;
 	spi_host_device_t host;
-	spi_bus_config_t& config;
+	const spi_bus_config_t& config;
 	int dmaChannel;
 	
 	friend SPIDevice;

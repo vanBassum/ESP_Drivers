@@ -141,7 +141,7 @@ MCP23S17::Pins MCP23S17::GetPins(Pins mask)
 void MCP23S17::SetPinsMode(Pins mask, PinModes mode)
 {
 	mutex.Take();
-	if (mode == PinModes::PIN_INPUT)
+	if (mode == PinModes::INPUT)
 		pinDirBuffer = (pinDirBuffer & ~mask) | (Pins::ALL & mask);
 	else
 		pinDirBuffer = pinDirBuffer & ~mask;
