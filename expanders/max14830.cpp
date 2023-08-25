@@ -33,7 +33,7 @@ MAX14830::MAX14830(SPIDevice& device, gpio_num_t irq) :
 bool MAX14830::Detect()
 {
 	regmap_write(MAX310X_GLOBALCMD_REG, MAX310X_EXTREG_ENBL);
-	uint8_t value = max310x_port_read(MAX14830_UART_NUM_0, MAX310X_REVID_EXTREG);
+	uint8_t value = max310x_port_read(Ports::NUM_0, MAX310X_REVID_EXTREG);
 	regmap_write(MAX310X_GLOBALCMD_REG, MAX310X_EXTREG_DSBL);
 	if (((value & MAX310x_REV_MASK) != MAX14830_REV_ID))
 	{
@@ -57,23 +57,23 @@ void MAX14830::regmap_read(uint8_t cmd, uint8_t * value)
 }
 
 
-uint8_t MAX14830::max310x_port_read(max14830_uart_port_t port, uint8_t cmd)
+uint8_t MAX14830::max310x_port_read(Ports port, uint8_t cmd)
 {
 	uint8_t value = 0;
-	cmd = (port << 5) | cmd;
+	cmd = ((uint32_t)port << 5) | cmd;
 	regmap_read(cmd, &value);
 	return value;
 }
 
 
-void MAX14830::max310x_port_write(max14830_uart_port_t port, uint8_t cmd, uint8_t value)
+void MAX14830::max310x_port_write(Ports port, uint8_t cmd, uint8_t value)
 {
-	cmd = (port << 5) | cmd;
+	cmd = ((uint32_t)port << 5) | cmd;
 	regmap_write(cmd, value);
 }
 
 
-void MAX14830::max310x_port_update(max14830_uart_port_t port, uint8_t cmd, uint8_t mask, uint8_t value)
+void MAX14830::max310x_port_update(Ports port, uint8_t cmd, uint8_t mask, uint8_t value)
 {
 	uint8_t val = max310x_port_read(port, cmd);
 	val &= ~mask;
@@ -224,7 +224,7 @@ uint8_t MAX14830::max310x_update_best_err(uint64_t f, int64_t *besterr)
 uint32_t MAX14830::max310x_get_ref_clk()
 {
 	uint64_t clk = MAX14830_CLK;	//we only need 64bits for calculation..
-	uint8_t value = max310x_port_read(MAX14830_UART_NUM_0, MAX310X_PLLCFG_REG);
+	uint8_t value = max310x_port_read(Ports::NUM_0, MAX310X_PLLCFG_REG);
 	uint32_t clkDiv = value & MAX310X_PLLCFG_PREDIV_MASK;
 	uint32_t mul = (value >> 6) & 0x3;
 	if (mul == 0)
@@ -239,7 +239,7 @@ uint32_t MAX14830::max310x_get_ref_clk()
 	return clk;
 }
 
-uint32_t MAX14830::max310x_set_baud(max14830_uart_port_t port, uint32_t baud)
+uint32_t MAX14830::max310x_set_baud(Ports port, uint32_t baud)
 {
 	uint8_t mode = 0;
 	uint32_t fref = max310x_get_ref_clk();
@@ -271,88 +271,88 @@ uint32_t MAX14830::max310x_set_baud(max14830_uart_port_t port, uint32_t baud)
 	return clk / div; //actual baudrate, this will never be exactly the value requested..
 }
 
-void MAX14830::SetPinsMode(max14830_pins_t mask, max14830_pinmodes_t mode)
+void MAX14830::SetPinsMode(Pins mask, PinModes mode)
 {
 	spidev.AcquireBus();
 	for (int i = 0; i < 4; i++)
 	{
-		uint8_t minimask = (mask >> (4*i)) & 0xF;
+		uint8_t minimask = ((uint32_t)mask >> (4*i)) & 0xF;
 		if (minimask > 0)
 		{
 			uint8_t od = (gpioConfBuffer[i] >> 4) & 0xf;
 			uint8_t ou = (gpioConfBuffer[i]) & 0xf;
 			switch (mode)
 			{
-			case MAX14830_PINMODE_INPUT:
+			case PinModes::INPUT:
 				ou &= ~minimask;
 				break;
-			case MAX14830_PINMODE_PUSHPULL:
+			case PinModes::PUSHPULL:
 				ou |= minimask;
 				od &= ~minimask;
 				break;
-			case MAX14830_PINMODE_OPENDRAIN:
+			case PinModes::OPENDRAIN:
 				ou |= minimask;
 				od |= minimask;
 				break;
 			}
 			
 			gpioConfBuffer[i] = (od << 4) | ou;
-			max310x_port_write((max14830_uart_port_t)i, MAX310X_GPIOCFG_REG, gpioConfBuffer[i]);
+			max310x_port_write((Ports)i, MAX310X_GPIOCFG_REG, gpioConfBuffer[i]);
 		}
 	}
 	spidev.ReleaseBus();
 }
 
-void MAX14830::SetPins(max14830_pins_t mask, max14830_pins_t value)
+void MAX14830::SetPins(Pins mask, Pins value)
 {
 	spidev.AcquireBus();
 	for (int i = 0; i < 4; i++)
 	{
-		uint8_t minimask = (mask >> (4*i)) & 0xF;
-		uint8_t minivalue = (value >> (4*i)) & 0xF;
+		uint8_t minimask = ((uint32_t)mask >> (4*i)) & 0xF;
+		uint8_t minivalue = ((uint32_t)value >> (4*i)) & 0xF;
 		if (minimask > 0)
 		{
 			uint8_t ou = (gpioDataBuffer[i]) & 0xf;
 			ou &= ~minimask;
 			ou |= minivalue & minimask;
 			gpioDataBuffer[i] = ou;
-			max310x_port_write((max14830_uart_port_t)i, MAX310X_GPIODATA_REG, gpioDataBuffer[i]);
+			max310x_port_write((Ports)i, MAX310X_GPIODATA_REG, gpioDataBuffer[i]);
 		}
 	}
 	spidev.ReleaseBus();
 }
 
-void MAX14830::SetInterrupts(max14830_pins_t mask, max14830_pins_t value)
+void MAX14830::SetInterrupts(Pins mask, Pins value)
 {
 	spidev.AcquireBus();
 	for (int i = 0; i < 4; i++)
 	{
-		uint8_t minimask = (mask >> (4*i)) & 0xF;
-		uint8_t minivalue = (value >> (4*i)) & 0xF;
+		uint8_t minimask = ((uint32_t)mask >> (4*i)) & 0xF;
+		uint8_t minivalue = ((uint32_t)value >> (4*i)) & 0xF;
 		if (minimask > 0)
 		{
 			uint8_t ou = (gpioIRQBuffer[i]) & 0xf;
 			ou &= ~minimask;
 			ou |= minivalue & minimask;
 			gpioIRQBuffer[i] = ou;
-			max310x_port_write((max14830_uart_port_t)i, MAX310X_STS_IRQEN_REG, gpioIRQBuffer[i]);
+			max310x_port_write((Ports)i, MAX310X_STS_IRQEN_REG, gpioIRQBuffer[i]);
 		}
 	}
 	spidev.ReleaseBus();
 }
 
-max14830_pins_t MAX14830::GetPins(max14830_pins_t mask)
+MAX14830::Pins MAX14830::GetPins(Pins mask)
 {
 	spidev.AcquireBus();
-	max14830_pins_t result = MAX14830_PIN_NONE;
+	Pins result = Pins::NONE;
 	for (int i = 0; i < 4; i++)
 	{
-		uint8_t minimask = (mask >> (4*i)) & 0xF;
+		uint8_t minimask = ((uint32_t)mask >> (4*i)) & 0xF;
 		if (minimask > 0)
 		{
-			uint8_t reg = max310x_port_read((max14830_uart_port_t)i, MAX310X_GPIODATA_REG);
+			uint8_t reg = max310x_port_read((Ports)i, MAX310X_GPIODATA_REG);
 			reg = (reg >> 4) & minimask;
-			result |= (max14830_pins_t)(reg << (i * 4));
+			result |= (Pins)(reg << (i * 4));
 		}
 	}
 	spidev.ReleaseBus();
@@ -361,7 +361,7 @@ max14830_pins_t MAX14830::GetPins(max14830_pins_t mask)
 
 
 
-MAX14830::Uart::Uart(MAX14830* parent, 	max14830_uart_port_t port)
+MAX14830::Uart::Uart(MAX14830* parent, 	Ports port)
 {
 	this->parent = parent;
 	this->port = port;
@@ -437,7 +437,7 @@ void MAX14830::gpio_isr_handler(void* arg)
 {
 	MAX14830* parent = (MAX14830 *)arg;
 	gpio_set_intr_type(parent->irqPin, GPIO_INTR_DISABLE);	//Stop interrupts, let task handle stuff and re-enable the interrupts.
-	parent->irqTask.NotifyFromISR(MAX14830_EVENT_IRQ);	
+	parent->irqTask.NotifyFromISR((uint32_t)Events::IRQ);	
 }
 
 void MAX14830::IrqTaskWork(Task* task, void* args)
@@ -453,17 +453,17 @@ void MAX14830::IrqTaskWork(Task* task, void* args)
 	gpio_install_isr_service(0);
 	gpio_isr_handler_add(irqPin, gpio_isr_handler, this);
 	//gpio_set_intr_type(irqPin, GPIO_INTR_LOW_LEVEL);	//https://github.com/espressif/esp-idf/issues/4203 'costaud' commented on 28 Oct 2019
-	max14830_events_t notifications;
+	Events notifications;
 	
 	while (true)
 	{
 		gpio_set_intr_type(irqPin, GPIO_INTR_LOW_LEVEL);	//Re enable interrupt.
 		if (task->NotifyWait((uint32_t*)&notifications))
 		{
-			max14830_pins_t changedPins = MAX14830_PIN_NONE;
+			Pins changedPins = Pins::NONE;
 			spidev.AcquireBus();
 			
-			if (HAS_BIT(notifications, MAX14830_EVENT_IRQ))
+			if (HAS_BIT(notifications, Events::IRQ))
 			{
 				//ESP_LOGI(TAG, "IRQ handeling");
 				uint8_t uart = 0;				
@@ -475,31 +475,31 @@ void MAX14830::IrqTaskWork(Task* task, void* args)
 			}
 			
 			
-			if (HAS_BIT(notifications, MAX14830_EVENT_PORT0_TX))
+			if (HAS_BIT(notifications, Events::PORT0_TX))
 				Uart0.HandleOutputBuffer();
-			if (HAS_BIT(notifications, MAX14830_EVENT_PORT1_TX))
+			if (HAS_BIT(notifications, Events::PORT1_TX))
 				Uart1.HandleOutputBuffer();
-			if (HAS_BIT(notifications, MAX14830_EVENT_PORT2_TX))
+			if (HAS_BIT(notifications, Events::PORT2_TX))
 				Uart2.HandleOutputBuffer();
-			if (HAS_BIT(notifications, MAX14830_EVENT_PORT3_TX))
+			if (HAS_BIT(notifications, Events::PORT3_TX))
 				Uart3.HandleOutputBuffer();
 			
 			spidev.ReleaseBus();
 			
-			if (changedPins) OnPinsChanged.Invoke(this, changedPins);
+			if ((uint32_t)changedPins) OnPinsChanged.Invoke(this, changedPins);
 		}
 	}
 }
 
 
-void MAX14830::Uart::HandleIRQ(max14830_pins_t* changes)
+void MAX14830::Uart::HandleIRQ(Pins* changes)
 {
 	//BUS is already aquired!
 	uint8_t isr = parent->max310x_port_read(port, MAX310X_IRQSTS_REG);							
 	if (HAS_BIT(isr, MAX310X_IRQ_STS_BIT))
 	{
 		uint8_t sts = parent->max310x_port_read(port, MAX310X_STS_IRQSTS_REG);		//For GPIO	last 4 bits
-		*changes |= (max14830_pins_t)((sts & 0xf) << (port * 4));
+		*changes |= (Pins)((sts & 0xf) << ((uint32_t)port * 4));
 	}
 				
 	//Im missing data, so this bit seems to be unreliable. 
@@ -525,7 +525,7 @@ void MAX14830::Uart::HandleIRQ(max14830_pins_t* changes)
 			//TODO: USE DMA! If we do decide to use DMA, ensure chip select logic is protected!
 			if (rxlen > 0)
 			{
-				parent->Max14830_ReadBufferPolled((port << 5), NULL, buffer, rxlen);
+				parent->Max14830_ReadBufferPolled(((uint32_t)port << 5), NULL, buffer, rxlen);
 				inputBuffer.Write(buffer, rxlen);
 			}
 		}
@@ -537,17 +537,17 @@ void MAX14830::Uart::OnDataReady(StreamBuffer* buffer)
 {
 	switch (port)
 	{
-	case MAX14830_UART_NUM_0:
-		parent->irqTask.Notify(MAX14830_EVENT_PORT0_TX);
+	case Ports::NUM_0:
+		parent->irqTask.Notify((uint32_t)Events::PORT0_TX);
 		break;
-	case MAX14830_UART_NUM_1:
-		parent->irqTask.Notify(MAX14830_EVENT_PORT1_TX);
+	case Ports::NUM_1:
+		parent->irqTask.Notify((uint32_t)Events::PORT1_TX);
 		break;
-	case MAX14830_UART_NUM_2:
-		parent->irqTask.Notify(MAX14830_EVENT_PORT2_TX);
+	case Ports::NUM_2:
+		parent->irqTask.Notify((uint32_t)Events::PORT2_TX);
 		break;
-	case MAX14830_UART_NUM_3:
-		parent->irqTask.Notify(MAX14830_EVENT_PORT3_TX);
+	case Ports::NUM_3:
+		parent->irqTask.Notify((uint32_t)Events::PORT3_TX);
 		break;
 		
 	}
@@ -575,6 +575,6 @@ void MAX14830::Uart::HandleOutputBuffer()
 	
 	//TODO: USE DMA! If we do decide to use DMA, ensure chip select logic is protected!
 	if (txLen > 0)
-		parent->Max14830_WriteBufferPolled((port << 5), (uint8_t*)buffer, txLen);
+		parent->Max14830_WriteBufferPolled(((uint32_t)port << 5), (uint8_t*)buffer, txLen);
 	
 }

@@ -16,56 +16,6 @@
 #define MAX14830_CLK					4000000
 #define MAX14830_FIFO_MAX				128
 
-typedef enum {
-	MAX14830_UART_NUM_0 = 0x0,
-	MAX14830_UART_NUM_1 = 0x1,
-	MAX14830_UART_NUM_2 = 0x2,
-	MAX14830_UART_NUM_3 = 0x3,
-} max14830_uart_port_t;
-
-enum max14830_pinmodes_t
-{
-	MAX14830_PINMODE_INPUT,
-	MAX14830_PINMODE_PUSHPULL,
-	MAX14830_PINMODE_OPENDRAIN
-};
-	
-enum max14830_pins_t
-{
-	MAX14830_PIN_NONE = 0,
-	MAX14830_PIN_0    = (1 << 0),
-	MAX14830_PIN_1    = (1 << 1),
-	MAX14830_PIN_2    = (1 << 2),
-	MAX14830_PIN_3    = (1 << 3),
-	MAX14830_PIN_4    = (1 << 4),
-	MAX14830_PIN_5    = (1 << 5),
-	MAX14830_PIN_6    = (1 << 6),
-	MAX14830_PIN_7    = (1 << 7),
-	MAX14830_PIN_8    = (1 << 8),
-	MAX14830_PIN_9    = (1 << 9),
-	MAX14830_PIN_10   = (1 << 10),
-	MAX14830_PIN_11   = (1 << 11),
-	MAX14830_PIN_12   = (1 << 12),
-	MAX14830_PIN_13   = (1 << 13),
-	MAX14830_PIN_14   = (1 << 14),
-	MAX14830_PIN_15   = (1 << 15),
-	MAX14830_PIN_ALL  = 0xFFFF,
-};
-DEFINE_ENUM_FLAG_OPERATORS(max14830_pins_t)
-	
-	
-enum max14830_events_t
-{
-	MAX14830_EVENT_NONE		= 0,
-	MAX14830_EVENT_IRQ		= (1 << 0),
-	MAX14830_EVENT_PORT0_TX	= (1 << 1),
-	MAX14830_EVENT_PORT1_TX	= (1 << 2),
-	MAX14830_EVENT_PORT2_TX	= (1 << 3),
-	MAX14830_EVENT_PORT3_TX	= (1 << 4),
-}
-;
-DEFINE_ENUM_FLAG_OPERATORS(max14830_events_t)
-	
 class MAX14830
 {
 	const char* TAG = "MAX14830";
@@ -80,20 +30,70 @@ class MAX14830
 	static void IRAM_ATTR gpio_isr_handler(void* arg);
 		
 public:
+	
+	
+	enum class Ports
+	{
+		NUM_0 = 0x0,
+		NUM_1 = 0x1,
+		NUM_2 = 0x2,
+		NUM_3 = 0x3,
+	};
+	
+	enum class PinModes
+	{
+		INPUT,
+		PUSHPULL,
+		OPENDRAIN
+	};
+
+	enum class Pins
+	{
+		NONE = 0,
+		D0    = (1 << 0),
+		D1    = (1 << 1),
+		D2    = (1 << 2),
+		D3    = (1 << 3),
+		D4    = (1 << 4),
+		D5    = (1 << 5),
+		D6    = (1 << 6),
+		D7    = (1 << 7),
+		D8    = (1 << 8),
+		D9    = (1 << 9),
+		D10   = (1 << 10),
+		D11   = (1 << 11),
+		D12   = (1 << 12),
+		D13   = (1 << 13),
+		D14   = (1 << 14),
+		D15   = (1 << 15),
+		ALL  = 0xFFFF,
+	};
+	
+
+	enum class Events
+	{
+		NONE		= 0,
+		IRQ		= (1 << 0),
+		PORT0_TX	= (1 << 1),
+		PORT1_TX	= (1 << 2),
+		PORT2_TX	= (1 << 3),
+		PORT3_TX	= (1 << 4),
+	};
+
 	class Uart
 	{
 		const char* TAG = "MAX14830::UART";
 		MAX14830* parent;
-		max14830_uart_port_t port;
+		Ports port;
 		StreamBuffer inputBuffer;
 		StreamBuffer outputBuffer;
 		void OnDataReady(StreamBuffer* buffer);
 	protected:
-		void HandleIRQ(max14830_pins_t* changes);
+		void HandleIRQ(Pins* changes);
 		void HandleOutputBuffer();
 		friend MAX14830;
 	public:
-		Uart(MAX14830* parent, max14830_uart_port_t port);
+		Uart(MAX14830* parent, Ports port);
 		void Init(uint32_t baudrate, uint8_t useCTS, uint8_t useRS485);
 		size_t Write(const void* data, size_t size);
 		size_t Read(void* data, size_t size);
@@ -108,25 +108,30 @@ protected:
 	void Max14830_ReadBufferPolled(uint8_t cmd, uint8_t * cmdData, uint8_t * replyData, uint8_t count);
 	void regmap_write(uint8_t cmd, uint8_t value);
 	void regmap_read(uint8_t cmd, uint8_t * value);
-	uint8_t max310x_port_read(max14830_uart_port_t port, uint8_t cmd);
-	void max310x_port_write(max14830_uart_port_t port, uint8_t cmd, uint8_t value);
-	void max310x_port_update(max14830_uart_port_t port, uint8_t cmd, uint8_t mask, uint8_t value);
+	uint8_t max310x_port_read(Ports port, uint8_t cmd);
+	void max310x_port_write(Ports port, uint8_t cmd, uint8_t value);
+	void max310x_port_update(Ports port, uint8_t cmd, uint8_t mask, uint8_t value);
 	uint8_t max310x_update_best_err(uint64_t f, int64_t *besterr);
 	uint32_t max310x_set_ref_clk();
-	uint32_t max310x_set_baud(max14830_uart_port_t port, uint32_t baud);
+	uint32_t max310x_set_baud(Ports port, uint32_t baud);
 	uint32_t max310x_get_ref_clk();
 	
 	friend Uart;
 public:
-	Event<MAX14830*, max14830_pins_t> OnPinsChanged;
+	Event<MAX14830*, Pins> OnPinsChanged;
 	MAX14830(SPIDevice& device, gpio_num_t irq);
-	void SetPinsMode(max14830_pins_t mask, max14830_pinmodes_t mode);
-	void SetPins(max14830_pins_t mask, max14830_pins_t value);
-	void SetInterrupts(max14830_pins_t mask, max14830_pins_t value);
-	max14830_pins_t GetPins(max14830_pins_t mask);
-	Uart Uart0 = Uart(this, MAX14830_UART_NUM_0);
-	Uart Uart1 = Uart(this, MAX14830_UART_NUM_1);
-	Uart Uart2 = Uart(this, MAX14830_UART_NUM_2);
-	Uart Uart3 = Uart(this, MAX14830_UART_NUM_3);
+	void SetPinsMode(Pins mask, PinModes mode);
+	void SetPins(Pins mask, Pins value);
+	void SetInterrupts(Pins mask, Pins value);
+	Pins GetPins(Pins mask);
+	Uart Uart0 = Uart(this, Ports::NUM_0);
+	Uart Uart1 = Uart(this, Ports::NUM_1);
+	Uart Uart2 = Uart(this, Ports::NUM_2);
+	Uart Uart3 = Uart(this, Ports::NUM_3);
 	
 };
+
+DEFINE_ENUM_CLASS_FLAG_OPERATORS(MAX14830::Pins,	uint32_t);
+DEFINE_ENUM_CLASS_FLAG_OPERATORS(MAX14830::Events,	uint32_t);
+
+
