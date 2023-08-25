@@ -33,8 +33,8 @@ public:
 	
 	enum class PinModes
 	{
-		PIN_INPUT,
-		PIN_OUPUT,
+		INPUT,
+		OUTPUT,
 	};
 		
 private:

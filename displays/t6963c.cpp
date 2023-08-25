@@ -33,13 +33,12 @@
 
 #define ADDR(col, row)	(col + (row * 30))
 
-T6963C::T6963C(IGPIO& io, const Settings& settings)
+T6963C::T6963C(IGPIO& io, uint8_t rows, uint8_t columns)
 	: io(io)
-	, settings(settings)
 {
 	ESP_LOGI(TAG, "Initializing");
-	this->columns = settings.width / 8;
-	this->rows = settings.height;
+	this->columns = columns;
+	this->rows = rows;
 	
 	io.SetPinsMode(Pins::ALL,	PinModes::PIN_OUTPUT);
 	io.SetPins(Pins::ALL,		Pins::NONE);

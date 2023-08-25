@@ -6,20 +6,14 @@ class T6963C
 {
 	const char* TAG = "T6963C";
 public:
-	struct Settings
-	{
-		uint16_t width = 240;
-		uint16_t height = 64;
-	};
-	
 	enum class Pins
 	{
 		NONE = 0x0000,
 		WR   = 0x0001,
 		RD   = 0x0002,
-		CE    = 0x0004,
+		CE   = 0x0004,
 		CD   = 0x0008,
-		RST  = 0x0010,
+		RST  = 0x0010,	
 		
 		DB0  = 0x0100,
 		DB1  = 0x0200,
@@ -48,7 +42,6 @@ public:
 	};
 private:
 	IGPIO& io;
-	const Settings& settings;
 	uint8_t rows = 0;
 	uint8_t columns = 0;
 	void WriteByte(bool cd, uint8_t data);
@@ -73,7 +66,7 @@ private:
 	Pins* OSetAddress(uint8_t col, uint8_t row, Pins* order);
 	
 public:
-	T6963C(IGPIO& io, const Settings& settings);
+	T6963C(IGPIO& io, uint8_t rows, uint8_t columns);
 	void WriteRow(uint32_t y, uint8_t* data, size_t size);
 };
 

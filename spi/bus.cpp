@@ -2,7 +2,7 @@
 #include "device.h"
 #include "esp_log.h"
 
-SPIBus::SPIBus(spi_host_device_t _host, spi_bus_config_t _config, int _dmaChannel) 
+SPIBus::SPIBus(spi_host_device_t _host, spi_bus_config_t& _config, int _dmaChannel) 
 	: host(_host)
 	, config(_config)
 	, dmaChannel(_dmaChannel)

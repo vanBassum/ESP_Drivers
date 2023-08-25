@@ -24,17 +24,17 @@ PN512::PN512(SPIDevice& device, gpio_num_t irq, MCP23S17& expander)
 
 	// TODO
 	// Reset pin is connected to MCP23S17 highest bit
-	expander.SetPinsMode(MCP23S17_PIN_B5, MCP23S17_PINMODE_OUTPUT);
-	expander.SetPinsMode(MCP23S17_PIN_B6, MCP23S17_PINMODE_OUTPUT);
-	expander.SetPinsMode(MCP23S17_PIN_B7, MCP23S17_PINMODE_OUTPUT);
-	expander.SetPins(MCP23S17_PIN_B5, MCP23S17_PIN_B5); //	RESET_MIFARE();
-	expander.SetPins(MCP23S17_PIN_B6, MCP23S17_PIN_B6); //	RESET_MIFARE();
-	expander.SetPins(MCP23S17_PIN_B7, MCP23S17_PIN_B7); //	RESET_MIFARE();
-	vTaskDelay(pdMS_TO_TICKS(10)); //SleepMs(10); // wacht even
-	expander.SetPins(MCP23S17_PIN_B5, MCP23S17_PIN_NONE); //START_MIFARE();
-	expander.SetPins(MCP23S17_PIN_B6, MCP23S17_PIN_NONE);
-	expander.SetPins(MCP23S17_PIN_B7, MCP23S17_PIN_NONE);
-	vTaskDelay(pdMS_TO_TICKS(1));  //SleepUs(100); // Wacht tot het IC is opgestart
+//	expander.SetPinsMode(MCP23S17_PIN_B5, MCP23S17_PINMODE_OUTPUT);
+//	expander.SetPinsMode(MCP23S17_PIN_B6, MCP23S17_PINMODE_OUTPUT);
+//	expander.SetPinsMode(MCP23S17_PIN_B7, MCP23S17_PINMODE_OUTPUT);
+//	expander.SetPins(MCP23S17_PIN_B5, MCP23S17_PIN_B5); //	RESET_MIFARE();
+//	expander.SetPins(MCP23S17_PIN_B6, MCP23S17_PIN_B6); //	RESET_MIFARE();
+//	expander.SetPins(MCP23S17_PIN_B7, MCP23S17_PIN_B7); //	RESET_MIFARE();
+//	vTaskDelay(pdMS_TO_TICKS(10)); //SleepMs(10); // wacht even
+//	expander.SetPins(MCP23S17_PIN_B5, MCP23S17_PIN_NONE); //START_MIFARE();
+//	expander.SetPins(MCP23S17_PIN_B6, MCP23S17_PIN_NONE);
+//	expander.SetPins(MCP23S17_PIN_B7, MCP23S17_PIN_NONE);
+//	vTaskDelay(pdMS_TO_TICKS(1));  //SleepUs(100); // Wacht tot het IC is opgestart
 }
 
 void PN512::Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count)
