@@ -4,28 +4,8 @@
 
 
 //https://github.com/camilstaps/T6963C_PIC/blob/master/t6963c.c
-
-#define	GLCD_PIN_NONE		MCP23S17_PIN_NONE
-#define	GLCD_PIN_WR			MCP23S17_PIN_B0
-#define	GLCD_PIN_RD			MCP23S17_PIN_B1
-#define	GLCD_PIN_CD			MCP23S17_PIN_B2
-#define	GLCD_PIN_CE			MCP23S17_PIN_NONE
-#define	GLCD_PIN_BL1		MCP23S17_PIN_B3
-#define	GLCD_PIN_BL2		MCP23S17_PIN_B4
-#define	GLCD_PIN_DB0		MCP23S17_PIN_A0
-#define	GLCD_PIN_DB1		MCP23S17_PIN_A1
-#define	GLCD_PIN_DB2		MCP23S17_PIN_A2
-#define	GLCD_PIN_DB3		MCP23S17_PIN_A3
-#define	GLCD_PIN_DB4		MCP23S17_PIN_A4
-#define	GLCD_PIN_DB5		MCP23S17_PIN_A5
-#define	GLCD_PIN_DB6		MCP23S17_PIN_A6
-#define	GLCD_PIN_DB7		MCP23S17_PIN_A7
-
-#define GLCD_CTRL_PINS		(GLCD_PIN_WR | GLCD_PIN_RD | GLCD_PIN_CD | GLCD_PIN_CE)
-#define GLCD_DATA_PINS		(GLCD_PIN_DB0 | GLCD_PIN_DB1 | GLCD_PIN_DB2 | GLCD_PIN_DB3 | GLCD_PIN_DB4 | GLCD_PIN_DB5 | GLCD_PIN_DB6 | GLCD_PIN_DB7 )
-#define GLCD_ALL_PINS		(GLCD_CTRL_PINS | GLCD_DATA_PINS | GLCD_PIN_BL1 | GLCD_PIN_BL2)
-
-
+#define GLCD_CTRL_PINS		(Pins::WR | Pins::RD | Pins::CD | Pins::CE)
+#define GLCD_DATA_PINS		(Pins::DB0 | Pins::DB1 | Pins::DB2 | Pins::DB3 | Pins::DB4 | Pins::DB5 | Pins::DB6 | Pins::DB7 )
 
 #define T6963_CURSOR_PATTERN_SELECT 		0xA0
 #define T6963_DISPLAY_MODE 				    0x90
@@ -53,19 +33,18 @@
 
 #define ADDR(col, row)	(col + (row * 30))
 
-T6963C::T6963C(MCP23S17& expander, const Settings& settings)
-	: expander(expander)
+T6963C::T6963C(IGPIO& io, const Settings& settings)
+	: io(io)
 	, settings(settings)
 {
 	ESP_LOGI(TAG, "Initializing");
 	this->columns = settings.width / 8;
 	this->rows = settings.height;
-	expander.SetPinsMode(GLCD_ALL_PINS, MCP23S17_PINMODE_OUTPUT);
-	expander.SetPins(GLCD_CTRL_PINS, GLCD_CTRL_PINS);
-	//RESET, NOT POSSIBLE
 	
-	SetBacklight(T6963C_BACKLIGHT_MIN);
-	
+	io.SetPinsMode(Pins::ALL,	PinModes::PIN_OUTPUT);
+	io.SetPins(Pins::ALL,		Pins::NONE);
+	io.SetPins(Pins::RST,		Pins::RST);	
+
 	WriteCmd(T6963_SET_GRAPHIC_HOME_ADDRESS, 0x00, 0x00);
 	WriteCmd(T6963_SET_GRAPHIC_AREA, columns, 0x00);			
 	WriteCmd(T6963_SET_TEXT_HOME_ADDRESS, 0x00, 0x03);             
@@ -117,18 +96,18 @@ void T6963C::WriteByte(bool cd, uint8_t data)
 
 void T6963C::SetCtrlPins(bool wr, bool rd, bool cd, bool ce)
 {
-	mcp23s17_pins_t pins = MCP23S17_PIN_NONE;
-	if (wr) pins |= GLCD_PIN_WR;
-	if (rd) pins |= GLCD_PIN_RD;
-	if (cd) pins |= GLCD_PIN_CD;
-	if (ce) pins |= GLCD_PIN_CE;
-	expander.SetPins(GLCD_CTRL_PINS, pins);
+	Pins pins = Pins::NONE;
+	if (wr) pins |= Pins::WR;
+	if (rd) pins |= Pins::RD;
+	if (cd) pins |= Pins::CD;
+	if (ce) pins |= Pins::CE;
+	io.SetPins(GLCD_CTRL_PINS, pins);
 }
 
 
 void T6963C::SetDataPins(uint8_t data)
 {
-	expander.SetPins(GLCD_DATA_PINS, (mcp23s17_pins_t)data);
+	io.SetPins(GLCD_DATA_PINS, (Pins)data);
 }
 
 
@@ -193,48 +172,28 @@ void T6963C::AutoWriteChar(char data)
 	AutoWrite(data - 0x20);
 }
 
-void T6963C::SetBacklight(t6963c_backlight_t value)
-{
-	
-	switch (value)
-	{
-	default:
-	case T6963C_BACKLIGHT_OFF:
-		expander.SetPins(GLCD_PIN_BL1 | GLCD_PIN_BL2, GLCD_PIN_NONE);
-		break;
-	case T6963C_BACKLIGHT_MIN:
-		expander.SetPins(GLCD_PIN_BL1 | GLCD_PIN_BL2, GLCD_PIN_BL1);
-		break;
-	case T6963C_BACKLIGHT_MID:
-		expander.SetPins(GLCD_PIN_BL1 | GLCD_PIN_BL2, GLCD_PIN_BL2);
-		break;
-	case T6963C_BACKLIGHT_MAX:
-		expander.SetPins(GLCD_PIN_BL1 | GLCD_PIN_BL2, GLCD_PIN_BL1 | GLCD_PIN_BL2);
-		break;
-	}
-}
 
 //--------------------------------------------------------------//
-void T6963C::OSet(uint8_t data, bool wr, bool rd, bool cd, bool ce, mcp23s17_pins_t* order)
+void T6963C::OSet(uint8_t data, bool wr, bool rd, bool cd, bool ce, Pins* order)
 {
-	*order = GLCD_PIN_NONE;
-	if (wr) (*order) |= GLCD_PIN_WR;
-	if (rd) (*order) |= GLCD_PIN_RD;
-	if (cd) (*order) |= GLCD_PIN_CD;
-	if (ce) (*order) |= GLCD_PIN_CE;
-	(*order) |= ((mcp23s17_pins_t)data) & GLCD_DATA_PINS;
+	*order = Pins::NONE;
+	if (wr) (*order) |= Pins::WR;
+	if (rd) (*order) |= Pins::RD;
+	if (cd) (*order) |= Pins::CD;
+	if (ce) (*order) |= Pins::CE;
+	(*order) |= ((Pins)data) & GLCD_DATA_PINS;
 }
 
 
 
-mcp23s17_pins_t* T6963C::OWriteByte(bool cd, uint8_t data, mcp23s17_pins_t* order)
+T6963C::Pins* T6963C::OWriteByte(bool cd, uint8_t data, Pins* order)
 {
 	OSet(data, 0, 1, cd, 0, order++);
 	OSet(data, 1, 1, cd, 1, order++);
 	return order;
 }
 
-mcp23s17_pins_t* T6963C::OWriteCmd(uint8_t cmd, uint8_t data1, mcp23s17_pins_t* order)
+T6963C::Pins* T6963C::OWriteCmd(uint8_t cmd, uint8_t data1, Pins* order)
 {
 	order = OWriteByte(0, data1, order);
 	order = OWriteByte(1, cmd, order);
@@ -242,7 +201,7 @@ mcp23s17_pins_t* T6963C::OWriteCmd(uint8_t cmd, uint8_t data1, mcp23s17_pins_t* 
 }
 
 
-mcp23s17_pins_t* T6963C::OWriteCmd(uint8_t cmd, uint8_t data1, uint8_t data2, mcp23s17_pins_t* order)
+T6963C::Pins* T6963C::OWriteCmd(uint8_t cmd, uint8_t data1, uint8_t data2, Pins* order)
 {
 	order = OWriteByte(0, data1, order);
 	order = OWriteByte(0, data2, order);
@@ -250,13 +209,13 @@ mcp23s17_pins_t* T6963C::OWriteCmd(uint8_t cmd, uint8_t data1, uint8_t data2, mc
 	return order;
 }
 
-mcp23s17_pins_t* T6963C::OWriteCmd(uint8_t cmd, mcp23s17_pins_t* order)
+T6963C::Pins* T6963C::OWriteCmd(uint8_t cmd, Pins* order)
 {
 	order = OWriteByte(1, cmd, order);
 	return order;
 }
 
-mcp23s17_pins_t* T6963C::OSetAddress(uint8_t col, uint8_t row, mcp23s17_pins_t* order)
+T6963C::Pins* T6963C::OSetAddress(uint8_t col, uint8_t row, Pins* order)
 {
 	uint16_t address = ADDR(col, row);
 	order = OWriteCmd(0x24, address, (address >> 8), order);
@@ -265,13 +224,13 @@ mcp23s17_pins_t* T6963C::OSetAddress(uint8_t col, uint8_t row, mcp23s17_pins_t* 
 
 void T6963C::WriteRow(uint32_t y, uint8_t* data, size_t size)
 {
-	mcp23s17_pins_t pinOrder[70];	//6 SetAddr + 2 StartAW + 60 AW + 2 StopAW
-	mcp23s17_pins_t* wrPtr = pinOrder;
+	Pins pinOrder[70];	//6 SetAddr + 2 StartAW + 60 AW + 2 StopAW
+	Pins* wrPtr = pinOrder;
 	wrPtr = OSetAddress(0, y, wrPtr);
 	wrPtr = OWriteCmd(T6963_SET_DATA_AUTO_WRITE, wrPtr);	
 	int col;
 	for (col = 0; col < size; col++)
 		wrPtr = OWriteByte(0, data[col], wrPtr);	
 	wrPtr = OWriteCmd(T6963_AUTO_RESET, wrPtr);	
-	expander.ConsecutivePinWriting(GLCD_CTRL_PINS | GLCD_DATA_PINS, pinOrder, 70);
+	io.ConsecutivePinWriting(GLCD_CTRL_PINS | GLCD_DATA_PINS, pinOrder, 70);
 }
