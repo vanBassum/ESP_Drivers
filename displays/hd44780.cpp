@@ -1,23 +1,8 @@
 #include "hd44780.h"
 #include "kernel.h"
 
-#define	LCD_PIN_NONE	MCP23S17_PIN_NONE
-#define	LCD_PIN_RW		MCP23S17_PIN_NONE
-#define	LCD_PIN_RS		MCP23S17_PIN_B0
-#define	LCD_PIN_E		MCP23S17_PIN_B1
-#define	LCD_PIN_BL		MCP23S17_PIN_B4
-#define	LCD_PIN_DB0		MCP23S17_PIN_A0
-#define	LCD_PIN_DB1		MCP23S17_PIN_A1
-#define	LCD_PIN_DB2		MCP23S17_PIN_A2
-#define	LCD_PIN_DB3		MCP23S17_PIN_A3
-#define	LCD_PIN_DB4		MCP23S17_PIN_A4
-#define	LCD_PIN_DB5		MCP23S17_PIN_A5
-#define	LCD_PIN_DB6		MCP23S17_PIN_A6
-#define	LCD_PIN_DB7		MCP23S17_PIN_A7
-
-
-#define LCD_DATA_PINS	(LCD_PIN_DB0 | LCD_PIN_DB1 | LCD_PIN_DB2 | LCD_PIN_DB3 | LCD_PIN_DB4 | LCD_PIN_DB5 | LCD_PIN_DB6 | LCD_PIN_DB7)
-#define LCD_ALL_PINS	(LCD_PIN_RS | LCD_PIN_RW | LCD_PIN_E | LCD_DATA_PINS | LCD_PIN_BL)
+#define LCD_DATA_PINS	(Pins::DB0 | Pins::DB1 | Pins::DB2 | Pins::DB3 | Pins::DB4 | Pins::DB5 | Pins::DB6 | Pins::DB7)
+#define LCD_ALL_PINS	(Pins::RS | Pins::RW | Pins::E | LCD_DATA_PINS | Pins::BL)
 
 #define HD44780_INIT_SEQ        0x30
 #define HD44780_DISP_CLEAR      0x01
@@ -49,28 +34,26 @@
 #define HD44780_ROW2_START      0x40
 #define HD44780_ROW2_END        HD44780_COLS
 
-mcp23s17_pins_t FromData(uint8_t data)
+HD44780::Pins FromData(uint8_t data)
 {
-	return (mcp23s17_pins_t)data;
+	return (HD44780::Pins)data;
 }
 
-HD44780::HD44780(MCP23S17& expander)
-	: expander(expander)
+HD44780::HD44780(IGPIO& io)
+	: io(io)
 {
 	ESP_LOGI(TAG, "Initializing");
-	expander.SetPinsMode(LCD_ALL_PINS, MCP23S17_PINMODE_OUTPUT);
-	expander.SetPins(LCD_ALL_PINS, LCD_PIN_NONE);				//All pins low
+	io.SetPinsMode(LCD_ALL_PINS, PinModes::PIN_OUTPUT);
+	io.SetPins(LCD_ALL_PINS, Pins::NONE);				//All pins low
 	vTaskDelay(pdMS_TO_TICKS(100));								//Wait for screen
-	
-	
-	
-	expander.SetPins(LCD_DATA_PINS, FromData(0xFF));
+
+	io.SetPins(LCD_DATA_PINS, FromData(0xFF));
 	vTaskDelay(pdMS_TO_TICKS(10));	
 	
-	expander.SetPins(LCD_PIN_E | LCD_PIN_RW | LCD_PIN_RS, LCD_PIN_E);
+	io.SetPins(Pins::E | Pins::RW | Pins::RS, Pins::E);
 	vTaskDelay(pdMS_TO_TICKS(10));	
 	
-	expander.SetPins(LCD_PIN_E | LCD_PIN_RW | LCD_PIN_RS, LCD_PIN_NONE);
+	io.SetPins(Pins::E | Pins::RW | Pins::RS, Pins::NONE);
 	vTaskDelay(pdMS_TO_TICKS(10));
 	
 	
@@ -84,9 +67,9 @@ HD44780::HD44780(MCP23S17& expander)
 	vTaskDelay(pdMS_TO_TICKS(10));	
 	
 	vTaskDelay(pdMS_TO_TICKS(10));	
-	expander.SetPins(LCD_PIN_E | LCD_PIN_RW | LCD_PIN_RS, FromData(0x30));
+	io.SetPins(Pins::E | Pins::RW | Pins::RS, FromData(0x30));
 	vTaskDelay(pdMS_TO_TICKS(10));	
-	expander.SetPins(LCD_DATA_PINS, FromData(0x30) | LCD_PIN_E);
+	io.SetPins(LCD_DATA_PINS, FromData(0x30) | Pins::E);
 	
 	
 	
@@ -122,9 +105,9 @@ HD44780::HD44780(MCP23S17& expander)
 void HD44780::SetBacklight(bool enabled)
 {
 	if (enabled)
-		expander.SetPins(LCD_PIN_BL, LCD_PIN_BL);
+		io.SetPins(Pins::BL, Pins::BL);
 	else		
-		expander.SetPins(LCD_PIN_BL, LCD_PIN_NONE);
+		io.SetPins(Pins::BL, Pins::NONE);
 	
 }
 
@@ -140,11 +123,11 @@ void HD44780::SetCursor(int x, int row)
 
 void HD44780::LCD_cmd(unsigned char cmd)
 {
-	expander.SetPins(LCD_PIN_E | LCD_PIN_RW | LCD_PIN_RS, LCD_PIN_E);
+	io.SetPins(Pins::E | Pins::RW | Pins::RS, Pins::E);
 	vTaskDelay(pdMS_TO_TICKS(10));	
-	expander.SetPins(LCD_DATA_PINS, FromData(cmd));
+	io.SetPins(LCD_DATA_PINS, FromData(cmd));
 	vTaskDelay(pdMS_TO_TICKS(10));	
-	expander.SetPins(LCD_PIN_E | LCD_PIN_RW | LCD_PIN_RS, LCD_PIN_NONE);
+	io.SetPins(Pins::E | Pins::RW | Pins::RS, Pins::NONE);
 }
 
 
@@ -157,11 +140,11 @@ void HD44780::WaitBFClear()
 
 void HD44780::LCD_Data(unsigned char cmd)
 {
-	expander.SetPins(LCD_PIN_E | LCD_PIN_RW | LCD_PIN_RS, LCD_PIN_RS | LCD_PIN_E);
-	expander.SetPins(LCD_DATA_PINS, FromData(cmd));
+	io.SetPins(Pins::E | Pins::RW | Pins::RS, Pins::RS | Pins::E);
+	io.SetPins(LCD_DATA_PINS, FromData(cmd));
 	vTaskDelay(pdMS_TO_TICKS(1));	//TODO Whaaaa?? This HAS to be µS...
 	//ets_delay_us(1);
-	expander.SetPins(LCD_PIN_E | LCD_PIN_RW | LCD_PIN_RS, LCD_PIN_NONE);
+	io.SetPins(Pins::E | Pins::RW | Pins::RS, Pins::NONE);
 	WaitBFClear();
 }
 
