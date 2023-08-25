@@ -46,6 +46,8 @@ typedef enum
 	MCP23S17_IOCR_NI		   = 0x01,   //  Not implemented.
 }mcp23s17_iocr_t;
 
+
+
 MCP23S17::MCP23S17(SPIDevice& spiDev, gpio_num_t irq)
 	: spidev(spiDev)
 	, irqPin(irq)
@@ -113,44 +115,44 @@ void MCP23S17::Write16(uint8_t reg, uint16_t value)
 
 
 
-void MCP23S17::SetPins(mcp23s17_pins_t mask, mcp23s17_pins_t value)
+void MCP23S17::SetPins(Pins mask, Pins value)
 {
 	mutex.Take();
 	pinBuffer = (pinBuffer & ~mask) | (value & mask);
 	
 	spidev.AcquireBus();
-	Write16(MCP23S17_REG_GPIO_A, pinBuffer);
+	Write16(MCP23S17_REG_GPIO_A, (uint16_t)pinBuffer);
 	spidev.ReleaseBus();
 	mutex.Give();
 }
 
 
-mcp23s17_pins_t MCP23S17::GetPins(mcp23s17_pins_t mask)
+MCP23S17::Pins MCP23S17::GetPins(Pins mask)
 {
 	mutex.Take();
 	spidev.AcquireBus();
-	mcp23s17_pins_t pins = (mcp23s17_pins_t)Read16(MCP23S17_REG_GPIO_A);
+	Pins pins = (Pins)Read16(MCP23S17_REG_GPIO_A);
 	spidev.ReleaseBus();
 	mutex.Give();
 	return pins & mask;
 }
 
 
-void MCP23S17::SetPinsMode(mcp23s17_pins_t mask, mcp23s17_pinmodes_t mode)
+void MCP23S17::SetPinsMode(Pins mask, PinModes mode)
 {
 	mutex.Take();
-	if (mode == MCP23S17_PINMODE_INPUT)
-		pinDirBuffer = (pinDirBuffer & ~mask) | (MCP23S17_PIN_ALL & mask);
+	if (mode == PinModes::PIN_INPUT)
+		pinDirBuffer = (pinDirBuffer & ~mask) | (Pins::ALL & mask);
 	else
 		pinDirBuffer = pinDirBuffer & ~mask;
 		
 	spidev.AcquireBus();
-	Write16(MCP23S17_REG_DIR_A, pinDirBuffer);
+	Write16(MCP23S17_REG_DIR_A, (uint16_t)pinDirBuffer);
 	spidev.ReleaseBus();
 	mutex.Give();
 }
 
-void MCP23S17::ConsecutivePinWriting(mcp23s17_pins_t mask, mcp23s17_pins_t* values, size_t size)
+void MCP23S17::ConsecutivePinWriting(Pins mask, Pins* values, size_t size)
 {
 	mutex.Take();
 	size_t totSize = 2 + size * 2;
@@ -162,7 +164,7 @@ void MCP23S17::ConsecutivePinWriting(mcp23s17_pins_t mask, mcp23s17_pins_t* valu
 	{
 		pinBuffer = (pinBuffer & ~mask) | (values[i] & mask);
 		txData[i * 2 + 2] = (uint8_t)pinBuffer;
-		txData[i * 2 + 3] = (uint8_t)(pinBuffer>>8);
+		txData[i * 2 + 3] = (uint8_t)((uint16_t)pinBuffer>>8);
 	}
 	spidev.AcquireBus();
 	Write8(MCP23S17_REG_IOCON_A, 0x28);	//seqop = BIT 5 0X20
