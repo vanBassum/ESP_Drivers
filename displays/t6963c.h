@@ -68,6 +68,8 @@ private:
 public:
 	T6963C(IGPIO& io, uint8_t rows, uint8_t columns);
 	void WriteRow(uint32_t y, uint8_t* data, size_t size);
+	uint8_t GetRows();
+	uint8_t GetColumns();
 };
 
 DEFINE_ENUM_CLASS_FLAG_OPERATORS(T6963C::Pins, uint32_t);

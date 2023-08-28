@@ -233,3 +233,15 @@ void T6963C::WriteRow(uint32_t y, uint8_t* data, size_t size)
 	wrPtr = OWriteCmd(T6963_AUTO_RESET, wrPtr);	
 	io.ConsecutivePinWriting(GLCD_CTRL_PINS | GLCD_DATA_PINS, pinOrder, 70);
 }
+
+
+uint8_t T6963C::GetColumns()
+{
+	return columns;
+}
+
+
+uint8_t T6963C::GetRows()
+{
+	return rows;
+}
