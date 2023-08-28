@@ -72,28 +72,21 @@ public:
 
 	enum class Events
 	{
-		NONE		= 0,
+		NONE	= 0,
 		IRQ		= (1 << 0),
-		PORT0_TX	= (1 << 1),
-		PORT1_TX	= (1 << 2),
-		PORT2_TX	= (1 << 3),
-		PORT3_TX	= (1 << 4),
 	};
 
 	class Uart
 	{
 		const char* TAG = "MAX14830::UART";
-		MAX14830* parent;
+		MAX14830& parent;
 		Ports port;
-		StreamBuffer inputBuffer;
-		StreamBuffer outputBuffer;
-		void OnDataReady(StreamBuffer* buffer);
-	protected:
-		void HandleIRQ(Pins* changes);
-		void HandleOutputBuffer();
+		void NotifyTxAvailable();
 		friend MAX14830;
+		
 	public:
-		Uart(MAX14830* parent, Ports port);
+		Event<Uart&> DataReceived;
+		Uart(MAX14830& parent, Ports port);
 		void Init(uint32_t baudrate, uint8_t useCTS, uint8_t useRS485);
 		size_t Write(const void* data, size_t size);
 		size_t Read(void* data, size_t size);
@@ -115,7 +108,7 @@ protected:
 	uint32_t max310x_set_ref_clk();
 	uint32_t max310x_set_baud(Ports port, uint32_t baud);
 	uint32_t max310x_get_ref_clk();
-	
+	void CheckForPinChanges(Ports port, Pins* changes, bool* uartTX);
 	friend Uart;
 public:
 	Event<MAX14830*, Pins> OnPinsChanged;
@@ -124,10 +117,10 @@ public:
 	void SetPins(Pins mask, Pins value);
 	void SetInterrupts(Pins mask, Pins value);
 	Pins GetPins(Pins mask);
-	Uart Uart0 = Uart(this, Ports::NUM_0);
-	Uart Uart1 = Uart(this, Ports::NUM_1);
-	Uart Uart2 = Uart(this, Ports::NUM_2);
-	Uart Uart3 = Uart(this, Ports::NUM_3);
+	Uart Uart0 = Uart(*this, Ports::NUM_0);
+	Uart Uart1 = Uart(*this, Ports::NUM_1);
+	Uart Uart2 = Uart(*this, Ports::NUM_2);
+	Uart Uart3 = Uart(*this, Ports::NUM_3);
 	
 };
 
