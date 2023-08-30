@@ -9,20 +9,19 @@ public:
 	enum class Pins
 	{
 		NONE = 0x0000,
-		WR   = 0x0001,
-		RD   = 0x0002,
-		CE   = 0x0004,
-		CD   = 0x0008,
-		RST  = 0x0010,	
-		
-		DB0  = 0x0100,
-		DB1  = 0x0200,
-		DB2  = 0x0400,
-		DB3  = 0x0800,
-		DB4  = 0x1000,
-		DB5  = 0x2000,
-		DB6  = 0x4000,
-		DB7  = 0x8000,
+		DB0  = 0x0001,
+		DB1  = 0x0002,
+		DB2  = 0x0004,
+		DB3  = 0x0008,
+		DB4  = 0x0010,
+		DB5  = 0x0020,
+		DB6  = 0x0040,
+		DB7  = 0x0080,
+		WR   = 0x0100,
+		RD   = 0x0200,
+		CE   = 0x0400,
+		CD   = 0x0800,
+		RST  = 0x1000,	
 		ALL  = 0x0FFF,
 	};
 	
