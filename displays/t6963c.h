@@ -22,7 +22,8 @@ public:
 		CE   = 0x0400,
 		CD   = 0x0800,
 		RST  = 0x1000,	
-		ALL  = 0x0FFF,
+		BL   = 0x2000,
+		ALL  = 0x3FFF,
 	};
 	
 	enum class PinModes

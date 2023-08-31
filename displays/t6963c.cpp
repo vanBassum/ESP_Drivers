@@ -43,6 +43,7 @@ T6963C::T6963C(IGPIO& io, uint8_t rows, uint8_t columns)
 	io.SetPinsMode(Pins::ALL,	PinModes::PIN_OUTPUT);
 	io.SetPins(Pins::ALL,		Pins::NONE);
 	io.SetPins(Pins::RST,		Pins::RST);	
+	io.SetPins(Pins::BL,		Pins::BL);	
 
 	WriteCmd(T6963_SET_GRAPHIC_HOME_ADDRESS, 0x00, 0x00);
 	WriteCmd(T6963_SET_GRAPHIC_AREA, columns, 0x00);			
