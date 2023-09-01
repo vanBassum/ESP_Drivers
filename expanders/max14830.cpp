@@ -374,11 +374,12 @@ void MAX14830::IrqTaskWork(Task* task, void* args)
 	while (true)
 	{
 		gpio_set_intr_type(irqPin, GPIO_INTR_LOW_LEVEL);	//Re enable interrupt.
+		ESP_LOGI("MAX", "IRQ EN");
 		if (task->NotifyWait((uint32_t*)&notifications))
 		{
 			if (HAS_BIT(notifications, Events::IRQ))
 			{
-				//ESP_LOGI(TAG, "IRQ handeling");
+				ESP_LOGI(TAG, "IRQ handeling");
 				Pins changedPins = Pins::NONE;
 				bool tx0, tx1, tx2, tx3;
 				uint8_t uart = 0;		
@@ -396,7 +397,9 @@ void MAX14830::IrqTaskWork(Task* task, void* args)
 				if (tx3) Uart3.NotifyTxAvailable();
 				
 				if ((uint32_t)changedPins) 
+				{
 					OnPinsChanged.Invoke(this, changedPins);
+				}
 			}			
 		}
 	}
