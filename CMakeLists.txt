@@ -14,7 +14,6 @@ idf_component_register(
 		i2c/device.cpp
 		mifare/pn512.cpp
 		netif/lan87xx.cpp
-		netif/netmanager.cpp
 		netif/wifi.cpp
 		rtc/ntp.cpp
 		rtc/pcf2123.cpp
