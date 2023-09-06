@@ -74,6 +74,10 @@ public:
 	{
 		NONE	= 0,
 		IRQ		= (1 << 0),
+		PORT0_TX	= (1 << 1),
+		PORT1_TX	= (1 << 2),
+		PORT2_TX	= (1 << 3),
+		PORT3_TX	= (1 << 4),
 	};
 
 	class Uart
@@ -81,7 +85,12 @@ public:
 		const char* TAG = "MAX14830::UART";
 		MAX14830& parent;
 		Ports port;
+		StreamBuffer inputBuffer;
+		StreamBuffer outputBuffer;
 		void NotifyTxAvailable();
+		void OnDataReady(StreamBuffer* buffer);
+		void HandleIRQ(Pins* changes);
+		void HandleOutputBuffer();
 		friend MAX14830;
 		
 	public:
