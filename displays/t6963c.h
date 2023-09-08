@@ -1,5 +1,6 @@
 #pragma once
 #include "mcp23s17.h"
+#include "gpio.h"
 
 
 class T6963C
@@ -26,12 +27,7 @@ public:
 		ALL  = 0x3FFF,
 	};
 	
-	enum class PinModes
-	{
-		PIN_INPUT,
-		PIN_OUTPUT,
-	};
-	
+
 	class IGPIO
 	{
 	public:

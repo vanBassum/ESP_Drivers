@@ -2,6 +2,7 @@
 #include "esp_system.h"
 #include "mcp23s17.h"
 #include <string>
+#include "gpio.h"
 //https://github.com/Matiasus/HD44780/blob/master/lib/hd44780.c
 
 
@@ -25,12 +26,7 @@ public:
 		DB7  = 0x0800,
 		ALL  = 0x0FFF,
 	};
-	
-	enum class PinModes
-	{
-		PIN_INPUT,
-		PIN_OUTPUT,
-	};
+
 	
 	class IGPIO
 	{

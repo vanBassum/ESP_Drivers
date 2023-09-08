@@ -2,6 +2,7 @@
 #include "kernel.h"
 #include "esp_base.h"
 #include "spi/bus.h"
+#include "gpio.h"
 
 //https://github.com/RobTillaart/MCP23S17/blob/master/MCP23S17.cpp
 //https://www.esp32.com/viewtopic.php?t=9309
@@ -30,13 +31,7 @@ public:
 		B7   = 0x8000,
 		ALL  = 0xFFFF,
 	};
-	
-	enum class PinModes
-	{
-		INPUT,
-		OUTPUT,
-	};
-		
+
 private:
 	const char* TAG = "MCP23S17";
 	Mutex mutex;

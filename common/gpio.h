@@ -19,4 +19,25 @@ enum class ISRModes
 	PIN_HIGH_LEVEL = 5,	/*!< GPIO interrupt type : input high level trigger     */
 };
 
+// This is more difficoult than I thought, so not for now. Maybee later
+
+//template<typename TPINS>
+//class IGPIO
+//{
+//	Event<IGPIO, TPINS> OnPinChange;
+//public:
+//	
+//	virtual void SetPinsMode(TPINS mask, PinModes mode)	= 0;
+//	virtual void SetPins(TPINS mask, TPINS value) = 0;
+//	virtual void GetPins(TPINS mask, TPINS* value) = 0;
+//	virtual void SetInterrupts(TPINS mask, ISRModes mode) = 0;
+//	
+//	void AddHandler(const std::function<void(IGPIO*, const TPINS&)>& handler) {
+//		OnPinChange.AddHandler(handler);
+//	}
+//	
+//	void RemoveHandler(const std::function<void(IGPIO*, const TPINS&)>& handler) {
+//		OnPinChange.RemoveHandler(handler);
+//	}
+//};
 
