@@ -1,6 +1,6 @@
 #include "ntp.h"
 
-Event<struct timeval*> NTP::OnSync; 
+Event<void, struct timeval*> NTP::OnSync; 
 bool NTP::NtpReceived = false;
 
 bool NTP::Init(const std::string& host)
@@ -17,7 +17,7 @@ bool NTP::Init(const std::string& host)
 void NTP::OnSyncCallback(struct timeval* tv)
 {
 	NtpReceived = true;
-	OnSync.Invoke(tv);
+	OnSync.Invoke(NULL, tv);
 }
 
 void NTP::SetSystemTime(DateTime* value)

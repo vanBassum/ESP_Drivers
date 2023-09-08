@@ -9,7 +9,7 @@ class NTP
 	static bool NtpReceived;
 public:
 	
-	static Event<struct timeval*> OnSync; 
+	static Event<void, struct timeval*> OnSync; 
 	static bool Init(const std::string& host);
 	static void SetSystemTime(DateTime* value);
 	static void SetTimeZone(const std::string& timeZone);

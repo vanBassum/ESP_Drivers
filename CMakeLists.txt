@@ -22,6 +22,7 @@ idf_component_register(
 	INCLUDE_DIRS
 		.
 		analog
+		common
 		displays
 		ethernet
 		expanders

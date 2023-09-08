@@ -1,11 +1,11 @@
 #pragma once
 
 #include <string>
+#include <functional>
 
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-
 #include "esp_base.h"
 
 
@@ -16,13 +16,14 @@ class Task
 	portBASE_TYPE priority = 0;
 	portSHORT stackDepth = configMINIMAL_STACK_SIZE;
 	TaskHandle_t taskHandle = NULL;
-	Action<Task*, void*> callback;
+	std::function<void(Task*, void*)> callback;
 		
 	static void TaskFunction(void* parm)
 	{
 		Task* t = static_cast<Task*>(parm);
-		t->callback.Invoke(t, t->arg);
-		t->taskHandle = NULL;	
+		if (t && t->callback) {
+			t->callback(t, t->arg);
+		}
 		vTaskDelete(NULL);
 	}
 		
@@ -48,17 +49,12 @@ public:
 			this->stackDepth = configMINIMAL_STACK_SIZE;
 	}
 		
-	template<typename T>
-		void Bind(T* instance, void(T::* mp)(Task*, void*))
+	void SetHandler(const std::function<void(Task*, void*)>& callback)
 	{
-		callback.Bind(instance, mp);
+		
+		this->callback = callback;
 	}
 
-	void Bind(void(*fp)(Task*, void*))
-	{
-		callback.Bind(fp);
-	}
-		
 	void Run(void* arg = NULL)
 	{
 		if (taskHandle != NULL)

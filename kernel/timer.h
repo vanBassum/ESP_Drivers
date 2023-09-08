@@ -3,17 +3,20 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
 #include "esp_base.h"
+#include <functional>
 
 
 class Timer
 {
-	Action<Timer*> callback;
+	std::function<void(Timer*)> callback;
 	TimerHandle_t xTimer = NULL;
 		
 	static void tCallback(TimerHandle_t xTimer)
 	{
 		Timer* t = static_cast<Timer*>(pvTimerGetTimerID(xTimer));
-		t->callback.Invoke(t);
+		if (t && t->callback) {
+			t->callback(t);
+		}
 	}
 		
 public:
@@ -29,15 +32,10 @@ public:
 			xTimerDelete(xTimer, 0);
 	}
 		
-	template<typename T>
-		void Bind(T* instance, void(T::* mp)(Timer*))
-	{
-		callback.Bind(instance, mp);
-	}
 
-	void Bind(void(*fp)(Timer*))
+	void SetHandler(const std::function<void(Timer*)> callback)
 	{
-		callback.Bind(fp);
+		this->callback = callback;
 	}
 		
 	bool Init(const std::string name, TimeSpan period, bool autoReload = true)

@@ -24,7 +24,7 @@ MAX14830::MAX14830(SPIDevice& device, gpio_num_t irq) :
 	//Its optional, don't start the task if interupts aren't required.
 	
 	irqTask.Init("MAX14830", 10, 1048 * 4);
-	irqTask.Bind(this, &MAX14830::IrqTaskWork);
+	irqTask.SetHandler([&](Task* task, void* args){this->IrqTaskWork();});
 	irqTask.Run();
 }
 
@@ -374,7 +374,7 @@ void MAX14830::Uart::Init(uint32_t baudrate, uint8_t useCTS, uint8_t useRS485)
 	inputBuffer.Init(64, 1);
 	outputBuffer.Init(64, 1);
 	
-	outputBuffer.OnDataReady.Bind(this, &MAX14830::Uart::OnDataReady);
+	outputBuffer.OnDataReady.AddHandler([&](StreamBuffer* buffer, void* args){this->OnDataReady();});
 	
 	parent.spidev.AcquireBus();
 	uint8_t flowCtrlRegVal = 0;
@@ -441,7 +441,7 @@ void MAX14830::gpio_isr_handler(void* arg)
 	parent->irqTask.NotifyFromISR((uint32_t)Events::IRQ);	
 }
 
-void MAX14830::IrqTaskWork(Task* task, void* args)
+void MAX14830::IrqTaskWork()
 {
 	//Configure GPIO interrupts.
 	gpio_config_t io_conf;
@@ -459,7 +459,7 @@ void MAX14830::IrqTaskWork(Task* task, void* args)
 	while (true)
 	{
 		gpio_set_intr_type(irqPin, GPIO_INTR_LOW_LEVEL);	//Re enable interrupt.
-		if (task->NotifyWait((uint32_t*)&notifications))
+		if (irqTask.NotifyWait((uint32_t*)&notifications))
 		{
 			Pins changedPins = Pins::NONE;
 			spidev.AcquireBus();
@@ -487,7 +487,8 @@ void MAX14830::IrqTaskWork(Task* task, void* args)
 			
 			spidev.ReleaseBus();
 			
-			if ((uint32_t)changedPins) OnPinsChanged.Invoke(this, changedPins);
+			if ((uint32_t)changedPins) 
+				OnPinsChanged.Invoke(this, changedPins);
 		}
 	}
 }
@@ -534,7 +535,7 @@ void MAX14830::Uart::HandleIRQ(Pins* changes)
 }
 
 
-void MAX14830::Uart::OnDataReady(StreamBuffer* buffer)
+void MAX14830::Uart::OnDataReady()
 {
 	switch (port)
 	{

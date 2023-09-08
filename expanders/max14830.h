@@ -88,13 +88,13 @@ public:
 		StreamBuffer inputBuffer;
 		StreamBuffer outputBuffer;
 		void NotifyTxAvailable();
-		void OnDataReady(StreamBuffer* buffer);
+		void OnDataReady();
 		void HandleIRQ(Pins* changes);
 		void HandleOutputBuffer();
 		friend MAX14830;
 		
 	public:
-		Event<Uart&> DataReceived;
+		Event<Uart> DataReceived;
 		Uart(MAX14830& parent, Ports port);
 		void Init(uint32_t baudrate, uint8_t useCTS, uint8_t useRS485);
 		size_t Write(const void* data, size_t size);
@@ -103,7 +103,7 @@ public:
 	
 	
 protected:
-	void IrqTaskWork(Task* task, void* args);
+	void IrqTaskWork();
 	bool Detect();
 	esp_err_t SetRefClock();
 	void Max14830_WriteBufferPolled(uint8_t cmd, const uint8_t * cmdData, uint8_t count);
@@ -120,7 +120,7 @@ protected:
 	void CheckForPinChanges(Ports port, Pins* changes, bool* uartTX);
 	friend Uart;
 public:
-	Event<MAX14830*, Pins> OnPinsChanged;
+	Event<MAX14830, Pins> OnPinsChanged;
 	MAX14830(SPIDevice& device, gpio_num_t irq);
 	void SetPinsMode(Pins mask, PinModes mode);
 	void SetPins(Pins mask, Pins value);

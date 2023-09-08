@@ -8,7 +8,7 @@ class StreamBuffer
 	StreamBufferHandle_t handle = NULL;
 		
 public:	
-	Event<StreamBuffer*> OnDataReady;
+	Event<StreamBuffer> OnDataReady;
 	
 	~StreamBuffer()
 	{
@@ -46,7 +46,7 @@ public:
 	{
 		if (handle == NULL) return 0;
 		size_t result = xStreamBufferSend(handle, data, size, portMAX_DELAY);
-		OnDataReady.Invoke(this);
+		OnDataReady.Invoke(this, NULL);
 		return result;
 	}
 };
