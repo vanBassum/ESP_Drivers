@@ -7,14 +7,13 @@ idf_component_register(
 		displays/hd44780.cpp
 		displays/st7735.cpp
 		displays/t6963c.cpp
-		ethernet/socket.cpp
+		ethernet/lan87xx.cpp
+		ethernet/wifi.cpp
 		expanders/max14830.cpp
 		expanders/mcp23s17.cpp
 		i2c/bus.cpp
 		i2c/device.cpp
 		mifare/pn512.cpp
-		netif/lan87xx.cpp
-		netif/wifi.cpp
 		rtc/ntp.cpp
 		rtc/pcf2123.cpp
 		spi/bus.cpp
@@ -30,7 +29,6 @@ idf_component_register(
 		i2c
 		kernel
 		mifare
-		netif
 		rtc
 		spi
 	REQUIRES ESP_Base driver esp_wifi esp_eth)

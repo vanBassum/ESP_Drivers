@@ -9,19 +9,12 @@
 #include "driver/gpio.h"
 #include "esp_eth.h"
 #include "esp_event.h"
+#include "netif.h"
 
-class Lan87xx
+class Lan87xx : public NetIF
 {	
-	esp_netif_t* eth_netif;
-
 public:
 	
 	Lan87xx(NetManager& netManager);
-
-	void GetIpInfo(esp_netif_ip_info_t* ip_info)
-	{
-		esp_netif_get_ip_info(eth_netif, ip_info);
-	}
-	
 };
 

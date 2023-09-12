@@ -58,9 +58,9 @@ Lan87xx::Lan87xx(NetManager& netManager)
 
     // Create new default instance of esp-netif for Ethernet
     esp_netif_config_t cfg                      = ESP_NETIF_DEFAULT_ETH();
-    eth_netif                                   = esp_netif_new(&cfg);
+	netIF                                       = esp_netif_new(&cfg);
 
-	ESP_ERROR_CHECK(esp_netif_attach(eth_netif, esp_eth_new_netif_glue(eth_handle)));
+	ESP_ERROR_CHECK(esp_netif_attach(netIF, esp_eth_new_netif_glue(eth_handle)));
 	ESP_ERROR_CHECK(esp_eth_start(eth_handle));
 
 };

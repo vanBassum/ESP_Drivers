@@ -11,6 +11,5 @@
 #include "i2c/i2c.h"
 #include "kernel/kernel.h"
 #include "mifare/mifare.h"
-#include "netif/netif.h"
 #include "rtc/rtc.h"
 #include "spi/spi.h"

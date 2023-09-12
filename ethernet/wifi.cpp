@@ -21,7 +21,7 @@ Wifi::Wifi(NetManager& netManager)
 {
 	wifi_init_config_t cfg2 = WIFI_INIT_CONFIG_DEFAULT();
 	
-	sta_netif = esp_netif_create_default_wifi_sta();
+	netIF = esp_netif_create_default_wifi_sta();
 	ESP_ERROR_CHECK(esp_wifi_init(&cfg2));
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM)); 
 
