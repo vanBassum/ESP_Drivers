@@ -20,7 +20,7 @@ public:
 			vSemaphoreDelete(handle);
 	}
 		
-	bool Take(TickType_t timeout = portMAX_DELAY)
+	bool Take(TickType_t timeout = portMAX_DELAY) const
 	{
 		bool suc = xSemaphoreTake(handle, timeout) == pdTRUE;
 		if (!suc)
@@ -31,14 +31,32 @@ public:
 		return suc;
 	}
 
-	bool Give()
+	bool Give()  const
 	{
 		return xSemaphoreGive(handle) == pdTRUE;
 	}
 
-	bool IsTaken(void) 
+	bool IsTaken(void)   const
 	{
 		TaskHandle_t holderTask = xSemaphoreGetMutexHolder(handle);
 		return holderTask != NULL;
 	}
+};
+
+
+class ScopedLock
+{
+	const Mutex& mutex;
+public:
+	ScopedLock(const Mutex& mutex)
+		: mutex(mutex)
+	{
+		mutex.Take();
+	}
+	
+	~ScopedLock()
+	{
+		mutex.Give();
+	}
+	
 };
