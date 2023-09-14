@@ -19,14 +19,30 @@ public:
 			vSemaphoreDelete(handle);
 	}
 		
-	bool Take(int timeout = portMAX_DELAY)
+	bool Take(int timeout = portMAX_DELAY) const
 	{
 		return xSemaphoreTakeRecursive(handle, timeout) == pdTRUE;
 	}
 
-	bool Give()
+	bool Give() const
 	{
 		return xSemaphoreGiveRecursive(handle) == pdTRUE;
 	}
 
+	class ContextLock
+	{
+		const RecursiveMutex& mutex;
+	public:
+		ContextLock(const RecursiveMutex& mutex)
+			: mutex(mutex)
+		{
+			mutex.Take();
+		}
+	
+		~ContextLock()
+		{
+			mutex.Give();
+		}
+	
+	};
 };

@@ -41,22 +41,24 @@ public:
 		TaskHandle_t holderTask = xSemaphoreGetMutexHolder(handle);
 		return holderTask != NULL;
 	}
+	
+	class ContextLock
+	{
+		const Mutex& mutex;
+	public:
+		ContextLock(const Mutex& mutex)
+			: mutex(mutex)
+		{
+			mutex.Take();
+		}
+	
+		~ContextLock()
+		{
+			mutex.Give();
+		}
+	
+	};
 };
 
 
-class ScopedLock
-{
-	const Mutex& mutex;
-public:
-	ScopedLock(const Mutex& mutex)
-		: mutex(mutex)
-	{
-		mutex.Take();
-	}
-	
-	~ScopedLock()
-	{
-		mutex.Give();
-	}
-	
-};
+

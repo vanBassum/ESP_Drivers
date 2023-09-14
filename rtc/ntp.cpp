@@ -9,8 +9,8 @@ bool NTP::Init(const std::string& host, const TimeSpan timeSpan)
 		//tzset();
 	sntp_setoperatingmode(SNTP_OPMODE_POLL);
 	sntp_setservername(0, host.c_str());
-	sntp_set_sync_interval(timeSpan.GetTotalMiliSeconds());
 	sntp_init();
+	sntp_set_sync_interval(timeSpan.GetTotalMiliSeconds());
 	sntp_set_time_sync_notification_cb(OnSyncCallback);
 	return true;
 }
