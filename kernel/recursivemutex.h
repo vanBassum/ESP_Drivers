@@ -45,20 +45,11 @@ public:
 			: mutex(mutex)
 			, msg(msg)
 		{
-			if (mutex.handle == NULL && msg != NULL)
-				ESP_LOGE("ContextLock", "NULL  %s", msg);
-			
-			if (msg != NULL && mutex.msg != NULL)
-				ESP_LOGI("ContextLock", "TAKE  %s %s", msg, mutex.msg);
-			else if (msg != NULL)
-				ESP_LOGI("ContextLock", "TAKE  %s", msg);
 			mutex.Take();
-			
 			if (msg != NULL && mutex.msg != NULL)
 				ESP_LOGI("ContextLock", "TAKEN %s %s", msg, mutex.msg);
 			else if (msg != NULL)
 				ESP_LOGI("ContextLock", "TAKEN %s", msg);
-
 		}
 	
 		~ContextLock()
@@ -68,11 +59,6 @@ public:
 			else if (msg != NULL)
 				ESP_LOGI("ContextLock", "GIVE  %s", msg);
 			mutex.Give();
-			if (msg != NULL && mutex.msg != NULL)
-				ESP_LOGI("ContextLock", "GIVEN %s %s", msg, mutex.msg);
-			else if (msg != NULL)
-				ESP_LOGI("ContextLock", "GIVEN %s", msg);
 		}
-	
 	};
 };
