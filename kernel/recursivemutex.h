@@ -3,62 +3,31 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "esp_log.h"
+#include "mutex.h"
 
 
-class RecursiveMutex
+class RecursiveMutex : public IMutex
 {
 	SemaphoreHandle_t handle = NULL;
-	const char* msg = NULL;
 public:
 	RecursiveMutex(const char* msg = NULL)
-		: msg(msg)
 	{
-		if(msg != NULL)
-			ESP_LOGI("RecursiveMutex", "Create %s", msg);
 		handle = xSemaphoreCreateRecursiveMutex();
 	}
 		
-	~RecursiveMutex()
+	~RecursiveMutex() override
 	{
-		if (msg != NULL)
-			ESP_LOGI("RecursiveMutex", "Destruct %s", msg);
 		if(handle != NULL)
 			vSemaphoreDelete(handle);
 	}
 		
-	bool Take(int timeout = portMAX_DELAY) const
+	bool Take(TickType_t timeout = portMAX_DELAY) const override
 	{
 		return xSemaphoreTakeRecursive(handle, timeout) == pdTRUE;
 	}
 
-	bool Give() const
+	bool Give() const override
 	{
 		return xSemaphoreGiveRecursive(handle) == pdTRUE;
 	}
-
-	class ContextLock
-	{
-		const RecursiveMutex& mutex;
-		const char* msg = NULL;
-	public:
-		ContextLock(const RecursiveMutex& mutex, const char* msg = NULL)
-			: mutex(mutex)
-			, msg(msg)
-		{
-			mutex.Take();
-			if (msg != NULL && mutex.msg != NULL)
-				ESP_LOGI("ContextLock", "TAKEN %s %s", msg, mutex.msg);
-			else if (msg != NULL)
-				ESP_LOGI("ContextLock", "TAKEN %s", msg);
-		}
-	
-		~ContextLock()
-		{
-			if (msg != NULL && mutex.msg != NULL)
-				ESP_LOGI("ContextLock", "GIVE  %s %s", msg, mutex.msg);
-			else if (msg != NULL)
-				ESP_LOGI("ContextLock", "GIVE  %s", msg);
-			mutex.Give();
-		}
-	};
 };
