@@ -72,9 +72,9 @@ public:
 	}
 		
 	bool SetPeriod(TimeSpan period, int timeout = portMAX_DELAY)
-	{
+	{		
 		if (xTimer == NULL) return false;
-		TickType_t rtosTicks = period.GetMiliSeconds() / portTICK_PERIOD_MS;
+		TickType_t rtosTicks = period.GetTotalMiliSeconds() / portTICK_PERIOD_MS;
 		if (rtosTicks < 1)
 			rtosTicks = 1;
 		return xTimerChangePeriod(xTimer, rtosTicks, timeout ) == pdPASS;
