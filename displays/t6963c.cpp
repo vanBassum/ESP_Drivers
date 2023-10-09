@@ -44,6 +44,7 @@ T6963C::T6963C(IGPIO& io, uint8_t rows, uint8_t columns)
 	io.SetPins(Pins::RST,		Pins::RST);	
 	io.SetPins(Pins::BL,		Pins::BL);	
 
+	WriteCmd(T6963_MODE_SET);
 	WriteCmd(T6963_SET_GRAPHIC_HOME_ADDRESS, 0x00, 0x00);
 	WriteCmd(T6963_SET_GRAPHIC_AREA, columns, 0x00);			
 	WriteCmd(T6963_SET_TEXT_HOME_ADDRESS, 0x00, 0x03);             
@@ -52,7 +53,7 @@ T6963C::T6963C(IGPIO& io, uint8_t rows, uint8_t columns)
 	
 	WriteCmd(T6963_SET_OFFSET_REGISTER);
 	WriteCmd(T6963_DISPLAY_MODE | 0b1000);
-	WriteCmd(T6963_MODE_SET);
+	
 	
 	Clear();
 	ESP_LOGI(TAG, "Initialized");
