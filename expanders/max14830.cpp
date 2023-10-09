@@ -23,7 +23,7 @@ MAX14830::MAX14830(SPIDevice& device, gpio_num_t irq) :
 	//This task will do everything required to handle device interrupts.
 	//Its optional, don't start the task if interupts aren't required.
 	
-	irqTask.Init("MAX14830", 10, 1048 * 4);
+	irqTask.Init("MAX14830", 10, 1048 * 3);
 	irqTask.SetHandler([&](Task* task, void* args){this->IrqTaskWork();});
 	irqTask.Run();
 }
