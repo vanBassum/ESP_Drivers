@@ -6,6 +6,7 @@ class SPIBus;
 
 class SPIDevice
 {
+	constexpr const static char* TAG = "SPIDevice";
 	Mutex mutex;
 	spi_device_handle_t spi = NULL;
 public:

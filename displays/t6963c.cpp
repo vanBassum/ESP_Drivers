@@ -36,7 +36,6 @@
 T6963C::T6963C(IGPIO& io, uint8_t rows, uint8_t columns)
 	: io(io)
 {
-	ESP_LOGI(TAG, "Initializing");
 	this->columns = columns;
 	this->rows = rows;
 	
@@ -56,6 +55,7 @@ T6963C::T6963C(IGPIO& io, uint8_t rows, uint8_t columns)
 	WriteCmd(T6963_MODE_SET);
 	
 	Clear();
+	ESP_LOGI(TAG, "Initialized");
 }
 
 void T6963C::WriteCmd(uint8_t cmd, uint8_t data1)

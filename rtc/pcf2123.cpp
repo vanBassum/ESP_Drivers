@@ -107,7 +107,7 @@ PCF2123::PCF2123(SPIDevice& spiDev, gpio_num_t irq)
 	regs.ClearAll();
 	this->ctrl_set(&regs, true, true, false);
 	spi.ReleaseBus();
-	
+	ESP_LOGI(TAG, "Initialized");
 }
 
 
