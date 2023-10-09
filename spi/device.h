@@ -1,10 +1,12 @@
 #pragma once
 #include "driver/spi_master.h"
+#include "mutex.h"
 
 class SPIBus;
 
 class SPIDevice
 {
+	Mutex mutex;
 	spi_device_handle_t spi = NULL;
 public:
 	SPIDevice(SPIBus& bus, const spi_device_interface_config_t& devConfig);
