@@ -13,10 +13,9 @@ static const char *TAG = "PN512";
 ** 
 *****************************************************************************/
 
-PN512::PN512(SPIDevice& device, gpio_num_t irq, MCP23S17& expander)
+PN512::PN512(SPIDevice& device, IGPIO& gpio)
 	: spidev(device)
-	, expander(expander)
-	, irqPin(irq)
+	, gpio(gpio)
 {	
 
 	
