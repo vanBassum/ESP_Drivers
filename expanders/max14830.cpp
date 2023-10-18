@@ -371,11 +371,6 @@ MAX14830::Uart::Uart(MAX14830& parent, Ports port)
 
 void MAX14830::Uart::Init(uint32_t baudrate, uint8_t useCTS, uint8_t useRS485)
 {
-	inputBuffer.Init(64, 1);
-	outputBuffer.Init(64, 1);
-	
-	outputBuffer.OnDataReady.AddHandler([&](StreamBuffer* buffer, void* args){this->OnDataReady();});
-	
 	parent.spidev.AcquireBus();
 	uint8_t flowCtrlRegVal = 0;
 	if (useCTS)
@@ -424,15 +419,6 @@ void MAX14830::Uart::Init(uint32_t baudrate, uint8_t useCTS, uint8_t useRS485)
 }
 
 
-size_t MAX14830::Uart::Write(const void* data, size_t size)
-{
-	return outputBuffer.Write(data, size);
-}
-
-size_t MAX14830::Uart::Read(void* data, size_t size)
-{	
-	return inputBuffer.Read(data, size);
-}
 
 void MAX14830::gpio_isr_handler(void* arg)
 {
@@ -475,16 +461,6 @@ void MAX14830::IrqTaskWork()
 				Uart3.HandleIRQ(&changedPins);
 			}
 			
-			
-			if (HAS_BIT(notifications, Events::PORT0_TX))
-				Uart0.HandleOutputBuffer();
-			if (HAS_BIT(notifications, Events::PORT1_TX))
-				Uart1.HandleOutputBuffer();
-			if (HAS_BIT(notifications, Events::PORT2_TX))
-				Uart2.HandleOutputBuffer();
-			if (HAS_BIT(notifications, Events::PORT3_TX))
-				Uart3.HandleOutputBuffer();
-			
 			spidev.ReleaseBus();
 			
 			if ((uint32_t)changedPins) 
@@ -503,80 +479,67 @@ void MAX14830::Uart::HandleIRQ(Pins* changes)
 		uint8_t sts = parent.max310x_port_read(port, MAX310X_STS_IRQSTS_REG);		//For GPIO	last 4 bits
 		*changes |= (Pins)((sts & 0xf) << ((uint32_t)port * 4));
 	}
-				
-	//Im missing data, so this bit seems to be unreliable. 
-	//Disabling the check for now, doesn't really hurt since we ask the max how many characters are available anyway.
-	//if (HAS_BIT(isr, MAX310X_IRQ_RXEMPTY_BIT)) //inverted in the config
+
+	if (HAS_BIT(isr, MAX310X_IRQ_RXEMPTY_BIT)) //inverted in the config
+		dataAvailable.Give();	//Notifiy the read that there is data in the MAX buffers
+}
+
+
+
+
+
+size_t MAX14830::Uart::Read(uint8_t* buffer, size_t size)
+{
+	//Optionally, we could change this to read the fifo register, when zero wait for the semaphore. 
+	//Although this shouln't be required and this way it saves a spi read.
+	size_t rxlen = 0;
+	if (dataAvailable.Take())	//Wait blocking for data
 	{
-		//MAX has uart data for this port, so read it and store it in the buffers.
-		size_t rxlen = parent.max310x_port_read(port, MAX310X_RXFIFOLVL_REG);	
-		size_t space = inputBuffer.GetAvailableSpace();
-		if (rxlen > 0 && space > 0)
-		{
-			uint8_t buffer[32];
-			
-			if (rxlen > space)
-				rxlen = space;
-			
-			if (rxlen > sizeof(buffer))
-				rxlen = sizeof(buffer);
+		parent.spidev.AcquireBus();
+		rxlen = parent.max310x_port_read(port, MAX310X_RXFIFOLVL_REG);
 		
+		if (rxlen > 0)
+		{
+			if (rxlen > size)
+				rxlen = size;
+			
 			if (rxlen > SOC_SPI_MAXIMUM_BUFFER_SIZE)
 				rxlen = SOC_SPI_MAXIMUM_BUFFER_SIZE;
 			
 			//TODO: USE DMA! If we do decide to use DMA, ensure chip select logic is protected!
 			if (rxlen > 0)
 			{
+				//If the max is receiving data while we are reading it, this data should be in the next call of this function, don't use a loop to fetch untill all is read.
 				parent.Max14830_ReadBufferPolled(((uint32_t)port << 5), NULL, buffer, rxlen);
-				inputBuffer.Write(buffer, rxlen);
 			}
 		}
+		parent.spidev.ReleaseBus();
 	}
+	return rxlen;
 }
 
 
-void MAX14830::Uart::OnDataReady()
+size_t MAX14830::Uart::Write(const uint8_t* buffer, size_t size)
 {
-	switch (port)
-	{
-	case Ports::NUM_0:
-		parent.irqTask.Notify((uint32_t)Events::PORT0_TX);
-		break;
-	case Ports::NUM_1:
-		parent.irqTask.Notify((uint32_t)Events::PORT1_TX);
-		break;
-	case Ports::NUM_2:
-		parent.irqTask.Notify((uint32_t)Events::PORT2_TX);
-		break;
-	case Ports::NUM_3:
-		parent.irqTask.Notify((uint32_t)Events::PORT3_TX);
-		break;
+	parent.spidev.AcquireBus();
 		
-	}
-	
-}
+	size_t txLen = size;
+	size_t fifolvl = parent.max310x_port_read(port, MAX310X_TXFIFOLVL_REG);		
 
-
-void MAX14830::Uart::HandleOutputBuffer()
-{
-	//BUS is already aquired!
-	uint8_t buffer[32];
-	size_t txLen = outputBuffer.GetAvailableBytes();
-	size_t fifolvl = parent.max310x_port_read(port, MAX310X_TXFIFOLVL_REG);
-	
-	if (txLen > sizeof(buffer))
-		txLen = sizeof(buffer);
-	
 	if (txLen > SOC_SPI_MAXIMUM_BUFFER_SIZE)
 		txLen = SOC_SPI_MAXIMUM_BUFFER_SIZE;
 	
 	if (txLen > MAX14830_FIFO_MAX - fifolvl)
 		txLen = MAX14830_FIFO_MAX - fifolvl;
-	
-	outputBuffer.Read(buffer, txLen);
-	
+
 	//TODO: USE DMA! If we do decide to use DMA, ensure chip select logic is protected!
 	if (txLen > 0)
 		parent.Max14830_WriteBufferPolled(((uint32_t)port << 5), (uint8_t*)buffer, txLen);
+
+	parent.spidev.ReleaseBus();	
 	
+	return txLen;
 }
+
+
+

@@ -73,32 +73,23 @@ public:
 	enum class Events
 	{
 		NONE	= 0,
-		IRQ		= (1 << 0),
-		PORT0_TX	= (1 << 1),
-		PORT1_TX	= (1 << 2),
-		PORT2_TX	= (1 << 3),
-		PORT3_TX	= (1 << 4),
+		IRQ		= (1 << 0)
 	};
 
-	class Uart
+	class Uart : public IStream
 	{
 		const char* TAG = "MAX14830::UART";
 		MAX14830& parent;
 		Ports port;
-		StreamBuffer inputBuffer;
-		StreamBuffer outputBuffer;
-		void NotifyTxAvailable();
-		void OnDataReady();
+		Semaphore dataAvailable;
 		void HandleIRQ(Pins* changes);
-		void HandleOutputBuffer();
 		friend MAX14830;
 		
 	public:
-		Event<Uart> DataReceived;
 		Uart(MAX14830& parent, Ports port);
 		void Init(uint32_t baudrate, uint8_t useCTS, uint8_t useRS485);
-		size_t Write(const void* data, size_t size);
-		size_t Read(void* data, size_t size);
+		size_t Read(uint8_t* buffer, size_t size) override;
+		size_t Write(const uint8_t* buffer, size_t size) override;
 	};
 	
 	
