@@ -20,7 +20,7 @@ public:
 			vSemaphoreDelete(handle);
 	}
 		
-	bool Take(int timeout = portMAX_DELAY)
+	bool Take(TickType_t timeout = portMAX_DELAY)
 	{
 		return xSemaphoreTake(handle, timeout) == pdTRUE;
 	}

@@ -26,6 +26,8 @@ class MAX14830
 	SPIDevice& spidev;
 	Task irqTask;
 	gpio_num_t irqPin = GPIO_NUM_NC;
+	RecursiveMutex mutex;
+	
 	
 	static void IRAM_ATTR gpio_isr_handler(void* arg);
 		
@@ -83,8 +85,8 @@ public:
 		Ports port;
 		Semaphore dataAvailable;
 		void HandleIRQ(Pins* changes);
+		bool initialized = false;
 		friend MAX14830;
-		
 	public:
 		Uart(MAX14830& parent, Ports port);
 		void Init(uint32_t baudrate, uint8_t useCTS, uint8_t useRS485);
