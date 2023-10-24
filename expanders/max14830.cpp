@@ -414,12 +414,9 @@ void MAX14830::IrqTaskWork()
 			
 			if (HAS_BIT(notifications, Events::IRQ))
 			{
-				
 				uint8_t uart = 0;				
 				regmap_read(MAX310X_GLOBALIRQ_REG, &uart);
-				gpio_set_intr_type(irqPin, GPIO_INTR_LOW_LEVEL);			
-				ESP_LOGI(TAG, "IRQ handeling GLOBALIRQ = 0x%02x", uart);
-				
+				gpio_set_intr_type(irqPin, GPIO_INTR_LOW_LEVEL);							
 				//These bits are inverted! See datasheet
 				if ((uart & 0x01) == 0) Uart0.HandleIRQ(&changedPins);
 				if ((uart & 0x02) == 0) Uart1.HandleIRQ(&changedPins);
@@ -520,12 +517,8 @@ size_t MAX14830::Uart::Read(uint8_t* buffer, size_t size)
 	if (dataAvailable.Take())	//Wait blocking for data
 	{
 		ContextLock lock(parent.mutex);
-		ESP_LOGI(TAG, "Semph taken");	
 		parent.spidev.AcquireBus();
-		rxlen = parent.max310x_port_read(port, MAX310X_RXFIFOLVL_REG);
-		
-		ESP_LOGI(TAG, "Len = %d", (int) rxlen);
-		
+		rxlen = parent.max310x_port_read(port, MAX310X_RXFIFOLVL_REG);		
 		if (rxlen > 0)
 		{
 			if (rxlen > size)
