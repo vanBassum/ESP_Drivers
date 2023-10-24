@@ -415,13 +415,13 @@ void MAX14830::IrqTaskWork()
 			if (HAS_BIT(notifications, Events::IRQ))
 			{
 				uint8_t uart = 0;				
-				regmap_read(MAX310X_GLOBALIRQ_REG, &uart);
-				gpio_set_intr_type(irqPin, GPIO_INTR_LOW_LEVEL);							
+				regmap_read(MAX310X_GLOBALIRQ_REG, &uart);					
 				//These bits are inverted! See datasheet
 				if ((uart & 0x01) == 0) Uart0.HandleIRQ(&changedPins);
 				if ((uart & 0x02) == 0) Uart1.HandleIRQ(&changedPins);
 				if ((uart & 0x04) == 0) Uart2.HandleIRQ(&changedPins);
 				if ((uart & 0x08) == 0) Uart3.HandleIRQ(&changedPins);
+				gpio_set_intr_type(irqPin, GPIO_INTR_LOW_LEVEL);	
 			}
 			
 			spidev.ReleaseBus();
@@ -437,14 +437,16 @@ MAX14830::Uart::Uart(MAX14830& parent, Ports port)
 	: parent(parent)
 	, port(port)
 {
-
+	memcpy(TAG, "MAX14830::UARTx", 16);
+	TAG[14] = (char)port + '0';
+	Init(115200, 0, 0);	//This is a quick fix to enable the GPIO interrupts for all ports
 }
 
 
 void MAX14830::Uart::Init(uint32_t baudrate, uint8_t useCTS, uint8_t useRS485)
 {
 	ContextLock lock(parent.mutex);
-	ESP_LOGI(TAG, "Uart %d init", (int)port);
+	ESP_LOGI(TAG, "init");
 	parent.spidev.AcquireBus();
 	uint8_t flowCtrlRegVal = 0;
 	if (useCTS)
@@ -491,7 +493,6 @@ void MAX14830::Uart::Init(uint32_t baudrate, uint8_t useCTS, uint8_t useRS485)
 	parent.max310x_port_write(port, MAX310X_LSR_IRQEN_REG, 0);
 	parent.max310x_port_write(port, MAX310X_SPCHR_IRQEN_REG, 0);
 	parent.spidev.ReleaseBus();
-	initialized = true;
 }
 
 void MAX14830::Uart::HandleIRQ(Pins* changes)
@@ -519,6 +520,7 @@ size_t MAX14830::Uart::Read(uint8_t* buffer, size_t size)
 		ContextLock lock(parent.mutex);
 		parent.spidev.AcquireBus();
 		rxlen = parent.max310x_port_read(port, MAX310X_RXFIFOLVL_REG);		
+
 		if (rxlen > 0)
 		{
 			if (rxlen > size)
@@ -528,10 +530,15 @@ size_t MAX14830::Uart::Read(uint8_t* buffer, size_t size)
 				rxlen = SOC_SPI_MAXIMUM_BUFFER_SIZE;
 			
 			//TODO: USE DMA! If we do decide to use DMA, ensure chip select logic is protected!
-			if (rxlen > 0)
+			parent.Max14830_ReadBufferPolled(((uint32_t)port << 5), NULL, buffer, rxlen);
+
+			// If data is received while we are reading it, the ISR won't be set. 
+			// So, if data is available after reading, set the semaphore, we do want the caller to process data inbetween so we need to return.
+			// Otherwise the caller buffer could be full before we have read everything.
+			size_t more = parent.max310x_port_read(port, MAX310X_RXFIFOLVL_REG);
+			if(more > 0)
 			{
-				//If the max is receiving data while we are reading it, this data should be in the next call of this function, don't use a loop to fetch untill all is read.
-				parent.Max14830_ReadBufferPolled(((uint32_t)port << 5), NULL, buffer, rxlen);
+				dataAvailable.Give();
 			}
 		}
 		parent.spidev.ReleaseBus();

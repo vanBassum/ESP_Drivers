@@ -80,12 +80,11 @@ public:
 
 	class Uart : public IStream
 	{
-		const char* TAG = "MAX14830::UART";
+		char TAG[16];
 		MAX14830& parent;
 		Ports port;
 		Semaphore dataAvailable;
 		void HandleIRQ(Pins* changes);
-		bool initialized = false;
 		friend MAX14830;
 	public:
 		Uart(MAX14830& parent, Ports port);
