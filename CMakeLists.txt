@@ -7,6 +7,7 @@ idf_component_register(
 		displays/hd44780.cpp
 		displays/st7735.cpp
 		displays/t6963c.cpp
+		displays/st7796s.cpp
 		ethernet/lan87xx.cpp
 		ethernet/wifi.cpp
 		expanders/max14830.cpp
