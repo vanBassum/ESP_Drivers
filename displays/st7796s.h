@@ -19,6 +19,8 @@ public:
     gpio_num_t dc = GPIO_NUM_NC;
     gpio_num_t rst = GPIO_NUM_NC;
     gpio_num_t blck = GPIO_NUM_NC;
+    uint16_t   hor_res = 320;
+    uint16_t   ver_res = 480;
 
 	ST7796S(std::shared_ptr<SPIDevice> spidev, std::function<void(ST7796S& dev)> configurator)
         : spidev(spidev)
@@ -27,9 +29,9 @@ public:
     }
 
     void st7796s_init(void);
-    void WriteWindow(uint16_t* colors, size_t size);
 
     //void st7796s_flush(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map);
     void DrawPixel(uint16_t x, uint16_t y, uint16_t color);
-    void SetWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
+    void SetWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
+    void WriteWindow(uint16_t* colors, size_t size);
 };

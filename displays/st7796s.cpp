@@ -186,7 +186,7 @@ void ST7796S::DrawPixel(uint16_t x, uint16_t y, uint16_t color)
 
 
 
-void ST7796S::SetWindow(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
+void ST7796S::SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
 {
     uint8_t data[4];
 	/*Column addresses*/
