@@ -1,7 +1,7 @@
 #pragma once
 #include "kernel.h"
 #include "esp_base.h"
-#include "spi/bus.h"
+#include "spi/device.h"
 #include "gpio.h"
 
 //https://github.com/RobTillaart/MCP23S17/blob/master/MCP23S17.cpp

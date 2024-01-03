@@ -6,20 +6,21 @@
 #include "freertos/task.h"
 
 
-MAX14830::MAX14830(SPIDevice& device, gpio_num_t irq) : 
-	spidev(device),
-	irqPin(irq)
+MAX14830::MAX14830(std::shared_ptr<SPIDevice> spi, std::function<void(MAX14830& dev)> configurator)
+	: spi(spi)
 {
+	configurator((*this));
+
 	ContextLock lock(mutex);
 	ESP_LOGI(TAG, "Initializing");
 	memset(gpioConfBuffer, 0, sizeof(gpioConfBuffer));
 	memset(gpioDataBuffer, 0, sizeof(gpioDataBuffer));
 	memset(gpioIRQBuffer, 0, sizeof(gpioIRQBuffer));
 
-	spidev.AcquireBus();
+	spi->AcquireBus();
 	assert(Detect());
 	max310x_set_ref_clk();
-	spidev.ReleaseBus();
+	spi->ReleaseBus();
 	
 	//This task will do everything required to handle device interrupts.
 	//Its optional, don't start the task if interupts aren't required.
@@ -97,7 +98,7 @@ void MAX14830::Max14830_WriteBufferPolled(uint8_t cmd, const uint8_t * cmdData, 
 	t.length = (count * 8);                   		//amount of bits
 	t.tx_buffer = cmdData;               			//The data is the cmd itself
 	t.cmd = 0x80 | cmd;								//Add write bit
-	spidev.PollingTransmit(&t);  			//Transmit!
+	spi->PollingTransmit(&t);  			//Transmit!
 }
 
 
@@ -110,7 +111,7 @@ void MAX14830::Max14830_ReadBufferPolled(uint8_t cmd, uint8_t * cmdData, uint8_t
 	t.tx_buffer = cmdData;               			//The data is the cmd itself
 	t.rx_buffer = replyData;
 	t.cmd = cmd;
-	spidev.PollingTransmit(&t);  			//Transmit!
+	spi->PollingTransmit(&t);  			//Transmit!
 }
 
 uint32_t MAX14830::max310x_set_ref_clk()
@@ -201,7 +202,7 @@ uint32_t MAX14830::max310x_set_ref_clk()
 		regmap_read(MAX310X_STS_IRQSTS_REG, &val);
 		if (!(val & MAX310X_STS_CLKREADY_BIT))
 		{
-			vTaskDelay(20 / portTICK_PERIOD_MS);
+			vTaskDelay(pdMS_TO_TICKS(20));
 			//ESP_LOGE(TAG, "Clock is not stable yet");
 		}
 		else
@@ -287,7 +288,7 @@ uint32_t MAX14830::max310x_set_baud(Ports port, uint32_t baud)
 void MAX14830::SetPinsMode(Pins mask, PinModes mode)
 {
 	ContextLock lock(mutex);
-	spidev.AcquireBus();
+	spi->AcquireBus();
 	for (int i = 0; i < 4; i++)
 	{
 		uint8_t minimask = ((uint32_t)mask >> (4*i)) & 0xF;
@@ -314,13 +315,13 @@ void MAX14830::SetPinsMode(Pins mask, PinModes mode)
 			max310x_port_write((Ports)i, MAX310X_GPIOCFG_REG, gpioConfBuffer[i]);
 		}
 	}
-	spidev.ReleaseBus();
+	spi->ReleaseBus();
 }
 
 void MAX14830::SetPins(Pins mask, Pins value)
 {
 	ContextLock lock(mutex);
-	spidev.AcquireBus();
+	spi->AcquireBus();
 	for (int i = 0; i < 4; i++)
 	{
 		uint8_t minimask = ((uint32_t)mask >> (4*i)) & 0xF;
@@ -334,13 +335,13 @@ void MAX14830::SetPins(Pins mask, Pins value)
 			max310x_port_write((Ports)i, MAX310X_GPIODATA_REG, gpioDataBuffer[i]);
 		}
 	}
-	spidev.ReleaseBus();
+	spi->ReleaseBus();
 }
 
 void MAX14830::SetInterrupts(Pins mask, Pins value)
 {
 	ContextLock lock(mutex);
-	spidev.AcquireBus();
+	spi->AcquireBus();
 	for (int i = 0; i < 4; i++)
 	{
 		uint8_t minimask = ((uint32_t)mask >> (4*i)) & 0xF;
@@ -354,13 +355,13 @@ void MAX14830::SetInterrupts(Pins mask, Pins value)
 			max310x_port_write((Ports)i, MAX310X_STS_IRQEN_REG, gpioIRQBuffer[i]);
 		}
 	}
-	spidev.ReleaseBus();
+	spi->ReleaseBus();
 }
 
 MAX14830::Pins MAX14830::GetPins(Pins mask)
 {
 	ContextLock lock(mutex);
-	spidev.AcquireBus();
+	spi->AcquireBus();
 	Pins result = Pins::NONE;
 	for (int i = 0; i < 4; i++)
 	{
@@ -372,7 +373,7 @@ MAX14830::Pins MAX14830::GetPins(Pins mask)
 			result |= (Pins)(reg << (i * 4));
 		}
 	}
-	spidev.ReleaseBus();
+	spi->ReleaseBus();
 	return result;
 }
 
@@ -410,21 +411,21 @@ void MAX14830::IrqTaskWork()
 		{
 			ContextLock lock(mutex);
 			Pins changedPins = Pins::NONE;
-			spidev.AcquireBus();
+			spi->AcquireBus();
 			
 			if (HAS_BIT(notifications, Events::IRQ))
 			{
 				uint8_t uart = 0;				
 				regmap_read(MAX310X_GLOBALIRQ_REG, &uart);					
 				//These bits are inverted! See datasheet
-				if ((uart & 0x01) == 0) Uart0.HandleIRQ(&changedPins);
-				if ((uart & 0x02) == 0) Uart1.HandleIRQ(&changedPins);
-				if ((uart & 0x04) == 0) Uart2.HandleIRQ(&changedPins);
-				if ((uart & 0x08) == 0) Uart3.HandleIRQ(&changedPins);
+				if ((uart & 0x01) == 0) HandleIRQ(Ports::NUM_0, &changedPins);
+				if ((uart & 0x02) == 0) HandleIRQ(Ports::NUM_1, &changedPins);
+				if ((uart & 0x04) == 0) HandleIRQ(Ports::NUM_2, &changedPins);
+				if ((uart & 0x08) == 0) HandleIRQ(Ports::NUM_3, &changedPins);
 				gpio_set_intr_type(irqPin, GPIO_INTR_LOW_LEVEL);	
 			}
 			
-			spidev.ReleaseBus();
+			spi->ReleaseBus();
 			
 			if ((uint32_t)changedPins) 
 				OnPinsChanged.Invoke(this, changedPins);
@@ -432,94 +433,94 @@ void MAX14830::IrqTaskWork()
 	}
 }
 
-
-MAX14830::Uart::Uart(MAX14830& parent, Ports port)
-	: parent(parent)
-	, port(port)
+void MAX14830::HandleIRQ(Ports port, Pins* changes)
 {
-	memcpy(TAG, "MAX14830::UARTx", 16);
-	TAG[14] = (char)port + '0';
-	Init(115200, 0, 0);	//This is a quick fix to enable the GPIO interrupts for all ports
-}
-
-
-void MAX14830::Uart::Init(uint32_t baudrate, uint8_t useCTS, uint8_t useRS485)
-{
-	ContextLock lock(parent.mutex);
-	ESP_LOGI(TAG, "init");
-	parent.spidev.AcquireBus();
-	uint8_t flowCtrlRegVal = 0;
-	if (useCTS)
-	{
-		//Set transmitter off
-		parent.max310x_port_update(port, MAX310X_MODE1_REG, MAX310X_MODE1_TXDIS_BIT, MAX310X_MODE1_TXDIS_BIT);
-		flowCtrlRegVal |= MAX310X_FLOWCTRL_AUTOCTS_BIT;
-	}
-	else
-	{
-		parent.max310x_port_update(port, MAX310X_MODE1_REG, MAX310X_MODE1_TXDIS_BIT, 0);
-	}
-	
-	parent.max310x_set_baud(port, baudrate);
-	parent.max310x_port_write(port, MAX310X_LCR_REG, MAX310X_LCR_LENGTH0_BIT | MAX310X_LCR_LENGTH1_BIT);	// 8 bit - no parity - 1 stopbit
-	parent.max310x_port_write(port, MAX310X_FLOWCTRL_REG, flowCtrlRegVal);
-	
-	if (useRS485)
-	{
-		parent.max310x_port_update(port, MAX310X_MODE1_REG, (MAX310X_MODE1_TRNSCVCTRL_BIT | MAX310X_MODE1_IRQSEL_BIT), (MAX310X_MODE1_TRNSCVCTRL_BIT | MAX310X_MODE1_IRQSEL_BIT));
-		parent.max310x_port_write(port, MAX310X_HDPIXDELAY_REG, 0x11);
-	}
-	else
-	{
-		parent.max310x_port_update(port, MAX310X_MODE1_REG, (MAX310X_MODE1_TRNSCVCTRL_BIT | MAX310X_MODE1_IRQSEL_BIT), (0 | MAX310X_MODE1_IRQSEL_BIT));
-		parent.max310x_port_write(port, MAX310X_HDPIXDELAY_REG, 0);
-	}
-	
-	
-	// Configure MODE2 register & Reset FIFOs
-	parent.max310x_port_write(port, MAX310X_MODE2_REG, MAX310X_MODE2_RXEMPTINV_BIT | MAX310X_MODE2_FIFORST_BIT);
-	parent.max310x_port_update(port, MAX310X_MODE2_REG, MAX310X_MODE2_FIFORST_BIT, 0);
-
-	// Clear IRQ status registers
-	parent.max310x_port_read(port, MAX310X_IRQSTS_REG);
-	parent.max310x_port_read(port, MAX310X_LSR_IRQSTS_REG);
-	parent.max310x_port_read(port, MAX310X_SPCHR_IRQSTS_REG);
-	parent.max310x_port_read(port, MAX310X_STS_IRQSTS_REG);
-	parent.max310x_port_read(port, MAX310X_GLOBALIRQ_REG);
-	
-	/* Enable STS, RX, TX, CTS change interrupts */
-	//parent.max310x_port_write(port, MAX310X_IRQEN_REG, MAX310X_IRQ_RXEMPTY_BIT | MAX310X_IRQ_TXEMPTY_BIT | MAX310X_IRQ_STS_BIT);
-	parent.max310x_port_write(port, MAX310X_IRQEN_REG, MAX310X_IRQ_RXEMPTY_BIT | MAX310X_IRQ_STS_BIT);
-	parent.max310x_port_write(port, MAX310X_LSR_IRQEN_REG, 0);
-	parent.max310x_port_write(port, MAX310X_SPCHR_IRQEN_REG, 0);
-	parent.spidev.ReleaseBus();
-}
-
-void MAX14830::Uart::HandleIRQ(Pins* changes)
-{
-	ContextLock lock(parent.mutex);
+	ContextLock lock(mutex);
 	//BUS is already aquired!
-	uint8_t isr = parent.max310x_port_read(port, MAX310X_IRQSTS_REG);							
+	uint8_t isr = max310x_port_read(port, MAX310X_IRQSTS_REG);							
 	if (HAS_BIT(isr, MAX310X_IRQ_STS_BIT))
 	{
-		uint8_t sts = parent.max310x_port_read(port, MAX310X_STS_IRQSTS_REG);		//For GPIO	last 4 bits
+		uint8_t sts = max310x_port_read(port, MAX310X_STS_IRQSTS_REG);		//For GPIO	last 4 bits
 		*changes |= (Pins)((sts & 0xf) << ((uint32_t)port * 4));
 	}
 
 	if (HAS_BIT(isr, MAX310X_IRQ_RXEMPTY_BIT)) //inverted in the config
 	{
-		dataAvailable.Give();	//Notifiy the read that there is data in the MAX buffers
+		dataAvailable[(int)port].Give();	//Notifiy the read that there is data in the MAX buffers
 	}
 }
 
-size_t MAX14830::Uart::Read(uint8_t* buffer, size_t size)
+
+
+
+MAX14830::Uart::Uart(std::shared_ptr<MAX14830> max, std::function<void(Uart& dev)> configurator)
+	: max(max)
+{
+	configurator((*this));
+	Init();	//This is a quick fix to enable the GPIO interrupts for all ports
+}
+
+void MAX14830::PortInit(Ports port, uint32_t baudrate, bool useCTS, bool useRS485)
+{
+	ContextLock lock(mutex);
+	ESP_LOGI(TAG, "init");
+	spi->AcquireBus();
+	uint8_t flowCtrlRegVal = 0;
+	if (useCTS)
+	{
+		//Set transmitter off
+		max310x_port_update(port, MAX310X_MODE1_REG, MAX310X_MODE1_TXDIS_BIT, MAX310X_MODE1_TXDIS_BIT);
+		flowCtrlRegVal |= MAX310X_FLOWCTRL_AUTOCTS_BIT;
+	}
+	else
+	{
+		max310x_port_update(port, MAX310X_MODE1_REG, MAX310X_MODE1_TXDIS_BIT, 0);
+	}
+	
+	max310x_set_baud(port, baudrate);
+	max310x_port_write(port, MAX310X_LCR_REG, MAX310X_LCR_LENGTH0_BIT | MAX310X_LCR_LENGTH1_BIT);	// 8 bit - no parity - 1 stopbit
+	max310x_port_write(port, MAX310X_FLOWCTRL_REG, flowCtrlRegVal);
+	
+	if (useRS485)
+	{
+		max310x_port_update(port, MAX310X_MODE1_REG, (MAX310X_MODE1_TRNSCVCTRL_BIT | MAX310X_MODE1_IRQSEL_BIT), (MAX310X_MODE1_TRNSCVCTRL_BIT | MAX310X_MODE1_IRQSEL_BIT));
+		max310x_port_write(port, MAX310X_HDPIXDELAY_REG, 0x11);
+	}
+	else
+	{
+		max310x_port_update(port, MAX310X_MODE1_REG, (MAX310X_MODE1_TRNSCVCTRL_BIT | MAX310X_MODE1_IRQSEL_BIT), (0 | MAX310X_MODE1_IRQSEL_BIT));
+		max310x_port_write(port, MAX310X_HDPIXDELAY_REG, 0);
+	}
+	
+	
+	// Configure MODE2 register & Reset FIFOs
+	max310x_port_write(port, MAX310X_MODE2_REG, MAX310X_MODE2_RXEMPTINV_BIT | MAX310X_MODE2_FIFORST_BIT);
+	max310x_port_update(port, MAX310X_MODE2_REG, MAX310X_MODE2_FIFORST_BIT, 0);
+
+	// Clear IRQ status registers
+	max310x_port_read(port, MAX310X_IRQSTS_REG);
+	max310x_port_read(port, MAX310X_LSR_IRQSTS_REG);
+	max310x_port_read(port, MAX310X_SPCHR_IRQSTS_REG);
+	max310x_port_read(port, MAX310X_STS_IRQSTS_REG);
+	max310x_port_read(port, MAX310X_GLOBALIRQ_REG);
+	
+	/* Enable STS, RX, TX, CTS change interrupts */
+	//max310x_port_write(port, MAX310X_IRQEN_REG, MAX310X_IRQ_RXEMPTY_BIT | MAX310X_IRQ_TXEMPTY_BIT | MAX310X_IRQ_STS_BIT);
+	max310x_port_write(port, MAX310X_IRQEN_REG, MAX310X_IRQ_RXEMPTY_BIT | MAX310X_IRQ_STS_BIT);
+	max310x_port_write(port, MAX310X_LSR_IRQEN_REG, 0);
+	max310x_port_write(port, MAX310X_SPCHR_IRQEN_REG, 0);
+	spi->ReleaseBus();
+}
+
+
+size_t MAX14830::PortRead(Ports port, uint8_t* buffer, size_t size)
 {
 	size_t rxlen = 0;
-	if (dataAvailable.Take())	//Wait blocking for data
+	if (dataAvailable[(int)port].Take())	//Wait blocking for data
 	{
-		ContextLock lock(parent.mutex);
-		parent.spidev.AcquireBus();
-		rxlen = parent.max310x_port_read(port, MAX310X_RXFIFOLVL_REG);		
+		ContextLock lock(mutex);
+		spi->AcquireBus();
+		rxlen = max310x_port_read(port, MAX310X_RXFIFOLVL_REG);		
 
 		if (rxlen > 0)
 		{
@@ -530,30 +531,30 @@ size_t MAX14830::Uart::Read(uint8_t* buffer, size_t size)
 				rxlen = SOC_SPI_MAXIMUM_BUFFER_SIZE;
 			
 			//TODO: USE DMA! If we do decide to use DMA, ensure chip select logic is protected!
-			parent.Max14830_ReadBufferPolled(((uint32_t)port << 5), NULL, buffer, rxlen);
+			Max14830_ReadBufferPolled(((uint32_t)port << 5), NULL, buffer, rxlen);
 
 			// If data is received while we are reading it, the ISR won't be set. 
 			// So, if data is available after reading, set the semaphore, we do want the caller to process data inbetween so we need to return.
 			// Otherwise the caller buffer could be full before we have read everything.
-			size_t more = parent.max310x_port_read(port, MAX310X_RXFIFOLVL_REG);
+			size_t more = max310x_port_read(port, MAX310X_RXFIFOLVL_REG);
 			if(more > 0)
 			{
-				dataAvailable.Give();
+				dataAvailable[(int)port].Give();
 			}
 		}
-		parent.spidev.ReleaseBus();
+		spi->ReleaseBus();
 	}
 	return rxlen;
 }
 
 
-size_t MAX14830::Uart::Write(const uint8_t* buffer, size_t size)
+size_t MAX14830::PortWrite(Ports port, const uint8_t* buffer, size_t size)
 {
-	ContextLock lock(parent.mutex);
-	parent.spidev.AcquireBus();
+	ContextLock lock(mutex);
+	spi->AcquireBus();
 		
 	size_t txLen = size;
-	size_t fifolvl = parent.max310x_port_read(port, MAX310X_TXFIFOLVL_REG);		
+	size_t fifolvl = max310x_port_read(port, MAX310X_TXFIFOLVL_REG);		
 
 	if (txLen > SOC_SPI_MAXIMUM_BUFFER_SIZE)
 		txLen = SOC_SPI_MAXIMUM_BUFFER_SIZE;
@@ -563,9 +564,9 @@ size_t MAX14830::Uart::Write(const uint8_t* buffer, size_t size)
 
 	//TODO: USE DMA! If we do decide to use DMA, ensure chip select logic is protected!
 	if (txLen > 0)
-		parent.Max14830_WriteBufferPolled(((uint32_t)port << 5), (uint8_t*)buffer, txLen);
+		Max14830_WriteBufferPolled(((uint32_t)port << 5), (uint8_t*)buffer, txLen);
 
-	parent.spidev.ReleaseBus();	
+	spi->ReleaseBus();	
 	
 	return txLen;
 }

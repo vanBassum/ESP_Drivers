@@ -1,5 +1,5 @@
 #pragma once
-#include "spi/bus.h"
+#include "spi/device.h"
 #include "driver/gpio.h"
 #include "mcp23s17.h"
 

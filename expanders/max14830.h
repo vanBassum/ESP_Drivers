@@ -1,8 +1,7 @@
 #pragma once
 
-#include "spi/bus.h"
+#include "spi/device.h"
 #include "kernel.h"
-#include "spi.h"
 #include "driver/gpio.h"
 #include "esp_base.h"
 
@@ -23,14 +22,10 @@ class MAX14830
 	uint8_t gpioConfBuffer[4];
 	uint8_t gpioDataBuffer[4];
 	uint8_t gpioIRQBuffer[4];
-	SPIDevice& spidev;
 	Task irqTask;
-	gpio_num_t irqPin = GPIO_NUM_NC;
 	RecursiveMutex mutex;
-	
-	
 	static void IRAM_ATTR gpio_isr_handler(void* arg);
-		
+	Semaphore dataAvailable[4];
 public:
 	
 	
@@ -80,21 +75,21 @@ public:
 
 	class Uart : public IStream
 	{
-		char TAG[16];
-		MAX14830& parent;
-		Ports port;
-		Semaphore dataAvailable;
-		void HandleIRQ(Pins* changes);
-		friend MAX14830;
+		std::shared_ptr<MAX14830> max;
+		
 	public:
-		Uart(MAX14830& parent, Ports port);
-		void Init(uint32_t baudrate, uint8_t useCTS, uint8_t useRS485);
-		size_t Read(uint8_t* buffer, size_t size) override;
-		size_t Write(const uint8_t* buffer, size_t size) override;
+		Ports port;
+		uint32_t baudrate = 115200;
+		uint8_t useCTS = false;
+		uint8_t useRS485 = false;
+
+		Uart(std::shared_ptr<MAX14830> spiBus, std::function<void(Uart& dev)> configurator);
+		size_t Read(uint8_t* buffer, size_t size) override {return max->PortRead(port, buffer, size);}
+		size_t Write(const uint8_t* buffer, size_t size) override {return max->PortWrite(port, buffer, size);}
+		void   Init(){max->PortInit(port, baudrate, useCTS, useRS485);}
 	};
 	
-	
-protected:
+private:
 	void IrqTaskWork();
 	bool Detect();
 	esp_err_t SetRefClock();
@@ -110,19 +105,24 @@ protected:
 	uint32_t max310x_set_baud(Ports port, uint32_t baud);
 	uint32_t max310x_get_ref_clk();
 	void CheckForPinChanges(Ports port, Pins* changes, bool* uartTX);
-	friend Uart;
+	void HandleIRQ(Ports port, Pins* changes);
+	size_t PortRead(Ports port, uint8_t* buffer, size_t size);
+	size_t PortWrite(Ports port,const uint8_t* buffer, size_t size);
+	void  PortInit(Ports port, uint32_t baudrate, bool useCTS, bool useRS485);
+
+
+	std::shared_ptr<SPIDevice> spi;
+
 public:
+	gpio_num_t irqPin = GPIO_NUM_NC;
+	MAX14830(std::shared_ptr<SPIDevice> spi, std::function<void(MAX14830& dev)> configurator);
+
+
 	Event<MAX14830, Pins> OnPinsChanged;
-	MAX14830(SPIDevice& device, gpio_num_t irq);
 	void SetPinsMode(Pins mask, PinModes mode);
 	void SetPins(Pins mask, Pins value);
 	void SetInterrupts(Pins mask, Pins value);
-	Pins GetPins(Pins mask);
-	Uart Uart0 = Uart(*this, Ports::NUM_0);
-	Uart Uart1 = Uart(*this, Ports::NUM_1);
-	Uart Uart2 = Uart(*this, Ports::NUM_2);
-	Uart Uart3 = Uart(*this, Ports::NUM_3);
-	
+	Pins GetPins(Pins mask);	
 };
 
 DEFINE_ENUM_CLASS_FLAG_OPERATORS(MAX14830::Pins,	uint32_t);
