@@ -4,15 +4,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-/*********************
- *      DEFINES
- *********************/
-#define ST7796S_DC                  dc
-#define ST7796S_RST                 rst
-//#define ST7796S_USE_RST             CONFIG_LV_DISP_USE_RST
-//#define ST7796S_INVERT_COLORS       CONFIG_LV_INVERT_COLORS
-//#define ST7796S_DISPLAY_ORIENTATION CONFIG_LV_DISPLAY_ORIENTATION
-
 
 /*******************
  * ST7796S REGS
@@ -103,8 +94,28 @@ typedef struct
 } lcd_init_cmd_t;
 
 
-void ST7796S::st7796s_init(void)
+
+ST7796S::ST7796S(std::shared_ptr<SPIDevice> spidev) : spidev(spidev)
 {
+}
+
+
+bool ST7796S::isInitialized() const
+{
+    return initialized;
+}
+
+void ST7796S::setConfig(const Config &newConfig)
+{
+	assert(!initialized);
+	config = newConfig;
+}
+
+
+void ST7796S::init(void)
+{
+	assert(!initialized);
+
 	lcd_init_cmd_t init_cmds[] = {
 		{0xCF, {0x00, 0x83, 0X30}, 3},
 		{0xED, {0x64, 0x03, 0X12, 0X81}, 4},
@@ -134,19 +145,19 @@ void ST7796S::st7796s_init(void)
 	};
 
 	//Initialize non-SPI GPIOs
-	gpio_reset_pin(blck);
-	gpio_set_direction(blck, GPIO_MODE_OUTPUT);
-	gpio_set_level(blck, 1);
+	gpio_reset_pin(config.blck);
+	gpio_set_direction(config.blck, GPIO_MODE_OUTPUT);
+	gpio_set_level(config.blck, 1);
 
-	gpio_reset_pin(ST7796S_DC);
-	gpio_set_direction(ST7796S_DC, GPIO_MODE_OUTPUT);
-	gpio_reset_pin(ST7796S_RST);
-	gpio_set_direction(ST7796S_RST, GPIO_MODE_OUTPUT);
+	gpio_reset_pin(config.dc);
+	gpio_set_direction(config.dc, GPIO_MODE_OUTPUT);
+	gpio_reset_pin(config.rst);
+	gpio_set_direction(config.rst, GPIO_MODE_OUTPUT);
 
     //Reset the display
-	gpio_set_level(ST7796S_RST, 0);
+	gpio_set_level(config.rst, 0);
 	vTaskDelay(100 / portTICK_PERIOD_MS);
-	gpio_set_level(ST7796S_RST, 1);
+	gpio_set_level(config.rst, 1);
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 
@@ -174,13 +185,15 @@ void ST7796S::st7796s_init(void)
 #else
 	st7796s_send_cmd(0x20);
 #endif
+	initialized = true;
 }
 
 
 void ST7796S::DrawPixel(uint16_t x, uint16_t y, uint16_t color)
 {
-  SetWindow(x, y, x + 1, y + 1);
-  WriteWindow(&color, 1);
+	assert(initialized);
+  	SetWindow(x, y, x + 1, y + 1);
+  	WriteWindow(&color, 1);
 }
 
 
@@ -188,6 +201,7 @@ void ST7796S::DrawPixel(uint16_t x, uint16_t y, uint16_t color)
 
 void ST7796S::SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
 {
+	assert(initialized);
     uint8_t data[4];
 	/*Column addresses*/
 	st7796s_send_cmd(0x2A);
@@ -208,9 +222,22 @@ void ST7796S::SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
 
 void ST7796S::WriteWindow(uint16_t* colors, size_t size)
 {
+	assert(initialized);
 	/*Memory write*/
 	st7796s_send_cmd(0x2C);
 	st7796s_send_color((void *)colors, size * 2);
+}
+
+uint16_t ST7796S::getHeight()
+{
+	assert(initialized);
+    return config.ver_res;
+}
+
+uint16_t ST7796S::getWidth()
+{
+	assert(initialized);
+    return config.hor_res;
 }
 
 void ST7796S::st7796s_sleep_in()
@@ -245,21 +272,21 @@ void disp_wait_for_pending_transactions(void)
 void ST7796S::st7796s_send_cmd(uint8_t cmd)
 {
 	disp_wait_for_pending_transactions();
-	gpio_set_level(ST7796S_DC, 0); /*Command mode*/
+	gpio_set_level(config.dc, 0); /*Command mode*/
     st7796s_spi_transfer(&cmd, nullptr, 1);
 }
 
 void ST7796S::st7796s_send_data(void *data, uint16_t length)
 {
 	disp_wait_for_pending_transactions();
-	gpio_set_level(ST7796S_DC, 1); /*Data mode*/
+	gpio_set_level(config.dc, 1); /*Data mode*/
     st7796s_spi_transfer((uint8_t*)data, nullptr, length);
 }
 
 void ST7796S::st7796s_send_color(void *data, uint16_t length)
 {
 	disp_wait_for_pending_transactions();
-	gpio_set_level(ST7796S_DC, 1); /*Data mode*/
+	gpio_set_level(config.dc, 1); /*Data mode*/
     st7796s_spi_transfer((uint8_t*)data, nullptr, length);
 }
 
@@ -277,6 +304,7 @@ void ST7796S::st7796s_spi_transfer(const uint8_t* txData, uint8_t* rxData, size_
 	transaction.rx_buffer = rxData;
 	spidev->PollingTransmit(&transaction);
 }
+
 
 void ST7796S::st7796s_set_orientation(uint8_t orientation)
 {

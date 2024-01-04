@@ -2,15 +2,16 @@
 #include "esp_log.h"
 #include "driver/spi_master.h"
 
-SPIBus::SPIBus(std::function<void(SPIBus& bus)> configurator)
+void SPIBus::init()
 {
-	configurator((*this));
+	assert(initialized == 0 && "SPIBus already initialized");
 	ESP_LOGI(TAG, "Initializing");
-	ESP_ERROR_CHECK(spi_bus_initialize(host, &config, dmaChannel));
+	ESP_ERROR_CHECK(spi_bus_initialize(config.host, &config.config, config.dmaChannel));
+	initialized = true;
 }
-	
-SPIBus::~SPIBus()
+
+void SPIBus::setConfig(const Config &newConfig)
 {
-	spi_bus_free(host);
+	assert(initialized == 0 && "Can't change configuration after initialisation");
+	config = newConfig;
 }
-	
