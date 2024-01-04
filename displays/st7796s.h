@@ -1,3 +1,4 @@
+#pragma once
 #include "esp_system.h"
 #include "esp_base.h"
 #include "spi.h"
