@@ -16,13 +16,18 @@ class Task
 	portBASE_TYPE priority = 0;
 	portSHORT stackDepth = configMINIMAL_STACK_SIZE;
 	TaskHandle_t taskHandle = NULL;
-	std::function<void(Task*, void*)> callback;
+	std::function<void(Task*, void*)> callbackOld;
+	std::function<void()> callback;
 		
 	static void TaskFunction(void* parm)
 	{
 		Task* t = static_cast<Task*>(parm);
+		if (t && t->callbackOld) {
+			t->callbackOld(t, t->arg);
+		}
+
 		if (t && t->callback) {
-			t->callback(t, t->arg);
+			t->callback();
 		}
 		vTaskDelete(NULL);
 	}
@@ -50,6 +55,12 @@ public:
 	}
 		
 	void SetHandler(const std::function<void(Task*, void*)>& callback)
+	{
+		
+		this->callbackOld = callback;
+	}
+
+	void SetHandler(const std::function<void()>& callback)
 	{
 		
 		this->callback = callback;
