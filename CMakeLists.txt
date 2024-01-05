@@ -6,8 +6,8 @@ idf_component_register(
 		analog/ina3221.cpp
 		displays/hd44780.cpp
 		displays/st7735.cpp
-		displays/t6963c.cpp
 		displays/st7796s.cpp
+		displays/t6963c.cpp
 		ethernet/lan87xx.cpp
 		ethernet/wifi.cpp
 		expanders/max14830.cpp

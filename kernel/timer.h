@@ -8,19 +8,18 @@
 
 class Timer
 {
-	std::function<void(Timer*)> callback;
+	std::function<void()> callback;
 	TimerHandle_t xTimer = NULL;
 		
 	static void tCallback(TimerHandle_t xTimer)
 	{
 		Timer* t = static_cast<Timer*>(pvTimerGetTimerID(xTimer));
 		if (t && t->callback) {
-			t->callback(t);
+			t->callback();
 		}
 	}
 		
 public:
-		
 	Timer()
 	{	
 
@@ -33,7 +32,7 @@ public:
 	}
 		
 
-	void SetHandler(const std::function<void(Timer*)> callback)
+	void SetHandler(const std::function<void()> callback)
 	{
 		this->callback = callback;
 	}
