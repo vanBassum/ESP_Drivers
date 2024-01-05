@@ -30,6 +30,7 @@ idf_component_register(
 		i2c
 		kernel
 		mifare
+		onewire
 		rtc
 		spi
 	REQUIRES ESP_Base driver esp_wifi esp_eth)

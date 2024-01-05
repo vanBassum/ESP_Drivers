@@ -11,5 +11,6 @@
 #include "i2c/i2c.h"
 #include "kernel/kernel.h"
 #include "mifare/mifare.h"
+#include "onewire/onewire.h"
 #include "rtc/rtc.h"
 #include "spi/spi.h"
