@@ -12,7 +12,8 @@ void SPIDevice::setConfig(const Config& newConfig) {
 
 void SPIDevice::init() {
     assert(!initialized && "SPIDevice already initialized");
-    ESP_LOGI(TAG, "Initializing");
+    assert(spiBus->isInitialized() && "SPIBus not initialized");
+    ESP_LOGI(TAG, "Initializing host %d", spiBus->config.host);
 	ESP_ERROR_CHECK(spi_bus_add_device(spiBus->config.host, &config.devConfig, &handle));
     initialized = true;
 }

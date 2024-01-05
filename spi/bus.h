@@ -26,4 +26,5 @@ public:
     ~SPIBus() = default;
     void setConfig(const Config &newConfig);
     void init();
+    bool isInitialized() const;
 };
