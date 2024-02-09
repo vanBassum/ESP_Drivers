@@ -177,7 +177,8 @@ void MCP23S17::setConfig(const Config &newConfig)
 
 void MCP23S17::init()
 {
-	 assert(!initialized_ && "Already initialized");
+	 	assert(!initialized_ && "Already initialized");
+		assert(spidev->isInitialized());
         // Initialization logic
 		spidev->AcquireBus();
 		Write8(MCP23S17_REG_IOCON_A, 0x08);    					// Set up ICON A,B to auto increment

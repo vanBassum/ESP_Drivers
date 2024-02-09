@@ -36,7 +36,7 @@ private:
 	const char* TAG = "MCP23S17";
 	Mutex mutex;
 	std::shared_ptr<SPIDevice> spidev;
-	gpio_num_t irqPin = GPIO_NUM_NC;
+	
 	uint8_t devAddr = 0;
 	
 	void Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count);
