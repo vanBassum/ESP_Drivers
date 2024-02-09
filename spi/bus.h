@@ -17,14 +17,14 @@ public:
 		
     };
 
-private:
-    Config config = {}; // Default initialize Config
-    bool initialized = false;
-	friend SPIDevice;
-public:
     SPIBus() = default;
     ~SPIBus() = default;
     void setConfig(const Config &newConfig);
     void init();
     bool isInitialized() const;
+
+private:
+    Config config = {}; // Default initialize Config
+    bool initialized = false;
+	friend SPIDevice;
 };
