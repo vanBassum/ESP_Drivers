@@ -35,7 +35,7 @@ public:
 private:
 	const char* TAG = "MCP23S17";
 	Mutex mutex;
-	SPIDevice& spidev;
+	std::shared_ptr<SPIDevice> spidev;
 	gpio_num_t irqPin = GPIO_NUM_NC;
 	uint8_t devAddr = 0;
 	
@@ -51,12 +51,23 @@ private:
 
 public:
 		
-	MCP23S17(SPIDevice& spiDev, gpio_num_t irq);
+	struct Config
+	{
+		gpio_num_t IRQPin;
+	};
+	
+	MCP23S17(std::shared_ptr<SPIDevice> spidevice);
 	void SetPinsMode(Pins mask, PinModes mode);
 	void SetPins(Pins mask, Pins value);
 	Pins GetPins(Pins mask);
 	void ConsecutivePinWriting(Pins mask, Pins* values, size_t size);
-	
+	void setConfig(const Config& newConfig);
+    void init();
+    bool isInitialized() const;
+
+	private:
+    	Config config_;
+    	bool initialized_ = false;
 };
 
 DEFINE_ENUM_CLASS_FLAG_OPERATORS(MCP23S17::Pins, uint32_t);

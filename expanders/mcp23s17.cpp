@@ -48,14 +48,9 @@ typedef enum
 
 
 
-MCP23S17::MCP23S17(SPIDevice& spiDev, gpio_num_t irq)
-	: spidev(spiDev)
-	, irqPin(irq)
+MCP23S17::MCP23S17(std::shared_ptr<SPIDevice> spidevice) : spidev(spidevice)
 {	
-	spidev.AcquireBus();
-	Write8(MCP23S17_REG_IOCON_A, 0x08);    					// Set up ICON A,B to auto increment
-	spidev.ReleaseBus();
-	ESP_LOGI(TAG, "Initialized");
+
 }
 
 
@@ -66,7 +61,7 @@ void MCP23S17::Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count)
 	t.length = (count * 8);              		
 	t.tx_buffer = txData;               		
 	t.rx_buffer = rxData;
-	spidev.PollingTransmit(&t);  		
+	spidev->PollingTransmit(&t);  		
 }
 
 uint8_t MCP23S17::Read8(uint8_t reg)
@@ -120,9 +115,9 @@ void MCP23S17::SetPins(Pins mask, Pins value)
 	mutex.Take();
 	pinBuffer = (pinBuffer & ~mask) | (value & mask);
 	
-	spidev.AcquireBus();
+	spidev->AcquireBus();
 	Write16(MCP23S17_REG_GPIO_A, (uint16_t)pinBuffer);
-	spidev.ReleaseBus();
+	spidev->ReleaseBus();
 	mutex.Give();
 }
 
@@ -130,9 +125,9 @@ void MCP23S17::SetPins(Pins mask, Pins value)
 MCP23S17::Pins MCP23S17::GetPins(Pins mask)
 {
 	mutex.Take();
-	spidev.AcquireBus();
+	spidev->AcquireBus();
 	Pins pins = (Pins)Read16(MCP23S17_REG_GPIO_A);
-	spidev.ReleaseBus();
+	spidev->ReleaseBus();
 	mutex.Give();
 	return pins & mask;
 }
@@ -146,9 +141,9 @@ void MCP23S17::SetPinsMode(Pins mask, PinModes mode)
 	else
 		pinDirBuffer = pinDirBuffer & ~mask;
 		
-	spidev.AcquireBus();
+	spidev->AcquireBus();
 	Write16(MCP23S17_REG_DIR_A, (uint16_t)pinDirBuffer);
-	spidev.ReleaseBus();
+	spidev->ReleaseBus();
 	mutex.Give();
 }
 
@@ -166,10 +161,32 @@ void MCP23S17::ConsecutivePinWriting(Pins mask, Pins* values, size_t size)
 		txData[i * 2 + 2] = (uint8_t)pinBuffer;
 		txData[i * 2 + 3] = (uint8_t)((uint16_t)pinBuffer>>8);
 	}
-	spidev.AcquireBus();
+	spidev->AcquireBus();
 	Write8(MCP23S17_REG_IOCON_A, 0x28);	//seqop = BIT 5 0X20
 	Transmit(txData, NULL, totSize);
 	Write8(MCP23S17_REG_IOCON_A, 0x08);	//seqop = BIT 5 0X20
-	spidev.ReleaseBus();
+	spidev->ReleaseBus();
 	mutex.Give();
+}
+
+void MCP23S17::setConfig(const Config &newConfig)
+{
+		assert(!initialized_ && "Config cannot be changed after initialization");
+        config_ = newConfig;
+}
+
+void MCP23S17::init()
+{
+	 assert(!initialized_ && "Already initialized");
+        // Initialization logic
+		spidev->AcquireBus();
+		Write8(MCP23S17_REG_IOCON_A, 0x08);    					// Set up ICON A,B to auto increment
+		spidev->ReleaseBus();
+		ESP_LOGI(TAG, "Initialized");
+        initialized_ = true;
+}
+
+bool MCP23S17::isInitialized() const
+{
+    return initialized_;
 }
