@@ -112,6 +112,7 @@ void MCP23S17::Write16(uint8_t reg, uint16_t value)
 
 void MCP23S17::SetPins(Pins mask, Pins value)
 {
+	assert(initialized_);
 	mutex.Take();
 	pinBuffer = (pinBuffer & ~mask) | (value & mask);
 	
@@ -124,6 +125,7 @@ void MCP23S17::SetPins(Pins mask, Pins value)
 
 MCP23S17::Pins MCP23S17::GetPins(Pins mask)
 {
+	assert(initialized_);
 	mutex.Take();
 	spidev->AcquireBus();
 	Pins pins = (Pins)Read16(MCP23S17_REG_GPIO_A);
@@ -135,6 +137,7 @@ MCP23S17::Pins MCP23S17::GetPins(Pins mask)
 
 void MCP23S17::SetPinsMode(Pins mask, PinModes mode)
 {
+	assert(initialized_);
 	mutex.Take();
 	if (mode == PinModes::PIN_INPUT)
 		pinDirBuffer = (pinDirBuffer & ~mask) | (Pins::ALL & mask);
@@ -149,6 +152,7 @@ void MCP23S17::SetPinsMode(Pins mask, PinModes mode)
 
 void MCP23S17::ConsecutivePinWriting(Pins mask, Pins* values, size_t size)
 {
+	assert(initialized_);
 	mutex.Take();
 	size_t totSize = 2 + size * 2;
 	uint8_t txData[totSize];
@@ -171,20 +175,20 @@ void MCP23S17::ConsecutivePinWriting(Pins mask, Pins* values, size_t size)
 
 void MCP23S17::setConfig(const Config &newConfig)
 {
-		assert(!initialized_ && "Config cannot be changed after initialization");
-        config_ = newConfig;
+	assert(!initialized_ && "Config cannot be changed after initialization");
+	config_ = newConfig;
 }
 
 void MCP23S17::init()
 {
-	 	assert(!initialized_ && "Already initialized");
-		assert(spidev->isInitialized());
-        // Initialization logic
-		spidev->AcquireBus();
-		Write8(MCP23S17_REG_IOCON_A, 0x08);    					// Set up ICON A,B to auto increment
-		spidev->ReleaseBus();
-		ESP_LOGI(TAG, "Initialized");
-        initialized_ = true;
+	assert(!initialized_ && "Already initialized");
+	assert(spidev->isInitialized());
+	// Initialization logic
+	spidev->AcquireBus();
+	Write8(MCP23S17_REG_IOCON_A, 0x08);    					// Set up ICON A,B to auto increment
+	spidev->ReleaseBus();
+	ESP_LOGI(TAG, "Initialized");
+	initialized_ = true;
 }
 
 bool MCP23S17::isInitialized() const
