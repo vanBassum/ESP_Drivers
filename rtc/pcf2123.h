@@ -28,8 +28,7 @@
 #include "mtime.h"
 #include "spi.h"
 #include "driver/gpio.h"
-
-
+#include "spi/device.h"
 struct PCF2123_CtrlRegs
 {
 	/**
@@ -106,65 +105,9 @@ struct PCF2123_CtrlRegs
 
 class PCF2123
 {
+
 private:
-	const char* TAG = "PCF2123";
-	enum RxtMode { RXT_READ, RXT_WRITE } ;
-
-	SPIDevice& spi; 
-	gpio_num_t irq = GPIO_NUM_NC;
-	
-	/**
-		* Do SPI transmit and receive.
-		*
-		* @param   addr    Register to access
-		* @param   rw      RXT_READ or RXT_WRITE
-		* @param   buf     Buffer for reading/writing data
-		* @param   sz      Number of bytes to transact (don't count command byte)
-		*/
-	void rxt(uint8_t addr, uint8_t rw, uint8_t *buf, size_t sz);
-
-	/**
-		* Parse a BCD-encoded decimal into decimal.
-		*
-		* @param   bcd     The encoded decimal
-		*
-		* @return  Decoded decimal
-		*/
-	uint8_t bcd_decode(uint8_t bcd);
-
-	/**
-		* Encode a decimal into BCD
-		*
-		* @param   dec     Decimal to encode
-		*
-		* @return  Encoded value
-		*/
-	uint8_t bcd_encode(uint8_t dec);
-	
-	/**
-		* Read control registers.
-		*
-		* @return  Current register state
-		*/
-	PCF2123_CtrlRegs ctrl_get();
-
-	/**
-		* Write control register(s).
-		* Either ctrl1, ctrl2 or both can be written in the same
-		* transaction.
-		*
-		* The mask_alarms parameter makes it possible to make changes to the
-		* control registers without clobbering alarm state.
-		*
-		* @param   regs        Register buffer
-		* @param   set_ctrl1   Write ctrl1 register
-		* @param   set_ctrl2   Write ctrl2 register
-		* @param   mask_alarms Set alarm bits high to not affect alarm state
-		*/
-	void ctrl_set(PCF2123_CtrlRegs *regs,
-		bool set_ctrl1,
-		bool set_ctrl2,
-		bool mask_alarms);
+	std::shared_ptr<SPIDevice> spidev;
 
 public:
 	enum CountdownSrcClock {
@@ -174,9 +117,17 @@ public:
 		CNTDOWN_CLOCK_1PER60HZ = 3
 	};
 
+	struct Config
+	{
+		gpio_num_t IRQPin;
+	};
+
+	PCF2123(std::shared_ptr<SPIDevice> spidev);
 	
-	PCF2123(SPIDevice& spiDev, gpio_num_t irq);
-	
+	void setConfig(const Config& newConfig);
+    void init();
+    bool isInitialized() const;
+
 	/**
 		* Get current time of the RTC.
 		*
@@ -277,6 +228,67 @@ public:
 		* @return  True if the given parameters were valid
 		*/
 	//bool alarm_set(int minute, int hour, int day, int weekday);
+private:
+	const char* TAG = "PCF2123";
+	enum RxtMode { RXT_READ, RXT_WRITE } ;
 
+    Config config_;
+    bool initialized_ = false;	
 
+	//SPIDevice& spi; 
+	gpio_num_t irq = GPIO_NUM_NC;
+	
+	/**
+		* Do SPI transmit and receive.
+		*
+		* @param   addr    Register to access
+		* @param   rw      RXT_READ or RXT_WRITE
+		* @param   buf     Buffer for reading/writing data
+		* @param   sz      Number of bytes to transact (don't count command byte)
+		*/
+	void rxt(uint8_t addr, uint8_t rw, uint8_t *buf, size_t sz);
+
+	/**
+		* Parse a BCD-encoded decimal into decimal.
+		*
+		* @param   bcd     The encoded decimal
+		*
+		* @return  Decoded decimal
+		*/
+	uint8_t bcd_decode(uint8_t bcd);
+
+	/**
+		* Encode a decimal into BCD
+		*
+		* @param   dec     Decimal to encode
+		*
+		* @return  Encoded value
+		*/
+	uint8_t bcd_encode(uint8_t dec);
+	
+	/**
+		* Read control registers.
+		*
+		* @return  Current register state
+		*/
+	PCF2123_CtrlRegs ctrl_get();
+
+	/**
+		* Write control register(s).
+		* Either ctrl1, ctrl2 or both can be written in the same
+		* transaction.
+		*
+		* The mask_alarms parameter makes it possible to make changes to the
+		* control registers without clobbering alarm state.
+		*
+		* @param   regs        Register buffer
+		* @param   set_ctrl1   Write ctrl1 register
+		* @param   set_ctrl2   Write ctrl2 register
+		* @param   mask_alarms Set alarm bits high to not affect alarm state
+		*/
+	void ctrl_set(PCF2123_CtrlRegs *regs,
+		bool set_ctrl1,
+		bool set_ctrl2,
+		bool mask_alarms);
 };
+
