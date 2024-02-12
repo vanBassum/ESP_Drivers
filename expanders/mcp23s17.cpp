@@ -50,7 +50,7 @@ typedef enum
 
 MCP23S17::MCP23S17(std::shared_ptr<SPIDevice> spidevice) : spidev(spidevice)
 {	
-
+	assert(spidevice);
 }
 
 

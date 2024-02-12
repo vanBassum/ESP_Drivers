@@ -36,7 +36,10 @@
 #define REG_TIMER_CLKOUT_ADDR     0x0E
 #define REG_COUNTDOWN_TIMER_ADDR  0x0F
 
-
+PCF2123::PCF2123(std::shared_ptr<SPIDevice> spidevice) : spidev(spidevice)
+{	
+	assert(spidevice);
+}
 
 bool
 	PCF2123_CtrlRegs::get(int bit)
@@ -95,6 +98,15 @@ PCF2123::PCF2123(SPIDevice& spiDev, gpio_num_t irq)
 	: spi(spiDev)
 	, irq(irq)
 {
+	assert(!initialized_ && "Config cannot be changed after initialization");
+	config_ = newConfig;
+}
+
+void PCF2123::init()
+{
+	assert(!initialized_ && "Already initialized");
+	assert(spidev->isInitialized());
+	initialized_ = true;
 	ESP_LOGI(TAG, "Initializing");
 	reset();
 	spi.AcquireBus();
@@ -108,12 +120,19 @@ PCF2123::PCF2123(SPIDevice& spiDev, gpio_num_t irq)
 	this->ctrl_set(&regs, true, true, false);
 	spi.ReleaseBus();
 	ESP_LOGI(TAG, "Initialized");
+	
+}
+
+bool PCF2123::isInitialized() const
+{
+    return initialized_;
 }
 
 
 bool
 PCF2123::time_get(DateTime* now)
 {
+	assert(initialized_);
 	uint8_t buf[7];
 	spi.AcquireBus();
 	this->rxt(REG_TIME_DATE_ADDR, RXT_READ, buf, sizeof(buf));
@@ -137,6 +156,7 @@ PCF2123::time_get(DateTime* now)
 void
 PCF2123::time_set(DateTime* new_time)
 {
+	assert(initialized_);
 	uint8_t buf[7];
 	struct tm time;
 	new_time->GetAsUTC(&time);
@@ -158,7 +178,8 @@ PCF2123::time_set(DateTime* new_time)
 void
 PCF2123::reset()
 {
-	spi.AcquireBus();
+	assert(initialized_);
+	spidev->AcquireBus();
 	uint8_t buf = 0x58;
 	this->rxt(REG_CTRL1_ADDR, RXT_WRITE, &buf, sizeof(buf));
 	spi.ReleaseBus();
