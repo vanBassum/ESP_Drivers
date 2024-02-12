@@ -36,10 +36,13 @@
 #define REG_TIMER_CLKOUT_ADDR     0x0E
 #define REG_COUNTDOWN_TIMER_ADDR  0x0F
 
+PCF2123::PCF2123(std::shared_ptr<SPIDevice> spidevice) : spidev(spidevice)
+{	
 
+}
 
 bool
-	PCF2123_CtrlRegs::get(int bit)
+PCF2123_CtrlRegs::get(int bit)
 {
 	return this->ctrl[bit / 8] & (1 << (bit % 8));
 }
@@ -75,7 +78,7 @@ PCF2123::rxt(uint8_t addr, uint8_t rw, uint8_t *buf, size_t sz)
 	t.tx_buffer = buf; 
 	t.rx_buffer = buf;               			
 	t.cmd = 0x10 | (rw == RXT_READ ? 0x80 : 0x00) | addr;								
-	spi.PollingTransmit(&t);  			
+	spidev->PollingTransmit(&t);  			
 }
 
 
@@ -91,13 +94,19 @@ PCF2123::bcd_encode(uint8_t dec)
 	return ((dec / 10) << 4) | (dec % 10);
 }
 
-PCF2123::PCF2123(SPIDevice& spiDev, gpio_num_t irq)
-	: spi(spiDev)
-	, irq(irq)
+void PCF2123::setConfig(const Config &newConfig)
 {
+		assert(!initialized_ && "Config cannot be changed after initialization");
+        config_ = newConfig;
+}
+
+void PCF2123::init()
+{
+	assert(!initialized_ && "Already initialized");
+	assert(spidev->isInitialized());
 	ESP_LOGI(TAG, "Initializing");
 	reset();
-	spi.AcquireBus();
+	spidev->AcquireBus();
 	// /* Make sure the clock is in 24h mode */
 	// PCF2123_CtrlRegs regs = this->ctrl_get();
 	// regs.set(PCF2123_CtrlRegs::HOUR_MODE, 0);
@@ -106,8 +115,14 @@ PCF2123::PCF2123(SPIDevice& spiDev, gpio_num_t irq)
 	PCF2123_CtrlRegs regs = this->ctrl_get();
 	regs.ClearAll();
 	this->ctrl_set(&regs, true, true, false);
-	spi.ReleaseBus();
+	spidev->ReleaseBus();
 	ESP_LOGI(TAG, "Initialized");
+	initialized_ = true;
+}
+
+bool PCF2123::isInitialized() const
+{
+    return initialized_;
 }
 
 
@@ -115,9 +130,9 @@ bool
 PCF2123::time_get(DateTime* now)
 {
 	uint8_t buf[7];
-	spi.AcquireBus();
+	spidev->AcquireBus();
 	this->rxt(REG_TIME_DATE_ADDR, RXT_READ, buf, sizeof(buf));
-	spi.ReleaseBus();
+	spidev->ReleaseBus();
 	struct tm time;
 	memset(&time, 0, sizeof(struct tm));
 
@@ -150,18 +165,18 @@ PCF2123::time_set(DateTime* new_time)
 	buf[6] = bcd_encode(time.tm_year - 100);	//2023 - 1900 - 100 = 23
 	//PCF year = 0 - 99 
 	//struct tm year = since 1900
-	spi.AcquireBus();
+	spidev->AcquireBus();
 	this->rxt(REG_TIME_DATE_ADDR, RXT_WRITE, buf, sizeof(buf));
-	spi.ReleaseBus();
+	spidev->ReleaseBus();
 }
 
 void
 PCF2123::reset()
 {
-	spi.AcquireBus();
+	spidev->AcquireBus();
 	uint8_t buf = 0x58;
 	this->rxt(REG_CTRL1_ADDR, RXT_WRITE, &buf, sizeof(buf));
-	spi.ReleaseBus();
+	spidev->ReleaseBus();
 }
 
 
