@@ -243,6 +243,7 @@ void PN512::init(void)
 	START_MIFARE();
 	vTaskDelay(pdMS_TO_TICKS(1)); //SleepUs(100); // Wacht tot het IC is opgestart	
 	ConfigAsInitiator();
+	ESP_LOGI(TAG, "Initialized");
 }
 
 bool PN512::isInitialized() const

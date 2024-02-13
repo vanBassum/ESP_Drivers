@@ -111,18 +111,30 @@ private:
 	void  PortInit(Ports port, uint32_t baudrate, bool useCTS, bool useRS485);
 
 
-	std::shared_ptr<SPIDevice> spi;
+	std::shared_ptr<SPIDevice> spidev;
 
 public:
-	gpio_num_t irqPin = GPIO_NUM_NC;
-	MAX14830(std::shared_ptr<SPIDevice> spi, std::function<void(MAX14830& dev)> configurator);
+	struct Config
+	{
+		gpio_num_t IRQPin;
+	};
 
+	//gpio_num_t irqPin = GPIO_NUM_NC;
 
+//	MAX14830(std::shared_ptr<SPIDevice> spi, std::function<void(MAX14830& dev)> configurator);
+	MAX14830(std::shared_ptr<SPIDevice> spidevice);
 	Event<MAX14830, Pins> OnPinsChanged;
 	void SetPinsMode(Pins mask, PinModes mode);
 	void SetPins(Pins mask, Pins value);
 	void SetInterrupts(Pins mask, Pins value);
-	Pins GetPins(Pins mask);	
+	Pins GetPins(Pins mask);
+	void setConfig(const Config& newConfig);
+    void init();
+    bool isInitialized() const;	
+
+	private:
+    	Config config_;
+    	bool initialized_ = false;
 };
 
 DEFINE_ENUM_CLASS_FLAG_OPERATORS(MAX14830::Pins,	uint32_t);

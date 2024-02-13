@@ -105,7 +105,6 @@ void PCF2123::init()
 	assert(!initialized_ && "Already initialized");
 	assert(spidev->isInitialized());
 	initialized_ = true;
-	ESP_LOGI(TAG, "Initializing");
 	reset();
 	spidev->AcquireBus();
 	// /* Make sure the clock is in 24h mode */
@@ -118,7 +117,6 @@ void PCF2123::init()
 	this->ctrl_set(&regs, true, true, false);
 	spidev->ReleaseBus();
 	ESP_LOGI(TAG, "Initialized");
-	
 }
 
 bool PCF2123::isInitialized() const
