@@ -124,56 +124,70 @@ typedef struct {
 
 class PN512
 {
-public:
-	enum class Pins
-	{
-		NONE	= 0x0000,
-		RESET	= 0x0001,
-		ALL		= 0x0001,
-	};
-	
-
-	class IGPIO
-	{
 	public:
-		virtual void SetPinsMode(Pins mask, PinModes mode)	= 0;
-		virtual void SetPins(Pins mask, Pins value)	= 0;
-		virtual void GetPins(Pins mask, Pins* value) = 0;
-	};
-	
-private:
-	SPIDevice& spidev;
-	IGPIO& gpio;
-	uint8_t devAddr = 0;
-	gpio_num_t irqPin = GPIO_NUM_NC;
+		enum class Pins
+		{
+			NONE	= 0x0000,
+			RESET	= 0x0001,
+			ALL		= 0x0001,
+		};
+		
+/*
+		class IGPIO
+		{
+		public:
+			virtual void SetPinsMode(Pins mask, PinModes mode)	= 0;
+			virtual void SetPins(Pins mask, Pins value)	= 0;
+			virtual void GetPins(Pins mask, Pins* value) = 0;
+		};
+*/		
+	private:
+		std::shared_ptr<SPIDevice> spidev;
 
-	uint16_t AntiColl(uint8_t antiCollCode, uint8_t * snr);
-	uint16_t Select(uint8_t antiCollCode, uint8_t * snr, uint8_t * sak);
-	uint16_t AuthKey(uint8_t auth_mode, uint8_t *snr, uint8_t *keys, uint8_t block);
-	void InitTimer(uint16_t m_sec_X100);
-	void RESET_MIFARE(void);
-	void START_MIFARE(void);
-	void FLUSH(void);
-	void ConfigAsInitiator(void);
-	void Init2(void);
-	uint16_t WaitForTranceive(uint16_t escape);
-	void PrepareTranceive(void);
-	void WriteRC(uint8_t address, uint8_t data);
-	uint8_t ReadRC(uint8_t address);
-	void Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count);
+//		IGPIO& gpio;
+		uint8_t devAddr = 0;
+		//gpio_num_t irqPin = GPIO_NUM_NC;
+
+		uint16_t AntiColl(uint8_t antiCollCode, uint8_t * snr);
+		uint16_t Select(uint8_t antiCollCode, uint8_t * snr, uint8_t * sak);
+		uint16_t AuthKey(uint8_t auth_mode, uint8_t *snr, uint8_t *keys, uint8_t block);
+		void InitTimer(uint16_t m_sec_X100);
+		void RESET_MIFARE(void);
+		void START_MIFARE(void);
+		void FLUSH(void);
+		void ConfigAsInitiator(void);		
+		uint16_t WaitForTranceive(uint16_t escape);
+		void PrepareTranceive(void);
+		void WriteRC(uint8_t address, uint8_t data);
+		uint8_t ReadRC(uint8_t address);
+		void Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count);
 	
-public:
-	PN512(SPIDevice& device, IGPIO& gpio);
-	uint8_t GetVersion(void);
-	void RFon(void);
-	void RFoff(void);
-	void SOFTPOWERDOWN(void);
-	void WAKEUP(void);
-	uint16_t Request(uint8_t request, uint8_t * atq);
-	uint16_t Read(uint8_t cmd, uint8_t addr, uint8_t datalen, uint8_t *data);
-	uint16_t Write(uint8_t cmd, uint8_t addr, uint8_t datalen, uint8_t *data);
-	uint16_t CheckCardLogics(/*card_struct* card_data*/);
-	uint16_t MF_HandleSAK(uint8_t sak);
+	public:
+		struct Config
+		{
+			gpio_num_t IRQPin;
+		};
+		
+		PN512(std::shared_ptr<SPIDevice> spidevice);
+		//PN512(SPIDevice& device, IGPIO& gpio);
+		uint8_t GetVersion(void);
+		void RFon(void);
+		void RFoff(void);
+		void SOFTPOWERDOWN(void);
+		void WAKEUP(void);
+		uint16_t Request(uint8_t request, uint8_t * atq);
+		uint16_t Read(uint8_t cmd, uint8_t addr, uint8_t datalen, uint8_t *data);
+		uint16_t Write(uint8_t cmd, uint8_t addr, uint8_t datalen, uint8_t *data);
+		uint16_t CheckCardLogics(/*card_struct* card_data*/);
+		uint16_t MF_HandleSAK(uint8_t sak);
+
+		void setConfig(const Config& newConfig);
+		void init(void);
+		bool isInitialized() const;
+
+	private:
+    	Config config_;
+    	bool initialized_ = false;
 };
 
 DEFINE_ENUM_CLASS_FLAG_OPERATORS(PN512::Pins, uint32_t);

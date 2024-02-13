@@ -12,28 +12,9 @@ static const char *TAG = "PN512";
 ** Returned value:		None
 ** 
 *****************************************************************************/
-
-PN512::PN512(SPIDevice& device, IGPIO& gpio)
-	: spidev(device)
-	, gpio(gpio)
+PN512::PN512(std::shared_ptr<SPIDevice> spidevice) : spidev(spidevice)
 {	
-
-	
-	//init reset pin
-
-	// TODO
-	// Reset pin is connected to MCP23S17 highest bit
-//	expander.SetPinsMode(MCP23S17_PIN_B5, MCP23S17_PINMODE_OUTPUT);
-//	expander.SetPinsMode(MCP23S17_PIN_B6, MCP23S17_PINMODE_OUTPUT);
-//	expander.SetPinsMode(MCP23S17_PIN_B7, MCP23S17_PINMODE_OUTPUT);
-//	expander.SetPins(MCP23S17_PIN_B5, MCP23S17_PIN_B5); //	RESET_MIFARE();
-//	expander.SetPins(MCP23S17_PIN_B6, MCP23S17_PIN_B6); //	RESET_MIFARE();
-//	expander.SetPins(MCP23S17_PIN_B7, MCP23S17_PIN_B7); //	RESET_MIFARE();
-//	vTaskDelay(pdMS_TO_TICKS(10)); //SleepMs(10); // wacht even
-//	expander.SetPins(MCP23S17_PIN_B5, MCP23S17_PIN_NONE); //START_MIFARE();
-//	expander.SetPins(MCP23S17_PIN_B6, MCP23S17_PIN_NONE);
-//	expander.SetPins(MCP23S17_PIN_B7, MCP23S17_PIN_NONE);
-//	vTaskDelay(pdMS_TO_TICKS(1));  //SleepUs(100); // Wacht tot het IC is opgestart
+	assert(spidevice);
 }
 
 void PN512::Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count)
@@ -43,7 +24,7 @@ void PN512::Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count)
 	t.length = (count * 8);              		
 	t.tx_buffer = txData;               		
 	t.rx_buffer = rxData;
-	spidev.PollingTransmit(&t);  		
+	spidev->PollingTransmit(&t);  		
 }
 
 
@@ -81,12 +62,12 @@ uint8_t PN512::ReadRC(uint8_t address)
 *****************************************************************************/
 void PN512::WriteRC(uint8_t address, uint8_t data)
 {
-	spidev.AcquireBus();
+	spidev->AcquireBus();
 	uint8_t txData[2];
 	txData[0] = ((address << 1) & 0x7E);
 	txData[1] = data;
 	Transmit(txData, NULL, 2);
-	spidev.ReleaseBus();
+	spidev->ReleaseBus();
 }
 
 /*****************************************************************************
@@ -245,14 +226,28 @@ void PN512::ConfigAsInitiator(void)
 	WriteRC(MF_PN512_REG_COMMAND, MF_PN512_CMD_IDLE); // IDLE
 }
 
+void PN512::setConfig(const Config &newConfig)
+{
+	assert(!initialized_ && "Config cannot be changed after initialization");
+	config_ = newConfig;
+}
 
-void PN512::Init2(void)
+void PN512::init(void)
 {	
+	assert(!initialized_ && "Already initialized");
+	assert(spidev->isInitialized());
+	initialized_ = true;
+
 	RESET_MIFARE();
 	vTaskDelay(pdMS_TO_TICKS(10)); //SleepMs(10); // wacht even
 	START_MIFARE();
 	vTaskDelay(pdMS_TO_TICKS(1)); //SleepUs(100); // Wacht tot het IC is opgestart	
 	ConfigAsInitiator();
+}
+
+bool PN512::isInitialized() const
+{
+    return initialized_;
 }
 
 uint16_t PN512::WaitForTranceive(uint16_t escape)
