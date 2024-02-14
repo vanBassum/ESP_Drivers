@@ -2,6 +2,7 @@
 #include "IDevice.h"
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
+#include "kernel.h"
 
 class SpiBus : public IDevice
 {

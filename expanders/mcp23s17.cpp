@@ -45,7 +45,7 @@ typedef enum
 }mcp23s17_iocr_t;
 
 
-ErrCode MCP23S17::setConfig(IDeviceConfig &config)
+IDevice::ErrCode MCP23S17::setConfig(IDeviceConfig &config)
 {
     ContextLock lock(mutex);
 	//DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiDevice", &spiDeviceKey), );
@@ -53,7 +53,7 @@ ErrCode MCP23S17::setConfig(IDeviceConfig &config)
 	return ErrCode::Ok;
 }
 
-ErrCode MCP23S17::loadDependencies(std::shared_ptr<DeviceManager> deviceManager)
+IDevice::ErrCode MCP23S17::loadDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
 	GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<SpiDevice>(spiDeviceKey), Status::Dependencies, ErrCode::Dependency, TAG, "Dependencies not ready %d", (int)getStatus());
@@ -61,7 +61,7 @@ ErrCode MCP23S17::loadDependencies(std::shared_ptr<DeviceManager> deviceManager)
 	return ErrCode::Ok;
 }
 
-ErrCode MCP23S17::init()
+IDevice::ErrCode MCP23S17::init()
 {
 	ContextLock lock(mutex);
 	//TODO: Claim the bus!
@@ -73,13 +73,13 @@ ErrCode MCP23S17::init()
 }
 
 
-ErrCode MCP23S17::Transmit(uint8_t *txData, uint8_t *rxData, uint8_t count)
+IDevice::ErrCode MCP23S17::Transmit(uint8_t *txData, uint8_t *rxData, uint8_t count)
 {
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->Transmit(txData, rxData, count), Status::Dependencies, ErrCode::Dependency, TAG, "spiDevice->Transmit returned error");
+	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->Transmit(txData, rxData, count) == ErrCode::Ok, Status::Dependencies, ErrCode::Dependency, TAG, "spiDevice->Transmit returned error");
     return ErrCode::Ok;
 }
 
-ErrCode MCP23S17::Read8(uint8_t reg, uint8_t *value)
+IDevice::ErrCode MCP23S17::Read8(uint8_t reg, uint8_t *value)
 {
 	uint8_t txData[3];
 	uint8_t rxData[3];	
@@ -89,7 +89,7 @@ ErrCode MCP23S17::Read8(uint8_t reg, uint8_t *value)
     return Transmit(txData, rxData, 3);
 }
 
-ErrCode MCP23S17::Write8(uint8_t reg, uint8_t value)
+IDevice::ErrCode MCP23S17::Write8(uint8_t reg, uint8_t value)
 {
 	uint8_t txData[3];
 	txData[0] = MCP23S17_MANUF_CHIP_ADDRESS | (devAddr << 1);

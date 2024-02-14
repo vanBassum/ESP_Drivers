@@ -6,6 +6,7 @@ idf_component_register(
 		analog/ina3221.cpp
 		ethernet/lan87xx.cpp
 		ethernet/wifi.cpp
+		expanders/mcp23s17.cpp
 		i2c/bus.cpp
 		i2c/device.cpp
 		spi/bus.cpp
@@ -16,6 +17,7 @@ idf_component_register(
 		common
 		devicemanagement
 		ethernet
+		expanders
 		flash
 		i2c
 		interfaces

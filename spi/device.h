@@ -7,23 +7,12 @@
 #define SPI_CS_PIN_A1 						GPIO_NUM_32
 #define SPI_CS_PIN_A2 						GPIO_NUM_2
 
-//TODO: use gpio device to select cs pin!!!
-void IRAM_ATTR Select(spi_transaction_t* t)
-{
-    //SpiDevice* device = (SpiDevice*)t->user;    
-    gpio_set_level(SPI_CS_PIN_A0, 0);
-	gpio_set_level(SPI_CS_PIN_A1, 0);
-	gpio_set_level(SPI_CS_PIN_A2, 0);
-}
 
 //TODO: use gpio device to select cs pin!!!
-void IRAM_ATTR Deselect(spi_transaction_t* t)
-{
-    SpiDevice* device = (SpiDevice*)t->user;  
-    gpio_set_level(SPI_CS_PIN_A0, device->customCsPin & 0x01);
-	gpio_set_level(SPI_CS_PIN_A1, device->customCsPin & 0x02);
-	gpio_set_level(SPI_CS_PIN_A2, device->customCsPin & 0x04);
-}
+void IRAM_ATTR Select(spi_transaction_t* t);
+
+//TODO: use gpio device to select cs pin!!!
+void IRAM_ATTR Deselect(spi_transaction_t* t);
 
 class SpiDevice : public ISpiDevice {
     Mutex mutex;
@@ -132,6 +121,24 @@ public:
     }
 };
 
+
+//TODO: use gpio device to select cs pin!!!
+void IRAM_ATTR Select(spi_transaction_t* t)
+{
+    //SpiDevice* device = (SpiDevice*)t->user;    
+    gpio_set_level(SPI_CS_PIN_A0, 0);
+	gpio_set_level(SPI_CS_PIN_A1, 0);
+	gpio_set_level(SPI_CS_PIN_A2, 0);
+}
+
+//TODO: use gpio device to select cs pin!!!
+void IRAM_ATTR Deselect(spi_transaction_t* t)
+{
+    SpiDevice* device = (SpiDevice*)t->user;  
+    gpio_set_level(SPI_CS_PIN_A0, device->customCsPin & 0x01);
+	gpio_set_level(SPI_CS_PIN_A1, device->customCsPin & 0x02);
+	gpio_set_level(SPI_CS_PIN_A2, device->customCsPin & 0x04);
+}
 
 
 
