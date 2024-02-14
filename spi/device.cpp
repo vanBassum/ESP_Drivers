@@ -1,6 +1,6 @@
 #include "device.h"
 #include "esp_log.h"
-
+/*
 SPIDevice::SPIDevice(std::shared_ptr<SPIBus> spiBus) : spiBus(std::move(spiBus)) {
     assert(!spiBus && "SPIBus is nullptr");
 }
@@ -56,3 +56,4 @@ void SPIDevice::AcquireBus() {
 bool SPIDevice::isInitialized() const {
     return initialized;
 }
+*/
