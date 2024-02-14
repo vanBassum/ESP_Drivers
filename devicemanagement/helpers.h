@@ -44,7 +44,7 @@
 #define DEVICE_END_MARKER  {nullptr, {0}}  // End marker for the device tree
 
 union DevicePropertyValue {
-    const char*  str;
+    const char* str;
     int8_t i08;
     int16_t i16;
     int32_t i32;

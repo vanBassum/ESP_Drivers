@@ -3,11 +3,30 @@
 #include "bus.h"
 #include "DeviceManager.h"
 
+#define SPI_CS_PIN_A0 						GPIO_NUM_5
+#define SPI_CS_PIN_A1 						GPIO_NUM_32
+#define SPI_CS_PIN_A2 						GPIO_NUM_2
 
+//TODO: use gpio device to select cs pin!!!
+void IRAM_ATTR Select(spi_transaction_t* t)
+{
+    //SpiDevice* device = (SpiDevice*)t->user;    
+    gpio_set_level(SPI_CS_PIN_A0, 0);
+	gpio_set_level(SPI_CS_PIN_A1, 0);
+	gpio_set_level(SPI_CS_PIN_A2, 0);
+}
 
+//TODO: use gpio device to select cs pin!!!
+void IRAM_ATTR Deselect(spi_transaction_t* t)
+{
+    SpiDevice* device = (SpiDevice*)t->user;  
+    gpio_set_level(SPI_CS_PIN_A0, device->customCsPin & 0x01);
+	gpio_set_level(SPI_CS_PIN_A1, device->customCsPin & 0x02);
+	gpio_set_level(SPI_CS_PIN_A2, device->customCsPin & 0x04);
+}
 
 class SpiDevice : public ISpiDevice {
-    
+    Mutex mutex;
     constexpr static const char* TAG = "SpiDevice";
     const char* spiBusKey = nullptr;
     std::shared_ptr<SpiBus> spiBus;
@@ -15,11 +34,14 @@ class SpiDevice : public ISpiDevice {
     spi_device_interface_config_t devConfig = {};
 
 public:
+    uint8_t customCsPin = 0;
+
     virtual ~SpiDevice() {}
 
     //Since this is handeled by the devicemanager, assume this is only called on apropiate times. So no need to check the status of the driver.
     virtual ErrCode setConfig(IDeviceConfig& config) override  
     {
+        ContextLock lock(mutex);
         DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiBus", &spiBusKey), Status::ConfigError, ErrCode::ConfigError, TAG, "No property found for 'spiBus'");
         config.getProperty("command_bits", &devConfig.command_bits);
         config.getProperty("address_bits", &devConfig.address_bits);
@@ -33,6 +55,15 @@ public:
         config.getProperty("spics_io_num", &devConfig.spics_io_num);
         config.getProperty("flags", &devConfig.flags);
         config.getProperty("queue_size", &devConfig.queue_size);
+
+
+        if(config.getProperty("customCS", &customCsPin))
+        {
+            devConfig.pre_cb = Select;
+            devConfig.post_cb = Deselect;
+            
+        }
+
         //config.getProperty("pre_cb", &devConfig.pre_cb);
         //config.getProperty("post_cb", &devConfig.post_cb);
 
@@ -46,6 +77,7 @@ public:
     //Since this is handeled by the devicemanager, assume this is only called on apropiate times. So no need to check the status of the driver. Also assume the devicemanger is not null.
     virtual ErrCode loadDependencies(std::shared_ptr<DeviceManager> deviceManager) override
     {
+        ContextLock lock(mutex);
         GET_DEV_OR_RETURN(spiBus, deviceManager->getDeviceByKey<SpiBus>(spiBusKey), Status::Dependencies, ErrCode::Dependency, TAG, "Dependencies not ready %d", (int)getStatus());
         setStatus(Status::Initializing);
         return ErrCode::Ok;
@@ -54,6 +86,7 @@ public:
     //Since this is handeled by the devicemanager, assume this is only called on apropiate times. So no need to check the status of the driver.
     virtual ErrCode init() override
     {
+        ContextLock lock(mutex);
         spi_host_device_t host;
         DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiBus->GetHost(&host) == ErrCode::Ok, Status::Dependencies, ErrCode::Dependency, TAG, "spiBus->GetHost error");
 
@@ -70,6 +103,7 @@ public:
 
     virtual ErrCode Write(uint8_t* data, size_t size) override 
     {
+        ContextLock lock(mutex);
         //Ensure the device is in the ready state
         DEV_RETURN_ON_FALSE(checkStatus(Status::Ready), ErrCode::WrongStatus, TAG, "Driver not ready, status %d", (int)getStatus());
 
@@ -79,6 +113,17 @@ public:
 
     virtual ErrCode Read(uint8_t* data, size_t size) override 
     {
+        ContextLock lock(mutex);
+        //Ensure the device is in the ready state
+        DEV_RETURN_ON_FALSE(checkStatus(Status::Ready), ErrCode::WrongStatus, TAG, "Driver not ready, status %d", (int)getStatus());
+
+        //TODO: Implement reading of data. Dont forget to check the result of the functions you call from the dependecies.
+        return ErrCode::Ok;
+    }
+
+    ErrCode Transmit(uint8_t* txData, uint8_t* rxData, size_t size) 
+    {
+        ContextLock lock(mutex);
         //Ensure the device is in the ready state
         DEV_RETURN_ON_FALSE(checkStatus(Status::Ready), ErrCode::WrongStatus, TAG, "Driver not ready, status %d", (int)getStatus());
 

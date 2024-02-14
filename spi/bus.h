@@ -9,6 +9,7 @@ class SpiBus : public IDevice
     spi_host_device_t host = SPI_HOST_MAX;
     int dmaChannel = -1;
     spi_bus_config_t busConfig = {};
+    Mutex mutex;
 
 public:
     virtual ~SpiBus() {}
@@ -16,6 +17,7 @@ public:
     // Since this is handeled by the devicemanager, assume this is only called on apropiate times. So no need to check the status of the driver.
     virtual ErrCode setConfig(IDeviceConfig &config) override
     {
+        ContextLock lock(mutex);
         DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("host", (int32_t *)&host), Status::ConfigError, ErrCode::ConfigError, TAG, "No property found for 'host'");
         config.getProperty("dmaChannel", (int32_t *)&dmaChannel);
         config.getProperty("mosi_io_num", (int32_t *)&busConfig.mosi_io_num);
@@ -38,6 +40,7 @@ public:
     // Since this is handeled by the devicemanager, assume this is only called on apropiate times. So no need to check the status of the driver. Also assume the devicemanger is not null.
     virtual ErrCode loadDependencies(std::shared_ptr<DeviceManager> deviceManager) override
     {
+        ContextLock lock(mutex);
         setStatus(Status::Initializing);
         return ErrCode::Ok;
     }
@@ -45,6 +48,7 @@ public:
     // Since this is handeled by the devicemanager, assume this is only called on apropiate times. So no need to check the status of the driver.
     virtual ErrCode init() override
     {
+        ContextLock lock(mutex);
         if(spi_bus_initialize(host, &busConfig, dmaChannel) != ESP_OK)
         {
             setStatus(Status::Error);
@@ -56,6 +60,7 @@ public:
 
     ErrCode GetHost(spi_host_device_t* host)
     {
+        ContextLock lock(mutex);
         DEV_RETURN_ON_FALSE(checkStatus(Status::Ready), ErrCode::WrongStatus, TAG, "Driver not ready, status %d", (int)getStatus());
         *host = this->host;
         return ErrCode::Ok;
