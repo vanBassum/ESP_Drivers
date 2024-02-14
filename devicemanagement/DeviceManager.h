@@ -22,9 +22,8 @@ private:
 
     // Create a new device based on the configuration
     bool CreateDevice(IDeviceConfig& config) {
-        const char* deviceKey = config.getProperty("key")->str;
-
-        if (deviceKey == nullptr) {
+        const char* deviceKey = nullptr;
+        if (!config.getProperty("key", &deviceKey)) {
             ESP_LOGE(TAG, "Device key not found");
             return false;
         }

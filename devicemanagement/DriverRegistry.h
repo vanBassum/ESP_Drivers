@@ -26,16 +26,15 @@ public:
     // Create a driver based on compatibility field
     std::shared_ptr<IDevice> CreateDriver(std::shared_ptr<DeviceManager> deviceManager, IDeviceConfig& config) {
         
-        const char* compatibility = config.getProperty("compatible")->str;
-        const char* deviceKey = config.getProperty("key")->str;
-
-        if (compatibility == nullptr) {
-            ESP_LOGE(TAG, "No compatible property found");
+        const char* deviceKey = nullptr;
+        if (!config.getProperty("key", &deviceKey)) {
+            ESP_LOGE(TAG, "Device key not found");
             return nullptr;
         }
 
-        if (deviceKey == nullptr) {
-            ESP_LOGE(TAG, "No key found");
+        const char* compatibility = nullptr;
+        if (!config.getProperty("compatible", &compatibility)) {
+            ESP_LOGE(TAG, "Compatible key not found");
             return nullptr;
         }
 

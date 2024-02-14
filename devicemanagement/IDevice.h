@@ -37,6 +37,7 @@ public:
         WrongStatus = 2,                                    // Device is in wrong state
         Dependency = 3,                                     // Some dependency isn't available
         ConfigError = 4,                                    // Configuration problem
+        InitFault   = 5,
     };
 
 private:
