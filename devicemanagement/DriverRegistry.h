@@ -42,9 +42,11 @@ public:
         for (const auto& entry : drivers) {
             if (std::strcmp(entry.compatibility, compatibility) == 0) {
                 auto device = entry.factory();
-                device->key = deviceKey;
-                device->setConfig(config);
-                device->init(deviceManager);
+                if(device)
+                {
+                    device->key = deviceKey;
+                    device->setConfig(config);
+                }
                 return device;
             }
         }

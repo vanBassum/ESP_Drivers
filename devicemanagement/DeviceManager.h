@@ -38,14 +38,37 @@ private:
         }
 
         // Create a new device
+        ESP_LOGI(TAG, "Creating device '%s'", deviceKey);
         auto device = driverRegistry->CreateDriver(shared_from_this(), config);
         if(device)
         {
             devices.push_back(device);
-            ESP_LOGI(TAG, "Created device %s", deviceKey);
             return true;
         }
         return false;
+    }
+
+    int pollDevice(std::shared_ptr<IDevice> device)
+    {
+        switch (device->getStatus())
+        {
+        case IDevice::Status::Dependencies: 
+            return device->loadDependencies(shared_from_this()) == IDevice::ErrCode::Ok ? 1 : 0;
+
+        case IDevice::Status::Initializing:
+            return device->init() == IDevice::ErrCode::Ok ? 1 : 0;
+
+        case IDevice::Status::Error:            // Driver is end of life
+            return 2;
+
+        case IDevice::Status::ConfigError:      // Unrecoverable error!
+            ESP_LOGE(TAG, "Error in device configuration!");
+            assert(false);
+        case IDevice::Status::Created:          // This should not be possible, CreateDriver configures the device!
+        case IDevice::Status::Ready:
+        default:
+            return 0;
+        }
     }
 
     void work() {
@@ -53,11 +76,12 @@ private:
             bool reScan = false;
 
             for (auto it = devices.begin(); it != devices.end();) {
-                auto& device = *it;
-                if (device->checkStatus(IDevice::Status::Configured)) {
-                    reScan |= device->init(shared_from_this()) == IDevice::ErrCode::Ok;  //If initialisation was ok, dont wait for rescan.
+                int stat = pollDevice(*it);
+
+                if (stat == 1) {
+                    reScan = true;
                     ++it; // Move to the next device
-                } else if (device->checkStatus(IDevice::Status::Error)) {
+                } else if (stat == 2) {
                     it = devices.erase(it); // Remove the device from the list
                 } else {
                     ++it; // Move to the next device

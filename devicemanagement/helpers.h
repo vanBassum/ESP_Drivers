@@ -34,6 +34,7 @@
         }                                                                                       \
     } while(0)
 
+
 #define DEV_RETURN_ON_TRUE(a, returnValue, log_tag, format, ...) do {                           \
         if (unlikely(a)) {                                                                      \
             ESP_LOGE(log_tag, "%s(%d): " format, __FUNCTION__, __LINE__, ##__VA_ARGS__);        \
@@ -41,20 +42,31 @@
         }                                                                                       \
     } while(0)
 
-#define GET_STR_OR_RETURN(dst, property, log_tag, format, ...) do {                             \
+#define GET_STR_OR_RETURN(dst, property, newStatus, returnValue, log_tag, format, ...) do {     \
         const DevicePropertyValue* value = property;                                            \
         if (value == NULL) {                                                                    \
-            setStatus(Status::ConfigError);                                                     \
+            setStatus(newStatus);                                                               \
             ESP_LOGE(log_tag, format, ##__VA_ARGS__);                                           \
-            return ErrCode::ConfigError;                                                        \
+            return returnValue;                                                                 \
         }                                                                                       \
         dst = value->str;                                                                       \
     } while (0)
 
 
+#define GET_DEV_OR_RETURN(dst, device, newStatus, returnValue, log_tag, format, ...) do {       \
+        if (device == NULL) {                                                                   \
+            setStatus(newStatus);                                                               \
+            ESP_LOGE(log_tag, format, ##__VA_ARGS__);                                           \
+            return returnValue;                                                                 \
+        }                                                                                       \
+        dst = device;                                                                           \
+    } while (0)
 
-#define DEVICE_PARSTR(val)  {.str = (val)} // Initialize a pointer to a string
-#define DEVICE_PARI32(val)  {.i32 = (val)} // Initialize an int32_t value
+
+
+
+#define DEVICE_PROP_STR(val)  {.str = (val)} // Initialize a pointer to a string
+#define DEVICE_PROP_I32(val)  {.i32 = (val)} // Initialize an int32_t value
 #define DEVICE_END_MARKER  {nullptr, {0}}  // End marker for the device tree
 
 union DevicePropertyValue {

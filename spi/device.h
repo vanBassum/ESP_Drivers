@@ -4,7 +4,9 @@
 #include "DeviceManager.h"
 
 
-class SpiDevice : public IDevice {
+
+
+class SpiDevice : public ISpiDevice {
     
     constexpr static const char* TAG = "SpiDevice";
     const char* spiBusKey = nullptr;
@@ -13,33 +15,45 @@ class SpiDevice : public IDevice {
 public:
     virtual ~SpiDevice() {}
 
-    virtual ErrCode setConfig(IDeviceConfig& config) override
+    //Since this is handeled by the devicemanager, assume this is only called on apropiate times. So no need to check the status of the driver.
+    virtual ErrCode setConfig(IDeviceConfig& config) override  
     {
-        DEV_RETURN_ON_FALSE(checkStatus(Status::Created), ErrCode::WrongStatus, TAG, "Tried to config driver with status %d", (int)getStatus());
-
-        // Read the config
-        GET_STR_OR_RETURN(spiBusKey, config.getProperty("spiBus"), TAG, "Couln't get property 'spiBus'");
-
-        setStatus(Status::Configured);
+        GET_STR_OR_RETURN(spiBusKey, config.getProperty("spiBus"), Status::ConfigError, ErrCode::ConfigError, TAG, "No property found for 'spiBus'");
+        setStatus(Status::Dependencies);
         return ErrCode::Ok;
     }
 
-    virtual ErrCode init(std::shared_ptr<DeviceManager> deviceManager) override
+    //Since this is handeled by the devicemanager, assume this is only called on apropiate times. So no need to check the status of the driver. Also assume the devicemanger is not null.
+    virtual ErrCode loadDependencies(std::shared_ptr<DeviceManager> deviceManager) override
     {
-        DEV_SET_STATUS_AND_RETURN_ON_FALSE(deviceManager, Status::Error, ErrCode::NullPtr, TAG, "Cannot initialize device, devicemanger nullptr");
-        DEV_SET_STATUS_AND_RETURN_ON_FALSE(checkStatus(Status::Configured), Status::Error, ErrCode::WrongStatus, TAG, "Tried to initialize driver with status %d", (int)getStatus());
+        GET_DEV_OR_RETURN(bus, deviceManager->getDeviceByKey<SpiBus>(spiBusKey), Status::Dependencies, ErrCode::Dependency, TAG, "Dependencies not ready %d", (int)getStatus());
+        setStatus(Status::Initializing);
+        return ErrCode::Ok;
+    }
 
-        // Use the devicemanager to get all dependencies.
-        bus = deviceManager->getDeviceByKey<SpiBus>(spiBusKey);
-        DEV_RETURN_ON_FALSE(bus, ErrCode::Dependency, TAG, "Cannot initialize device, dependency 'SpiBus' missing");
-
-        // Check for dependencies to be status ready.       (There are no dependecies in this case)
-        DEV_RETURN_ON_FALSE(bus->checkStatus(Status::Ready), ErrCode::Dependency, TAG, "Cannot initialize device, dependency 'SpiBus' not ready");
-
-        // TODO: Initialize the drivers
-
-
+    //Since this is handeled by the devicemanager, assume this is only called on apropiate times. So no need to check the status of the driver.
+    virtual ErrCode init() override
+    {
+        //TODO: Initialize the driver here! Dont forget to check the result of the functions you call from the dependecies.
         setStatus(Status::Ready);
+        return ErrCode::Ok;
+    }
+
+    virtual ErrCode Write(uint8_t* data, size_t size) override 
+    {
+        //Ensure the device is in the ready state
+        DEV_RETURN_ON_FALSE(checkStatus(Status::Ready), ErrCode::WrongStatus, TAG, "Driver not ready, status %d", (int)getStatus());
+
+        //TODO: Implement writing of data. Dont forget to check the result of the functions you call from the dependecies.
+        return ErrCode::Ok;
+    }
+
+    virtual ErrCode Read(uint8_t* data, size_t size) override 
+    {
+        //Ensure the device is in the ready state
+        DEV_RETURN_ON_FALSE(checkStatus(Status::Ready), ErrCode::WrongStatus, TAG, "Driver not ready, status %d", (int)getStatus());
+
+        //TODO: Implement reading of data. Dont forget to check the result of the functions you call from the dependecies.
         return ErrCode::Ok;
     }
 };

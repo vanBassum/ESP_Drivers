@@ -13,10 +13,20 @@ public:
     enum class Status : uint32_t
     {
         Created = 0,                                        // Device was created, waiting for configuration.
-        Configured = 1,                                     // Device was configured, waiting for initialisaion.
-        Ready = 2,                                          // Device is initialized and ready to use.
-        ConfigError = 3,                                    // Device couldn't be created because of a configuration error.
-        Error = 4,                                          // Device is end of live, all references should be removed.
+        Dependencies = 1,                                   // Device was configured, waiting for dependencies.
+        Initializing = 2,                                   // Device needs initialisation.
+        Ready = 3,                                          // Device is initialized and ready to use.
+        ConfigError = 4,                                    // Device couldn't be created because of a configuration error.
+        Error = 5,                                          // Device is end of live, all references should be removed.
+    };
+
+    constexpr static const char* StatusStr[] = {
+        "Created",         
+        "Dependencies",    
+        "Initializing",    
+        "Ready",           
+        "ConfigError",     
+        "Error",           
     };
 
 
@@ -35,14 +45,17 @@ private:
 protected: 
     void setStatus(Status newStatus) 
     {
-        ESP_LOGI(TAG, "Device '%s' status changed. '%d' to '%d'", key, (int)status, (int)newStatus);
+        if(newStatus == Status::Ready)  //Only show when driver is ready.
+            ESP_LOGI(TAG, "'%s' status changed. '%s' to '%s'", key, StatusStr[(int)status], StatusStr[(int)newStatus]);
+
         status = newStatus;
     }
 
 public:
     virtual ~IDevice() {}
     virtual ErrCode setConfig(IDeviceConfig& config) = 0;
-    virtual ErrCode init(std::shared_ptr<DeviceManager> deviceManager) = 0;
+    virtual ErrCode loadDependencies(std::shared_ptr<DeviceManager> deviceManager) = 0;
+    virtual ErrCode init() = 0;
     Status getStatus() {return status;}
     bool checkStatus(Status cStatus) { return cStatus == status;}
 };
