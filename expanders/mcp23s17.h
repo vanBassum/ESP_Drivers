@@ -3,12 +3,12 @@
 #include "esp_base.h"
 #include "spi/device.h"
 #include "gpio.h"
-#include "IDevice.h"
+#include "IGpio.h"
 
 //https://github.com/RobTillaart/MCP23S17/blob/master/MCP23S17.cpp
 //https://www.esp32.com/viewtopic.php?t=9309
 
-class MCP23S17 : public IDevice
+class MCP23S17 : public IGpio
 {
     constexpr static const char* TAG = "MCP23S17";
 	Mutex mutex;
@@ -22,13 +22,20 @@ class MCP23S17 : public IDevice
 	ErrCode Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count);
 	ErrCode Read8(uint8_t reg, uint8_t* value);
 	ErrCode Write8(uint8_t reg, uint8_t value);
-	//ErrCode Read16(uint8_t reg, uint16_t* value);
-	//ErrCode Write16(uint8_t reg, uint16_t value);
+	ErrCode Read16(uint8_t reg, uint16_t* value);
+	ErrCode Write16(uint8_t reg, uint16_t value);
 
 public:
 	virtual ErrCode setConfig(IDeviceConfig& config) override;
     virtual ErrCode loadDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
     virtual ErrCode init() override;
+
+	virtual ErrCode Write(uint32_t bank, uint8_t mask, uint8_t value) override;
+    virtual ErrCode Read(uint32_t bank, uint8_t mask, uint8_t* value) override;
+    virtual ErrCode SetOuput(uint32_t bank, uint8_t mask) override;
+    virtual ErrCode SetInput(uint32_t bank, uint8_t mask) override;
+
+
 
 	//ErrCode SetPinsMode(Pins mask, PinModes mode);
 	//ErrCode SetPins(Pins mask, Pins value);

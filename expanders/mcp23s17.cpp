@@ -48,7 +48,7 @@ typedef enum
 IDevice::ErrCode MCP23S17::setConfig(IDeviceConfig &config)
 {
     ContextLock lock(mutex);
-	//DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiDevice", &spiDeviceKey), );
+	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiDevice", &spiDeviceKey),  Status::ConfigError, ErrCode::ConfigError, TAG, "Missing parameter: spiDevice");
 	setStatus(Status::Dependencies);
 	return ErrCode::Ok;
 }
@@ -64,7 +64,7 @@ IDevice::ErrCode MCP23S17::loadDependencies(std::shared_ptr<DeviceManager> devic
 IDevice::ErrCode MCP23S17::init()
 {
 	ContextLock lock(mutex);
-	//TODO: Claim the bus!
+
 	Write8(MCP23S17_REG_IOCON_A, 0x08);    					// Set up ICON A,B to auto increment
 
 
@@ -73,21 +73,48 @@ IDevice::ErrCode MCP23S17::init()
 }
 
 
+IDevice::ErrCode MCP23S17::Write(uint32_t bank, uint8_t mask, uint8_t value)
+{
+    ContextLock lock(mutex);
+	pinBuffer[bank] = (pinBuffer[bank] & ~mask) | (value & mask);
+	uint16_t val = pinBuffer[0] << 8 | pinBuffer[1];
+	return Write16(MCP23S17_REG_GPIO_A, val);
+}
+
+IDevice::ErrCode MCP23S17::Read(uint32_t bank, uint8_t mask, uint8_t* value)
+{
+    ContextLock lock(mutex);
+	uint16_t val;
+	IDevice::ErrCode result = Read16(MCP23S17_REG_GPIO_A, &val);
+	*value = ((uint8_t*)&val)[bank];
+	return result;
+}
+
+IDevice::ErrCode MCP23S17::SetOuput(uint32_t bank, uint8_t mask)			 
+{
+	ContextLock lock(mutex);
+	pinDirBuffer[bank] = pinDirBuffer[bank] & ~mask;
+	uint16_t val = pinDirBuffer[0] << 8 | pinDirBuffer[1];
+	return Write16(MCP23S17_REG_DIR_A, val);
+}
+
+IDevice::ErrCode MCP23S17::SetInput(uint32_t bank, uint8_t mask) 			
+{
+    ContextLock lock(mutex);
+	pinDirBuffer[bank] = (pinDirBuffer[bank] & ~mask) | mask;
+	uint16_t val = pinDirBuffer[0] << 8 | pinDirBuffer[1];
+	return Write16(MCP23S17_REG_DIR_A, val);
+}
+
+
 IDevice::ErrCode MCP23S17::Transmit(uint8_t *txData, uint8_t *rxData, uint8_t count)
 {
+	//TODO: Claim the bus!
 	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->Transmit(txData, rxData, count) == ErrCode::Ok, Status::Dependencies, ErrCode::Dependency, TAG, "spiDevice->Transmit returned error");
     return ErrCode::Ok;
 }
 
-IDevice::ErrCode MCP23S17::Read8(uint8_t reg, uint8_t *value)
-{
-	uint8_t txData[3];
-	uint8_t rxData[3];	
-	txData[0] = MCP23S17_MANUF_CHIP_ADDRESS | (devAddr << 1) | 0x01;
-	txData[1] = reg;
-	txData[2] = 0x00;
-    return Transmit(txData, rxData, 3);
-}
+
 
 IDevice::ErrCode MCP23S17::Write8(uint8_t reg, uint8_t value)
 {
@@ -97,3 +124,39 @@ IDevice::ErrCode MCP23S17::Write8(uint8_t reg, uint8_t value)
 	txData[2] = value;
 	return Transmit(txData, NULL, 3);
 }
+
+IDevice::ErrCode MCP23S17::Read8(uint8_t reg, uint8_t *value)
+{
+	uint8_t txData[3];
+	uint8_t rxData[3];	
+	txData[0] = MCP23S17_MANUF_CHIP_ADDRESS | (devAddr << 1) | 0x01;
+	txData[1] = reg;
+	txData[2] = 0x00;
+	ErrCode result = Transmit(txData, rxData, 3);
+	*value = rxData[2];
+    return result;
+}
+
+IDevice::ErrCode MCP23S17::Read16(uint8_t reg, uint16_t *value)
+{
+	uint8_t txData[4];
+	uint8_t rxData[4];	
+	txData[0] = MCP23S17_MANUF_CHIP_ADDRESS | (devAddr << 1) | 0x01;
+	txData[1] = reg;
+	txData[2] = 0x00;
+	txData[3] = 0x00;
+	ErrCode result = Transmit(txData, rxData, 4);
+	*value = (rxData[3] << 8) | rxData[2];
+	return result;
+}
+
+IDevice::ErrCode MCP23S17::Write16(uint8_t reg, uint16_t value)
+{
+	uint8_t txData[4];
+	txData[0] = MCP23S17_MANUF_CHIP_ADDRESS | (devAddr << 1);
+	txData[1] = reg;
+	txData[2] = (uint8_t)(value);
+	txData[3] = (uint8_t)(value >> 8);
+	return Transmit(txData, NULL, 4);
+}
+

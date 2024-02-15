@@ -1,59 +1,106 @@
 #include "device.h"
 #include "esp_log.h"
-/*
-SPIDevice::SPIDevice(std::shared_ptr<SPIBus> spiBus) : spiBus(std::move(spiBus)) {
-    assert(!spiBus && "SPIBus is nullptr");
+
+
+
+IDevice::ErrCode SpiDevice::setConfig(IDeviceConfig &config)
+{
+	ContextLock lock(mutex);
+	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiBus", &spiBusKey), Status::ConfigError, ErrCode::ConfigError, TAG, "No property found for 'spiBus'");
+	config.getProperty("command_bits", &devConfig.command_bits);
+	config.getProperty("address_bits", &devConfig.address_bits);
+	config.getProperty("dummy_bits", &devConfig.dummy_bits);
+	config.getProperty("mode", &devConfig.mode);
+	config.getProperty("duty_cycle_pos", &devConfig.duty_cycle_pos);
+	config.getProperty("cs_ena_pretrans", &devConfig.cs_ena_pretrans);
+	config.getProperty("cs_ena_posttrans", &devConfig.cs_ena_posttrans);
+	config.getProperty("clock_speed_hz", &devConfig.clock_speed_hz);
+	config.getProperty("input_delay_ns", &devConfig.input_delay_ns);
+	config.getProperty("spics_io_num", &devConfig.spics_io_num);
+	config.getProperty("flags", &devConfig.flags);
+	config.getProperty("queue_size", &devConfig.queue_size);
+
+
+	if(config.getProperty("customCS", &customCsPin))
+	{
+		devConfig.pre_cb = Select;
+		devConfig.post_cb = Deselect;
+		
+	}
+
+	//config.getProperty("pre_cb", &devConfig.pre_cb);
+	//config.getProperty("post_cb", &devConfig.post_cb);
+	
+	setStatus(Status::Dependencies);
+	return ErrCode::Ok;
 }
 
-void SPIDevice::setConfig(const Config& newConfig) {
-    assert(!initialized && "Can't change configuration after initialization");
-    config = newConfig;
+IDevice::ErrCode SpiDevice::loadDependencies(std::shared_ptr<DeviceManager> deviceManager)
+{
+	ContextLock lock(mutex);
+	GET_DEV_OR_RETURN(spiBus, deviceManager->getDeviceByKey<SpiBus>(spiBusKey), Status::Dependencies, ErrCode::Dependency, TAG, "Dependencies not ready %d", (int)getStatus());
+	setStatus(Status::Initializing);
+	return ErrCode::Ok;
 }
 
-void SPIDevice::init() {
-    assert(!initialized && "SPIDevice already initialized");
-    assert(spiBus->isInitialized() && "SPIBus not initialized");
-    ESP_LOGI(TAG, "Initializing host %d", spiBus->config.host);
-	ESP_ERROR_CHECK(spi_bus_add_device(spiBus->config.host, &config.devConfig, &handle));
-    initialized = true;
+IDevice::ErrCode SpiDevice::init()
+{
+	ContextLock lock(mutex);
+	spi_host_device_t host;
+	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiBus->GetHost(&host) == ErrCode::Ok, Status::Dependencies, ErrCode::Dependency, TAG, "spiBus->GetHost error");
+
+	if(spi_bus_add_device(host, &devConfig, &handle) != ESP_OK)
+	{
+		setStatus(Status::Error);
+		return ErrCode::InitFault;
+	}
+
+	//TODO: Initialize the driver here! Dont forget to check the result of the functions you call from the dependecies.
+	setStatus(Status::Ready);
+	return ErrCode::Ok;
 }
 
-void SPIDevice::transfer(uint8_t* txData, uint8_t* rxData, size_t length) {
-	assert(initialized && "SPIDevice not initialized");
-    ContextLock lock(mutex);
-    spi_transaction_t transaction {};
-    transaction.length = length * 8; // In bits
-    transaction.tx_buffer = txData;
-    transaction.rx_buffer = rxData;
-    ESP_ERROR_CHECK(spi_device_transmit(handle, &transaction));
+IDevice::ErrCode SpiDevice::Write(uint8_t *data, size_t size)
+{
+	ContextLock lock(mutex);
+	//Ensure the device is in the ready state
+	DEV_RETURN_ON_FALSE(checkStatus(Status::Ready), ErrCode::WrongStatus, TAG, "Driver not ready, status %d", (int)getStatus());
+
+	//TODO: Implement writing of data. Dont forget to check the result of the functions you call from the dependecies.
+	return ErrCode::Ok;
 }
 
-void SPIDevice::PollingTransmit(spi_transaction_t* transaction) {
-	assert(initialized && "SPIDevice not initialized");
-    ContextLock lock(mutex);
-    esp_err_t res = spi_device_polling_transmit(handle, transaction);
-    ESP_ERROR_CHECK(res); // Transmit!
+IDevice::ErrCode SpiDevice::Read(uint8_t *data, size_t size)
+{
+	ContextLock lock(mutex);
+	//Ensure the device is in the ready state
+	DEV_RETURN_ON_FALSE(checkStatus(Status::Ready), ErrCode::WrongStatus, TAG, "Driver not ready, status %d", (int)getStatus());
+
+	//TODO: Implement reading of data. Dont forget to check the result of the functions you call from the dependecies.
+	return ErrCode::Ok;
 }
 
-void SPIDevice::Transmit(spi_transaction_t* transaction) {
-	assert(initialized && "SPIDevice not initialized");
-    ContextLock lock(mutex);
-    ESP_ERROR_CHECK(spi_device_transmit(handle, transaction));
+IDevice::ErrCode SpiDevice::Transmit(uint8_t *txData, uint8_t *rxData, size_t size)
+{
+	ContextLock lock(mutex);
+	//Ensure the device is in the ready state
+	DEV_RETURN_ON_FALSE(checkStatus(Status::Ready), ErrCode::WrongStatus, TAG, "Driver not ready, status %d", (int)getStatus());
+
+	//TODO: Implement reading of data. Dont forget to check the result of the functions you call from the dependecies.
+	return ErrCode::Ok;
 }
 
-void SPIDevice::ReleaseBus() {
-	assert(initialized && "SPIDevice not initialized");
-    ContextLock lock(mutex);
-    spi_device_release_bus(handle);
+void IRAM_ATTR Select(spi_transaction_t *t)
+{
+    gpio_set_level(SPI_CS_PIN_A0, 0);
+	gpio_set_level(SPI_CS_PIN_A1, 0);
+	gpio_set_level(SPI_CS_PIN_A2, 0);
 }
 
-void SPIDevice::AcquireBus() {
-	assert(initialized && "SPIDevice not initialized");
-    ContextLock lock(mutex);
-    ESP_ERROR_CHECK(spi_device_acquire_bus(handle, portMAX_DELAY));
+void IRAM_ATTR Deselect(spi_transaction_t *t)
+{
+    SpiDevice* device = (SpiDevice*)t->user;  
+    gpio_set_level(SPI_CS_PIN_A0, device->customCsPin & 0x01);
+	gpio_set_level(SPI_CS_PIN_A1, device->customCsPin & 0x02);
+	gpio_set_level(SPI_CS_PIN_A2, device->customCsPin & 0x04);
 }
-
-bool SPIDevice::isInitialized() const {
-    return initialized;
-}
-*/
