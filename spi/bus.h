@@ -16,10 +16,10 @@ public:
     virtual ~SpiBus() {}
 
     // Since this is handeled by the devicemanager, assume this is only called on apropiate times. So no need to check the status of the driver.
-    virtual ErrCode setConfig(IDeviceConfig &config) override
+    virtual DeviceResult setDeviceConfig(IDeviceConfig &config) override
     {
         ContextLock lock(mutex);
-        DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("host", (int32_t *)&host), Status::ConfigError, ErrCode::ConfigError, TAG, "No property found for 'host'");
+        DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("host", (int32_t *)&host), DeviceStatus::ConfigError, DeviceResult::ConfigError, TAG, "No property found for 'host'");
         config.getProperty("dmaChannel", (int32_t *)&dmaChannel);
         config.getProperty("mosi_io_num", (int32_t *)&busConfig.mosi_io_num);
         config.getProperty("miso_io_num", (int32_t *)&busConfig.miso_io_num);
@@ -34,37 +34,37 @@ public:
         config.getProperty("flags", (int32_t *)&busConfig.flags);
         config.getProperty("intr_flags", (int32_t *)&busConfig.intr_flags);
 
-        setStatus(Status::Dependencies);
-        return ErrCode::Ok;
+        setStatus(DeviceStatus::Dependencies);
+        return DeviceResult::Ok;
     }
 
     // Since this is handeled by the devicemanager, assume this is only called on apropiate times. So no need to check the status of the driver. Also assume the devicemanger is not null.
-    virtual ErrCode loadDependencies(std::shared_ptr<DeviceManager> deviceManager) override
+    virtual DeviceResult loadDeviceDependencies(std::shared_ptr<DeviceManager> deviceManager) override
     {
         ContextLock lock(mutex);
-        setStatus(Status::Initializing);
-        return ErrCode::Ok;
+        setStatus(DeviceStatus::Initializing);
+        return DeviceResult::Ok;
     }
 
     // Since this is handeled by the devicemanager, assume this is only called on apropiate times. So no need to check the status of the driver.
-    virtual ErrCode init() override
+    virtual DeviceResult init() override
     {
         ContextLock lock(mutex);
         if(spi_bus_initialize(host, &busConfig, dmaChannel) != ESP_OK)
         {
-            setStatus(Status::Error);
-            return ErrCode::InitFault;
+            setStatus(DeviceStatus::Error);
+            return DeviceResult::InitFault;
         }
-        setStatus(Status::Ready);
-        return ErrCode::Ok;
+        setStatus(DeviceStatus::Ready);
+        return DeviceResult::Ok;
     }
 
-    ErrCode GetHost(spi_host_device_t* host)
+    DeviceResult GetHost(spi_host_device_t* host)
     {
         ContextLock lock(mutex);
-        DEV_RETURN_ON_FALSE(checkStatus(Status::Ready), ErrCode::WrongStatus, TAG, "Driver not ready, status %d", (int)getStatus());
+        DEV_RETURN_ON_FALSE(checkDeviceStatus(DeviceStatus::Ready), DeviceResult::WrongStatus, TAG, "Driver not ready, status %d", (int)getDeviceStatus());
         *host = this->host;
-        return ErrCode::Ok;
+        return DeviceResult::Ok;
     }
 };
 

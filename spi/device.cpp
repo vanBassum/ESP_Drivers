@@ -18,10 +18,10 @@ void print_spi_device_interface_config(const spi_device_interface_config_t *conf
     printf("post_cb: %p\n", (void *)config->post_cb);
 }
 
-IDevice::ErrCode SpiDevice::setConfig(IDeviceConfig &config)
+DeviceResult SpiDevice::setDeviceConfig(IDeviceConfig &config)
 {
 	ContextLock lock(mutex);
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiBus", &spiBusKey), Status::ConfigError, ErrCode::ConfigError, TAG, "No property found for 'spiBus'");
+	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiBus", &spiBusKey), DeviceStatus::ConfigError, DeviceResult::ConfigError, TAG, "No property found for 'spiBus'");
 	config.getProperty("command_bits", &devConfig.command_bits);
 	config.getProperty("address_bits", &devConfig.address_bits);
 	config.getProperty("dummy_bits", &devConfig.dummy_bits);
@@ -46,39 +46,39 @@ IDevice::ErrCode SpiDevice::setConfig(IDeviceConfig &config)
 	//config.getProperty("pre_cb", &devConfig.pre_cb);
 	//config.getProperty("post_cb", &devConfig.post_cb);
 	
-	setStatus(Status::Dependencies);
-	return ErrCode::Ok;
+	setStatus(DeviceStatus::Dependencies);
+	return DeviceResult::Ok;
 }
 
-IDevice::ErrCode SpiDevice::loadDependencies(std::shared_ptr<DeviceManager> deviceManager)
+DeviceResult SpiDevice::loadDeviceDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
-	GET_DEV_OR_RETURN(spiBus, deviceManager->getDeviceByKey<SpiBus>(spiBusKey), Status::Dependencies, ErrCode::Dependency, TAG, "Dependencies not ready %d", (int)getStatus());
-	setStatus(Status::Initializing);
-	return ErrCode::Ok;
+	GET_DEV_OR_RETURN(spiBus, deviceManager->getDeviceByKey<SpiBus>(spiBusKey), DeviceStatus::Dependencies, DeviceResult::Dependency, TAG, "Dependencies not ready %d", (int)getDeviceStatus());
+	setStatus(DeviceStatus::Initializing);
+	return DeviceResult::Ok;
 }
 
-IDevice::ErrCode SpiDevice::init()
+DeviceResult SpiDevice::init()
 {
 	ContextLock lock(mutex);
 	spi_host_device_t host;
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiBus->GetHost(&host) == ErrCode::Ok, Status::Dependencies, ErrCode::Dependency, TAG, "spiBus->GetHost error");
+	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiBus->GetHost(&host) == DeviceResult::Ok, DeviceStatus::Dependencies, DeviceResult::Dependency, TAG, "spiBus->GetHost error");
 
 	if(spi_bus_add_device(host, &devConfig, &handle) != ESP_OK)
 	{
-		setStatus(Status::Error);
-		return ErrCode::InitFault;
+		setStatus(DeviceStatus::Error);
+		return DeviceResult::InitFault;
 	}
 
 	//TODO: Initialize the driver here! Dont forget to check the result of the functions you call from the dependecies.
-	setStatus(Status::Ready);
-	return ErrCode::Ok;
+	setStatus(DeviceStatus::Ready);
+	return DeviceResult::Ok;
 }
 
-IDevice::ErrCode SpiDevice::Transmit(uint8_t *txData, uint8_t *rxData, size_t size)
+DeviceResult SpiDevice::Transmit(uint8_t *txData, uint8_t *rxData, size_t size)
 {
 	ContextLock lock(mutex);
-	DEV_RETURN_ON_FALSE(checkStatus(Status::Ready), ErrCode::WrongStatus, TAG, "Driver not ready, status %d", (int)getStatus());
+	DEV_RETURN_ON_FALSE(checkDeviceStatus(DeviceStatus::Ready), DeviceResult::WrongStatus, TAG, "Driver not ready, status %d", (int)getDeviceStatus());
 
     spi_transaction_t transaction {};
     transaction.length = size * 8; // In bits
@@ -86,12 +86,12 @@ IDevice::ErrCode SpiDevice::Transmit(uint8_t *txData, uint8_t *rxData, size_t si
     transaction.rx_buffer = rxData;
 	transaction.user = this;
 
-	if(spi_device_transmit(handle, &transaction) != ESP_OK)
+	if(spi_device_polling_transmit(handle, &transaction) != ESP_OK)
 	{
-		setStatus(Status::Dependencies);
-		return ErrCode::Dependency;
+		setStatus(DeviceStatus::Dependencies);
+		return DeviceResult::Dependency;
 	}
-	return ErrCode::Ok;
+	return DeviceResult::Ok;
 }
 
 void IRAM_ATTR Select(spi_transaction_t *t)

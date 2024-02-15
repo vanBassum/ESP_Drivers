@@ -19,27 +19,21 @@ class MCP23S17 : public IGpio
 	uint8_t pinBuffer[2] = {0};
 	uint8_t pinDirBuffer[2] = {0};
 	
-	ErrCode Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count);
-	ErrCode Read8(uint8_t reg, uint8_t* value);
-	ErrCode Write8(uint8_t reg, uint8_t value);
-	ErrCode Read16(uint8_t reg, uint16_t* value);
-	ErrCode Write16(uint8_t reg, uint16_t value);
+	DeviceResult Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count);
+	DeviceResult Read8(uint8_t reg, uint8_t* value);
+	DeviceResult Write8(uint8_t reg, uint8_t value);
+	DeviceResult Read16(uint8_t reg, uint16_t* value);
+	DeviceResult Write16(uint8_t reg, uint16_t value);
 
 public:
-	virtual ErrCode setConfig(IDeviceConfig& config) override;
-    virtual ErrCode loadDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
-    virtual ErrCode init() override;
-
-	virtual ErrCode Write(uint32_t bank, uint8_t mask, uint8_t value) override;
-    virtual ErrCode Read(uint32_t bank, uint8_t mask, uint8_t* value) override;
-    virtual ErrCode SetOuput(uint32_t bank, uint8_t mask) override;
-    virtual ErrCode SetInput(uint32_t bank, uint8_t mask) override;
+	virtual DeviceResult setDeviceConfig(IDeviceConfig& config) override;
+    virtual DeviceResult loadDeviceDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
+    virtual DeviceResult init() override;
 
 
+    virtual DeviceResult portConfigure(uint32_t port, uint8_t mask, GpioFlags value) override;
+    virtual DeviceResult portRead(uint32_t port, uint8_t mask, uint8_t* value) override;
+    virtual DeviceResult portWrite(uint32_t port, uint8_t mask, uint8_t value) override;
 
-	//ErrCode SetPinsMode(Pins mask, PinModes mode);
-	//ErrCode SetPins(Pins mask, Pins value);
-	//ErrCode GetPins(Pins mask);
-	//ErrCode ConsecutivePinWriting(Pins mask, Pins* values, size_t size);
 };
 

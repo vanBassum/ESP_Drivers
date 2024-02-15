@@ -49,22 +49,22 @@ private:
 
     int pollDevice(std::shared_ptr<IDevice> device)
     {
-        switch (device->getStatus())
+        switch (device->getDeviceStatus())
         {
-        case IDevice::Status::Dependencies: 
-            return device->loadDependencies(shared_from_this()) == IDevice::ErrCode::Ok ? 1 : 0;
+        case DeviceStatus::Dependencies: 
+            return device->loadDeviceDependencies(shared_from_this()) == DeviceResult::Ok ? 1 : 0;
 
-        case IDevice::Status::Initializing:
-            return device->init() == IDevice::ErrCode::Ok ? 1 : 0;
+        case DeviceStatus::Initializing:
+            return device->init() == DeviceResult::Ok ? 1 : 0;
 
-        case IDevice::Status::Error:            // Driver is end of life
+        case DeviceStatus::Error:            // Driver is end of life
             return 2;
 
-        case IDevice::Status::ConfigError:      // Unrecoverable error!
+        case DeviceStatus::ConfigError:      // Unrecoverable error!
             ESP_LOGE(TAG, "Error in device configuration!");
             assert(false);
-        case IDevice::Status::Created:          // This should not be possible, CreateDriver configures the device!
-        case IDevice::Status::Ready:
+        case DeviceStatus::Created:          // This should not be possible, CreateDriver configures the device!
+        case DeviceStatus::Ready:
         default:
             return 0;
         }
