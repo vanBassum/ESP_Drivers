@@ -15,9 +15,9 @@ public:
 
     
     // https://docs.zephyrproject.org/latest/hardware/peripherals/gpio.html#c.gpio_pin_configure
-    virtual DeviceResult portConfigure(uint32_t port, uint8_t mask, GpioFlags flags) = 0;
-
     // https://docs.zephyrproject.org/latest/hardware/peripherals/gpio.html#c.gpio_port_get_raw
+    
+    virtual DeviceResult portConfigure(uint32_t port, uint8_t mask, GpioFlags flags) = 0;
     virtual DeviceResult portRead(uint32_t port, uint8_t mask, uint8_t* value) = 0;
     virtual DeviceResult portWrite(uint32_t port, uint8_t mask, uint8_t value) = 0;
 

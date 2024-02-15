@@ -56,7 +56,7 @@ DeviceResult MCP23S17::setDeviceConfig(IDeviceConfig &config)
 DeviceResult MCP23S17::loadDeviceDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
-	GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<SpiDevice>(spiDeviceKey), DeviceStatus::Dependencies, DeviceResult::Dependency, TAG, "Dependencies not ready %d", (int)getDeviceStatus());
+	GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey), DeviceStatus::Dependencies, DeviceResult::Dependency, TAG, "Dependencies not ready %d", (int)getDeviceStatus());
 	setStatus(DeviceStatus::Initializing);
 	return DeviceResult::Ok;
 }
@@ -97,51 +97,12 @@ DeviceResult MCP23S17::portWrite(uint32_t port, uint8_t mask, uint8_t value)
 	return Write16(MCP23S17_REG_GPIO_A, val);
 }
 
-
-
-
-// DriverResult MCP23S17::WritePins(uint32_t bank, uint8_t mask, uint8_t value)
-// {
-//     
-// 		
-// 		
-// 		
-// }
-// 
-// DriverResult MCP23S17::ReadPins(uint32_t bank, uint8_t mask, uint8_t* value)
-// {
-//  
-// 	
-// 	
-// 	
-// 	
-// }
-// 
-// DriverResult MCP23S17::SetOuput(uint32_t bank, uint8_t mask)			 
-// {
-// 	ContextLock lock(mutex);
-// 	pinDirBuffer[bank] = pinDirBuffer[bank] & ~mask;
-// 	
-// 	
-// }
-// 
-// DriverResult MCP23S17::SetInput(uint32_t bank, uint8_t mask) 			
-// {
-//     ContextLock lock(mutex);
-// 	pinDirBuffer[bank] = (pinDirBuffer[bank] & ~mask) | mask;
-// 	uint16_t val = pinDirBuffer[0] << 8 | pinDirBuffer[1];
-// 	return Write16(MCP23S17_REG_DIR_A, val);
-// }
-
-
 DeviceResult MCP23S17::Transmit(uint8_t *txData, uint8_t *rxData, uint8_t count)
 {
 	//TODO: Claim the bus!
 	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->Transmit(txData, rxData, count) == DeviceResult::Ok, DeviceStatus::Dependencies, DeviceResult::Dependency, TAG, "spiDevice->Transmit returned error");
     return DeviceResult::Ok;
 }
-
-
 
 DeviceResult MCP23S17::Write8(uint8_t reg, uint8_t value)
 {

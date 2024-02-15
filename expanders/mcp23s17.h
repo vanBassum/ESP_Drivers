@@ -12,10 +12,11 @@ class MCP23S17 : public IGpio
 {
     constexpr static const char* TAG = "MCP23S17";
 	Mutex mutex;
-    const char* spiDeviceKey = nullptr;
-    std::shared_ptr<SpiDevice> spiDevice;	//TODO, MAKE USE OF INTERFACE!!!!
 
-	uint8_t devAddr = 0;	//I dont think this is used in SPI
+	//Config:
+    const char* spiDeviceKey = nullptr;
+    std::shared_ptr<ISpiDevice> spiDevice;
+	uint8_t devAddr = 0;	//I dont think this is used in the SPI version of this chip.
 	uint8_t pinBuffer[2] = {0};
 	uint8_t pinDirBuffer[2] = {0};
 	

@@ -10,6 +10,7 @@ enum class DeviceResult : uint32_t
     Dependency = 3,                                     // Some dependency isn't available
     ConfigError = 4,                                    // Configuration problem
     InitFault   = 5,
+    Error     = 6,
 };
 
 enum class DeviceStatus : uint32_t
