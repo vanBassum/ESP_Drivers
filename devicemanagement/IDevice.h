@@ -46,7 +46,7 @@ private:
 protected: 
     void setStatus(Status newStatus) 
     {
-        if(newStatus == Status::Ready)  //Only show when driver is ready.
+        if(newStatus == Status::Ready || status == Status::Ready)  //Only show transistions from and to Ready
             ESP_LOGI(TAG, "'%s' status changed. '%s' to '%s'", key, StatusStr[(int)status], StatusStr[(int)newStatus]);
 
         status = newStatus;

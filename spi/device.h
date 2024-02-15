@@ -26,9 +26,9 @@ public:
     virtual ErrCode setConfig(IDeviceConfig& config) override ;
     virtual ErrCode loadDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
     virtual ErrCode init() override;
-    virtual ErrCode Write(uint8_t* data, size_t size) override ;
-    virtual ErrCode Read(uint8_t* data, size_t size) override ;
-    ErrCode Transmit(uint8_t* txData, uint8_t* rxData, size_t size) ;
+    //virtual ErrCode Write(uint8_t* data, size_t size) override ;
+    //virtual ErrCode Read(uint8_t* data, size_t size) override ;
+    virtual ErrCode Transmit(uint8_t* txData, uint8_t* rxData, size_t size) override;
     
 };
 
