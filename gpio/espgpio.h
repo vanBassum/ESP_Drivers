@@ -10,7 +10,6 @@ class EspGpio : public IGpio // Prefer to use interface, otherwise use IDevice
     constexpr static const char *TAG = "ESPGpio";
     Mutex mutex;
     std::unordered_map<uint32_t, std::unordered_map<uint8_t, std::function<void()>>> isrCallbacks;
-    gpio_isr_handle_t isr_handle;
 
     void triggerCallbacks(uint32_t port, uint8_t changedPins);
     static void gpio_isr_handler(void *arg);

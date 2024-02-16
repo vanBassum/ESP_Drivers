@@ -69,12 +69,40 @@ DeviceResult MCP23S17::init()
 	return DeviceResult::Ok;
 }
 
-DeviceResult MCP23S17::portConfigure(uint32_t port, uint8_t mask, GpioConfigFlags flags) 
-{
-	if(flags & GpioConfigFlags::GPIO_FLAGS_INPUT)
-		pinDirBuffer[port] = (pinDirBuffer[port] & ~mask) | mask;
-	if(flags & GpioConfigFlags::GPIO_FLAGS_OUTPUT)
+DeviceResult MCP23S17::portConfigure(uint32_t port, uint8_t mask, GpioConfig *config)
+{	
+	ContextLock lock(mutex);
+
+    switch (config->intr)
+    {
+    case GPIO_CFG_INTR_DISABLE: //For now, no need for isr. Implement when required
+        break;
+    
+    default:
+        return DeviceResult::NotSupported;
+    }
+
+    switch (config->mode)
+    {
+    case GPIO_CFG_MODE_OUTPUT:  
 		pinDirBuffer[port] = pinDirBuffer[port] & ~mask;
+        break;
+	case GPIO_CFG_MODE_INPUT:  
+		pinDirBuffer[port] = (pinDirBuffer[port] & ~mask) | mask;
+        break;
+    
+    default:
+        return DeviceResult::NotSupported;
+    }
+
+    switch (config->pull)
+    {
+    case GPIO_CFG_PULL_DISABLE:  //The only valid option
+        break;
+    
+    default:
+        return DeviceResult::NotSupported;
+    }
 	
 	uint16_t val = pinDirBuffer[1] << 8 | pinDirBuffer[0];
 	return Write16(MCP23S17_REG_DIR_A, val);

@@ -53,9 +53,6 @@ DeviceResult MAX14830::init()
 	return DeviceResult::Ok;
 }
 
-
-
-
 DeviceResult MAX14830::Detect(bool* result)
 {
     uint8_t value;
