@@ -37,9 +37,8 @@ public:
 		this->callback = callback;
 	}
 		
-	bool Init(const std::string name, TimeSpan period, bool autoReload = true)
+	bool Init(const std::string name, TickType_t rtosTicks, bool autoReload = true)
 	{
-		TickType_t rtosTicks = period.GetMiliSeconds() / portTICK_PERIOD_MS;
 		if (rtosTicks < 1)
 			rtosTicks = 1;
 		xTimer = xTimerCreate(name.c_str(), rtosTicks, autoReload, this, &tCallback);
@@ -70,20 +69,18 @@ public:
 		return xTimerIsTimerActive(xTimer) != pdFALSE;
 	}
 		
-	bool SetPeriod(TimeSpan period, int timeout = portMAX_DELAY)
+	bool SetPeriod(TickType_t rtosTicks, int timeout = portMAX_DELAY)
 	{		
 		if (xTimer == NULL) return false;
-		TickType_t rtosTicks = period.GetTotalMiliSeconds() / portTICK_PERIOD_MS;
 		if (rtosTicks < 1)
 			rtosTicks = 1;
 		return xTimerChangePeriod(xTimer, rtosTicks, timeout ) == pdPASS;
 	}
 
-	TimeSpan GetPeriod()
+	TickType_t GetPeriod()
 	{
-		TimeSpan ts;
 		if (xTimer != NULL)
-			ts = TimeSpan::FromMiliseconds(xTimerGetPeriod(xTimer) * portTICK_PERIOD_MS);
-		return ts;
+			return 0;
+		return xTimerGetPeriod(xTimer);
 	}
 };
