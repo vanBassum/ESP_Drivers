@@ -6,7 +6,9 @@ idf_component_register(
 		analog/ina3221.cpp
 		ethernet/lan87xx.cpp
 		ethernet/wifi.cpp
+		expanders/MAX14830.cpp
 		expanders/mcp23s17.cpp
+		gpio/espgpio.cpp
 		i2c/bus.cpp
 		i2c/device.cpp
 		spi/bus.cpp
@@ -19,6 +21,7 @@ idf_component_register(
 		ethernet
 		expanders
 		flash
+		gpio
 		i2c
 		interfaces
 		kernel

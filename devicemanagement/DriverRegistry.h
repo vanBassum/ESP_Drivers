@@ -28,13 +28,13 @@ public:
         
         const char* deviceKey = nullptr;
         if (!config.getProperty("key", &deviceKey)) {
-            ESP_LOGE(TAG, "Device key not found");
+            ESP_LOGE(TAG, "Property missing: 'key'");
             return nullptr;
         }
 
         const char* compatibility = nullptr;
         if (!config.getProperty("compatible", &compatibility)) {
-            ESP_LOGE(TAG, "Compatible key not found");
+            ESP_LOGE(TAG, "Property missing: 'compatible' for device '%s'", deviceKey);
             return nullptr;
         }
 
@@ -50,7 +50,7 @@ public:
             }
         }
 
-        ESP_LOGE(TAG, "No driver registered for the specified compatibility");
+        ESP_LOGE(TAG, "No driver found for compatibility '%s' for device '%s'", compatibility, deviceKey);
         return nullptr;
     }
 };

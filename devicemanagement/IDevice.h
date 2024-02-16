@@ -11,6 +11,7 @@ enum class DeviceResult : uint32_t
     ConfigError = 4,                                    // Configuration problem
     InitFault   = 5,
     Error     = 6,
+    NotSupported = 7,
 };
 
 enum class DeviceStatus : uint32_t
@@ -29,10 +30,10 @@ class IDevice {
     constexpr static const char* TAG = "IDevice";
     DeviceStatus status = DeviceStatus::Created;
     constexpr static const char* StatusStr[] = {
-        "Created",         
+        "Ready",         
+        "Created",    
         "Dependencies",    
-        "Initializing",    
-        "Ready",           
+        "Initializing",           
         "ConfigError",     
         "Error",           
     };

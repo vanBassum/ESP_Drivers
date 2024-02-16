@@ -32,7 +32,7 @@ public:
     virtual DeviceResult init() override;
 
 
-    virtual DeviceResult portConfigure(uint32_t port, uint8_t mask, GpioFlags value) override;
+    virtual DeviceResult portConfigure(uint32_t port, uint8_t mask, GpioConfigFlags value) override;
     virtual DeviceResult portRead(uint32_t port, uint8_t mask, uint8_t* value) override;
     virtual DeviceResult portWrite(uint32_t port, uint8_t mask, uint8_t value) override;
 

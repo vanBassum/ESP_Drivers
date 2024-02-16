@@ -26,6 +26,19 @@
         }                                                                                       \
     } while(0)
 
+#define DEV_RETURN_ON_ERROR(result, log_tag, format, ...) do {                                  \
+        if (unlikely((result) != DeviceResult::Ok)) {                                           \
+            ESP_LOGE(log_tag, "%s(%d): " format, __FUNCTION__, __LINE__, ##__VA_ARGS__);        \
+            return result;                                                                      \
+        }                                                                                       \
+    } while(0)
+
+#define DEV_RETURN_ON_ERROR_SILENT(result) do {                                                 \
+        if (unlikely((result) != DeviceResult::Ok)) {                                           \
+            return result;                                                                      \
+        }                                                                                       \
+    } while(0)
+
 #define GET_DEV_OR_RETURN(dst, device, newStatus, returnValue, log_tag, format, ...) do {       \
         if (device == NULL) {                                                                   \
             setStatus(newStatus);                                                               \

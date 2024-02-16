@@ -18,16 +18,17 @@ DeviceResult SpiDevice::setDeviceConfig(IDeviceConfig &config)
 	config.getProperty("flags", &devConfig.flags);
 	config.getProperty("queue_size", &devConfig.queue_size);
 
+	const char* key = nullptr;
+	config.getProperty("key", &key);
+
 	const char *customCsPin = nullptr; // Use nullptr for clarity
 	if (config.getProperty("customCS", &customCsPin))
 	{
-		ESP_LOGI(TAG, "customCS = '%s'", customCsPin);
-
 		if (sscanf(customCsPin, "%m[^,],%hhu,%hhu", &csDeviceKey, &csPort, &csPin) == 3)
 		{
 			devConfig.pre_cb = Select;
 			devConfig.post_cb = Deselect;
-			ESP_LOGI(TAG, "Custom CS = %s, Port = %hhu, Pin = %hhu", csDeviceKey, csPort, csPin);
+			ESP_LOGI(TAG, "'%s' Using CS pin, Device ='%s' Port = %hhu, Pin = %hhu", key, csDeviceKey, csPort, csPin);
 		}
 	}
 
@@ -64,7 +65,7 @@ DeviceResult SpiDevice::init()
 	return DeviceResult::Ok;
 }
 
-DeviceResult SpiDevice::Transmit(uint8_t *txData, uint8_t *rxData, size_t size)
+DeviceResult SpiDevice::Transmit(uint8_t *txData, uint8_t *rxData, size_t size, SPIFlags flags)
 {
 	ContextLock lock(mutex);
 	DEV_RETURN_ON_FALSE(checkDeviceStatus(DeviceStatus::Ready), DeviceResult::WrongStatus, TAG, "Driver not ready, status %d", (int)getDeviceStatus());
@@ -73,24 +74,40 @@ DeviceResult SpiDevice::Transmit(uint8_t *txData, uint8_t *rxData, size_t size)
 	transaction.length = size * 8; // In bits
 	transaction.tx_buffer = txData;
 	transaction.rx_buffer = rxData;
-	transaction.user = this;
+	return Transmit(&transaction, flags);
+}
 
-	if (spi_device_transmit(handle, &transaction) != ESP_OK)
+DeviceResult SpiDevice::Transmit(spi_transaction_t *transaction, SPIFlags flags)
+{
+	transaction->user = this;
+	esp_err_t err = ESP_OK;
+
+	if(flags & SPIFlags::POLLED)
+		err = spi_device_polling_transmit(handle, transaction);
+	else
+		err = spi_device_transmit(handle, transaction);
+
+	if (err != ESP_OK)
 	{
 		setStatus(DeviceStatus::Dependencies);
+		const char* err_str = esp_err_to_name(err);
+    	ESP_LOGE(TAG, "SPI transaction failed: %s", err_str);
 		return DeviceResult::Dependency;
 	}
+	
 	return DeviceResult::Ok;
 }
 
 void IRAM_ATTR SpiDevice::Select(spi_transaction_t *t)
 {
 	SpiDevice *device = (SpiDevice *)t->user;
+	assert(device);
 	device->csDevice->portWrite(device->csPort, 1 << device->csPin, 1 << device->csPin); // Opted to not do checks, this function should remain small.
 }
 
 void IRAM_ATTR SpiDevice::Deselect(spi_transaction_t *t)
 {
 	SpiDevice *device = (SpiDevice *)t->user;
+	assert(device);
 	device->csDevice->portWrite(device->csPort, 1 << device->csPin, 0); 				// Opted to not do checks, this function should remain small.
 }

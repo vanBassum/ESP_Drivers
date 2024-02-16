@@ -69,11 +69,11 @@ DeviceResult MCP23S17::init()
 	return DeviceResult::Ok;
 }
 
-DeviceResult MCP23S17::portConfigure(uint32_t port, uint8_t mask, GpioFlags flags) 
+DeviceResult MCP23S17::portConfigure(uint32_t port, uint8_t mask, GpioConfigFlags flags) 
 {
-	if(flags & GpioFlags::GPIO_FLAGS_INPUT)
+	if(flags & GpioConfigFlags::GPIO_FLAGS_INPUT)
 		pinDirBuffer[port] = (pinDirBuffer[port] & ~mask) | mask;
-	if(flags & GpioFlags::GPIO_FLAGS_OUTPUT)
+	if(flags & GpioConfigFlags::GPIO_FLAGS_OUTPUT)
 		pinDirBuffer[port] = pinDirBuffer[port] & ~mask;
 	
 	uint16_t val = pinDirBuffer[1] << 8 | pinDirBuffer[0];
