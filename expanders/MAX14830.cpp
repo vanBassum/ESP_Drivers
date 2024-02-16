@@ -11,11 +11,11 @@
 DeviceResult MAX14830::setDeviceConfig(IDeviceConfig &config)
 {
     ContextLock lock(mutex);
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiDevice", &spiDeviceKey),  DeviceStatus::ConfigError, DeviceResult::ConfigError, TAG, "Missing parameter: spiDevice");
+	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiDevice", &spiDeviceKey),  DeviceStatus::ConfigError, DeviceResult::Error, TAG, "Missing parameter: spiDevice");
 
     const char *isrPinStr = nullptr;
-    DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("isrPin", &isrPinStr),  DeviceStatus::ConfigError, DeviceResult::ConfigError, TAG, "Missing parameter: isrPin");
-    DEV_SET_STATUS_AND_RETURN_ON_FALSE(sscanf(isrPinStr, "%m[^,],%hhu,%hhu", &isrDeviceKey, &isrPort, &isrPin) == 3,  DeviceStatus::ConfigError, DeviceResult::ConfigError, TAG, "Error parsing isrPin");
+    DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("isrPin", &isrPinStr),  DeviceStatus::ConfigError, DeviceResult::Error, TAG, "Missing parameter: isrPin");
+    DEV_SET_STATUS_AND_RETURN_ON_FALSE(sscanf(isrPinStr, "%m[^,],%hhu,%hhu", &isrDeviceKey, &isrPort, &isrPin) == 3,  DeviceStatus::ConfigError, DeviceResult::Error, TAG, "Error parsing isrPin");
 	setStatus(DeviceStatus::Dependencies);
 	return DeviceResult::Ok;
 }
@@ -23,8 +23,8 @@ DeviceResult MAX14830::setDeviceConfig(IDeviceConfig &config)
 DeviceResult MAX14830::loadDeviceDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
-	GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<SpiDevice>(spiDeviceKey), DeviceStatus::Dependencies, DeviceResult::Dependency, TAG, "Missing dependency: spiDevice");
-	GET_DEV_OR_RETURN(isrDevice, deviceManager->getDeviceByKey<IGpio>(isrDeviceKey), DeviceStatus::Dependencies, DeviceResult::Dependency, TAG, "Missing dependency: isrDevice");
+	GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<SpiDevice>(spiDeviceKey), DeviceStatus::Dependencies, DeviceResult::Error, TAG, "Missing dependency: spiDevice");
+	GET_DEV_OR_RETURN(isrDevice, deviceManager->getDeviceByKey<IGpio>(isrDeviceKey), DeviceStatus::Dependencies, DeviceResult::Error, TAG, "Missing dependency: isrDevice");
 	setStatus(DeviceStatus::Initializing);
 	return DeviceResult::Ok;
 }
@@ -182,7 +182,7 @@ DeviceResult MAX14830::Max14830_WriteBufferPolled(uint8_t cmd, const uint8_t * c
 	t.length = (count * 8);                   		    //amount of bits
 	t.tx_buffer = cmdData;               			    //The data is the cmd itself
 	t.cmd = 0x80 | cmd;								    //Add write bit
-    DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->Transmit(&t, SPIFlags::POLLED) == DeviceResult::Ok, DeviceStatus::Dependencies, DeviceResult::Dependency, TAG, "Error in spi transmit");
+    DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->Transmit(&t, SPIFlags::POLLED) == DeviceResult::Ok, DeviceStatus::Dependencies, DeviceResult::Error, TAG, "Error in spi transmit");
 	return DeviceResult::Ok;
 }
 
@@ -194,7 +194,7 @@ DeviceResult MAX14830::Max14830_ReadBufferPolled(uint8_t cmd, uint8_t * cmdData,
 	t.tx_buffer = cmdData;               			//The data is the cmd itself
 	t.rx_buffer = replyData;
 	t.cmd = cmd;
-    DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->Transmit(&t, SPIFlags::POLLED) == DeviceResult::Ok, DeviceStatus::Dependencies, DeviceResult::Dependency, TAG, "Error in spi transmit");
+    DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->Transmit(&t, SPIFlags::POLLED) == DeviceResult::Ok, DeviceStatus::Dependencies, DeviceResult::Error, TAG, "Error in spi transmit");
 	return DeviceResult::Ok;
 }
 

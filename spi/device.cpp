@@ -4,7 +4,7 @@
 DeviceResult SpiDevice::setDeviceConfig(IDeviceConfig &config)
 {
 	ContextLock lock(mutex);
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiBus", &spiBusKey), DeviceStatus::ConfigError, DeviceResult::ConfigError, TAG, "No property found for 'spiBus'");
+	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiBus", &spiBusKey), DeviceStatus::ConfigError, DeviceResult::Error, TAG, "No property found for 'spiBus'");
 	config.getProperty("command_bits", &devConfig.command_bits);
 	config.getProperty("address_bits", &devConfig.address_bits);
 	config.getProperty("dummy_bits", &devConfig.dummy_bits);
@@ -39,10 +39,10 @@ DeviceResult SpiDevice::setDeviceConfig(IDeviceConfig &config)
 DeviceResult SpiDevice::loadDeviceDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
-	GET_DEV_OR_RETURN(spiBus, deviceManager->getDeviceByKey<SpiBus>(spiBusKey), DeviceStatus::Dependencies, DeviceResult::Dependency, TAG, "spiBus not available");
+	GET_DEV_OR_RETURN(spiBus, deviceManager->getDeviceByKey<SpiBus>(spiBusKey), DeviceStatus::Dependencies, DeviceResult::Error, TAG, "spiBus not available");
 
 	if (csDeviceKey != nullptr)
-		GET_DEV_OR_RETURN(csDevice, deviceManager->getDeviceByKey<IGpio>(csDeviceKey), DeviceStatus::Dependencies, DeviceResult::Dependency, TAG, "csDevice not available");
+		GET_DEV_OR_RETURN(csDevice, deviceManager->getDeviceByKey<IGpio>(csDeviceKey), DeviceStatus::Dependencies, DeviceResult::Error, TAG, "csDevice not available");
 
 	setStatus(DeviceStatus::Initializing);
 	return DeviceResult::Ok;
@@ -52,12 +52,12 @@ DeviceResult SpiDevice::init()
 {
 	ContextLock lock(mutex);
 	spi_host_device_t host;
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiBus->GetHost(&host) == DeviceResult::Ok, DeviceStatus::Dependencies, DeviceResult::Dependency, TAG, "spiBus->GetHost error");
+	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiBus->GetHost(&host) == DeviceResult::Ok, DeviceStatus::Dependencies, DeviceResult::Error, TAG, "spiBus->GetHost error");
 
 	if (spi_bus_add_device(host, &devConfig, &handle) != ESP_OK)
 	{
 		setStatus(DeviceStatus::Error);
-		return DeviceResult::InitFault;
+		return DeviceResult::Error;
 	}
 
 	// TODO: Initialize the driver here! Dont forget to check the result of the functions you call from the dependecies.
@@ -68,7 +68,7 @@ DeviceResult SpiDevice::init()
 DeviceResult SpiDevice::Transmit(uint8_t *txData, uint8_t *rxData, size_t size, SPIFlags flags)
 {
 	ContextLock lock(mutex);
-	DEV_RETURN_ON_FALSE(checkDeviceStatus(DeviceStatus::Ready), DeviceResult::WrongStatus, TAG, "Driver not ready, status %d", (int)getDeviceStatus());
+	DEV_RETURN_ON_FALSE(checkDeviceStatus(DeviceStatus::Ready), DeviceResult::Error, TAG, "Driver not ready, status %d", (int)getDeviceStatus());
 
 	spi_transaction_t transaction{};
 	transaction.length = size * 8; // In bits
@@ -92,7 +92,7 @@ DeviceResult SpiDevice::Transmit(spi_transaction_t *transaction, SPIFlags flags)
 		setStatus(DeviceStatus::Dependencies);
 		const char* err_str = esp_err_to_name(err);
     	ESP_LOGE(TAG, "SPI transaction failed: %s", err_str);
-		return DeviceResult::Dependency;
+		return DeviceResult::Error;
 	}
 	
 	return DeviceResult::Ok;

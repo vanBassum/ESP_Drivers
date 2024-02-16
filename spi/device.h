@@ -14,11 +14,11 @@ class SpiDevice : public ISpiDevice {
     Mutex mutex;
     constexpr static const char* TAG = "SpiDevice";
 
-    //Dependency on the bus
+    //Error on the bus
     const char* spiBusKey = nullptr;
     std::shared_ptr<SpiBus> spiBus;
 
-    //Dependency and settings on the custom CS
+    //Error and settings on the custom CS
     uint8_t csPort = 0;
     uint8_t csPin = 0;
     const char* csDeviceKey = nullptr;

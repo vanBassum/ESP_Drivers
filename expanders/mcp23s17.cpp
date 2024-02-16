@@ -48,7 +48,7 @@ typedef enum
 DeviceResult MCP23S17::setDeviceConfig(IDeviceConfig &config)
 {
     ContextLock lock(mutex);
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiDevice", &spiDeviceKey),  DeviceStatus::ConfigError, DeviceResult::ConfigError, TAG, "Missing parameter: spiDevice");
+	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiDevice", &spiDeviceKey),  DeviceStatus::ConfigError, DeviceResult::Error, TAG, "Missing parameter: spiDevice");
 	setStatus(DeviceStatus::Dependencies);
 	return DeviceResult::Ok;
 }
@@ -56,7 +56,7 @@ DeviceResult MCP23S17::setDeviceConfig(IDeviceConfig &config)
 DeviceResult MCP23S17::loadDeviceDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
-	GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey), DeviceStatus::Dependencies, DeviceResult::Dependency, TAG, "Dependencies not ready %d", (int)getDeviceStatus());
+	GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey), DeviceStatus::Dependencies, DeviceResult::Error, TAG, "Dependencies not ready %d", (int)getDeviceStatus());
 	setStatus(DeviceStatus::Initializing);
 	return DeviceResult::Ok;
 }
@@ -128,7 +128,7 @@ DeviceResult MCP23S17::portWrite(uint32_t port, uint8_t mask, uint8_t value)
 DeviceResult MCP23S17::Transmit(uint8_t *txData, uint8_t *rxData, uint8_t count)
 {
 	//TODO: Claim the bus!
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->Transmit(txData, rxData, count) == DeviceResult::Ok, DeviceStatus::Dependencies, DeviceResult::Dependency, TAG, "spiDevice->Transmit returned error");
+	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->Transmit(txData, rxData, count) == DeviceResult::Ok, DeviceStatus::Dependencies, DeviceResult::Error, TAG, "spiDevice->Transmit returned error");
     return DeviceResult::Ok;
 }
 

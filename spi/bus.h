@@ -19,7 +19,7 @@ public:
     virtual DeviceResult setDeviceConfig(IDeviceConfig &config) override
     {
         ContextLock lock(mutex);
-        DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("host", (int32_t *)&host), DeviceStatus::ConfigError, DeviceResult::ConfigError, TAG, "No property found for 'host'");
+        DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("host", (int32_t *)&host), DeviceStatus::Error, DeviceResult::Error, TAG, "No property found for 'host'");
         config.getProperty("dmaChannel", (int32_t *)&dmaChannel);
         config.getProperty("mosi_io_num", (int32_t *)&busConfig.mosi_io_num);
         config.getProperty("miso_io_num", (int32_t *)&busConfig.miso_io_num);
@@ -53,7 +53,7 @@ public:
         if(spi_bus_initialize(host, &busConfig, dmaChannel) != ESP_OK)
         {
             setStatus(DeviceStatus::Error);
-            return DeviceResult::InitFault;
+            return DeviceResult::Error;
         }
         setStatus(DeviceStatus::Ready);
         return DeviceResult::Ok;
@@ -62,7 +62,7 @@ public:
     DeviceResult GetHost(spi_host_device_t* host)
     {
         ContextLock lock(mutex);
-        DEV_RETURN_ON_FALSE(checkDeviceStatus(DeviceStatus::Ready), DeviceResult::WrongStatus, TAG, "Driver not ready, status %d", (int)getDeviceStatus());
+        DEV_RETURN_ON_FALSE(checkDeviceStatus(DeviceStatus::Ready), DeviceResult::Error, TAG, "Driver not ready, status %d", (int)getDeviceStatus());
         *host = this->host;
         return DeviceResult::Ok;
     }

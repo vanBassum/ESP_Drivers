@@ -5,13 +5,8 @@
 enum class DeviceResult : uint32_t
 {
     Ok = 0,                                             // No error
-    NullPtr = 1,                                        // Something was null
-    WrongStatus = 2,                                    // Device is in wrong state
-    Dependency = 3,                                     // Some dependency isn't available
-    ConfigError = 4,                                    // Configuration problem
-    InitFault   = 5,
-    Error     = 6,
-    NotSupported = 7,
+    Error = 1,                                          // Something was null
+    NotSupported = 2,
 };
 
 enum class DeviceStatus : uint32_t
@@ -34,7 +29,7 @@ class IDevice {
         "Created",    
         "Dependencies",    
         "Initializing",           
-        "ConfigError",     
+        "Error",     
         "Error",           
     };
 
@@ -45,7 +40,8 @@ protected:
     void setStatus(DeviceStatus newStatus) 
     {
         if(newStatus == DeviceStatus::Ready || status == DeviceStatus::Ready)  //Only show transistions from and to Ready
-            ESP_LOGI(TAG, "'%s' status changed. '%s' to '%s'", key, StatusStr[(int)status], StatusStr[(int)newStatus]);
+            ESP_LOGI(TAG, "'%s' is '%s'", key, StatusStr[(int)newStatus]);
+
 
         status = newStatus;
     }
