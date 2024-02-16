@@ -7,6 +7,8 @@
 #define MAX14830_CLK					4000000
 #define MAX14830_FIFO_MAX				128
 
+static const GpioConfig isrDisabledConfig = CREATE_GPIO_CONFIG(GpioMode::GPIO_CFG_MODE_INPUT, GpioIntr::GPIO_CFG_INTR_DISABLE, GpioPullFlags::GPIO_CFG_PULL_DISABLE);
+static const GpioConfig isrEnabledConfig  = CREATE_GPIO_CONFIG(GpioMode::GPIO_CFG_MODE_INPUT, GpioIntr::GPIO_CFG_INTR_LOW_LEVEL, GpioPullFlags::GPIO_CFG_PULL_DISABLE);
 
 DeviceResult MAX14830::setDeviceConfig(IDeviceConfig &config)
 {
@@ -42,12 +44,10 @@ DeviceResult MAX14830::init()
     DEV_RETURN_ON_FALSE(SetRefClock(&clk, &clkError) == DeviceResult::Ok, DeviceResult::Error, TAG, "Error while setting reference clock");
     DEV_RETURN_ON_FALSE(clkError, DeviceResult::Error, TAG, "Clock error");
 
+    //TODO: Enable the ISR handling
+	//isrDevice->portIsrAddCallback(isrPort, isrPin, [&](){isr_handler();});
+	//isrDevice->portConfigure(isrPort, isrPin, &isrEnabledConfig);
 
-    // Init the task
-    task.Init("MAX14830", 7, 1024 * 2); //TODO: Should we make these params properies?
-    task.SetHandler([&](){Work();});
-    task.Run();
-	
 	// Tell the driver the device is initialized and ready to use.
 	setStatus(DeviceStatus::Ready);
 	return DeviceResult::Ok;
@@ -57,7 +57,7 @@ DeviceResult MAX14830::Detect(bool* result)
 {
     uint8_t value;
     DEV_RETURN_ON_ERROR_SILENT(regmap_write(MAX310X_GLOBALCMD_REG, MAX310X_EXTREG_ENBL));
-    DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(Ports::NUM_0, MAX310X_REVID_EXTREG, &value));
+    DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(0x00, MAX310X_REVID_EXTREG, &value));
     DEV_RETURN_ON_ERROR_SILENT(regmap_write(MAX310X_GLOBALCMD_REG, MAX310X_EXTREG_DSBL));
 
     if (((value & MAX310x_REV_MASK) != MAX14830_REV_ID))
@@ -198,6 +198,8 @@ DeviceResult MAX14830::Max14830_ReadBufferPolled(uint8_t cmd, uint8_t * cmdData,
 	return DeviceResult::Ok;
 }
 
+
+
 DeviceResult MAX14830::regmap_write(uint8_t cmd, uint8_t value)
 {
     return Max14830_WriteBufferPolled(cmd, &value, 1);
@@ -215,7 +217,7 @@ DeviceResult MAX14830::max310x_port_read(uint8_t port, uint8_t cmd, uint8_t* val
 	return regmap_read(cmd, value);
 }
 
-DeviceResult MAX14830::max310x_port_write(Ports port, uint8_t cmd, uint8_t value)
+DeviceResult MAX14830::max310x_port_write(uint8_t port, uint8_t cmd, uint8_t value)
 {
 	cmd = ((uint32_t)port << 5) | cmd;
 	return regmap_write(cmd, value);
@@ -233,15 +235,91 @@ uint8_t MAX14830::max310x_update_best_err(uint64_t f, int64_t * besterr)
 	return 1;
 }
 
-
-
-void MAX14830::Work()
+void MAX14830::isr_handler()
 {
-    while(1)
-    {
-        vTaskDelay(1000);
-    }
+	//TODO: How do we ensure that this code is callable from ISR?
+	//Or we dont call this from the ISR, and work with detecting flanks.
+	isrDevice->portConfigure(isrPort, isrPin, &isrDisabledConfig);	//Disable isr, until task has handled the work.
+
+	xTimerPendFunctionCallFromISR(processIsr, this, 0, NULL);
 }
 
+void MAX14830::processIsr(void * pvParameter1, uint32_t ulParameter2)
+{
+	MAX14830* device = (MAX14830*)pvParameter1;
+	ContextLock lock(device->mutex);
 
+	//TODO: We should check the returns of this!!!
+	device->handleIRQForPort(0x00); 
+	device->handleIRQForPort(0x01); 
+	device->handleIRQForPort(0x02); 
+	device->handleIRQForPort(0x03); 	
 
+	//All reasons for ISR should be gone now, so re-enable the isr pin.
+	//TODO: We should check the returns of this!!!
+	device->isrDevice->portConfigure(device->isrPort, device->isrPin, &isrEnabledConfig);
+}
+
+DeviceResult MAX14830::handleIRQForPort(uint8_t port)
+{
+	uint8_t isrReg;
+	DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_IRQSTS_REG, &isrReg));		
+	bool hasData = HAS_BIT(isrReg, MAX310X_IRQ_RXEMPTY_BIT); //inverted in the config
+	//TODO: Do something with the knowledge that there is data avaiable
+
+	if (HAS_BIT(isrReg, MAX310X_IRQ_STS_BIT))
+	{
+		uint8_t sts;
+		DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_STS_IRQSTS_REG, &sts));
+		//TODO: Do something with the knowledge that there are pinchanges.
+	}
+	return DeviceResult::Ok;
+}
+
+DeviceResult MAX14830::SetPinsMode(uint8_t port, uint8_t mask, GpioMode mode)
+{
+	ContextLock lock(mutex);
+
+	uint8_t minimask = mask & 0xF;
+	if (minimask > 0)
+	{
+		uint8_t od = (gpioConfBuffer[port] >> 4) & 0xf;
+		uint8_t ou = (gpioConfBuffer[port]) & 0xf;
+		switch (mode)
+		{
+		case GPIO_CFG_MODE_INPUT:
+			ou &= ~minimask;
+			break;
+		case GPIO_CFG_MODE_OUTPUT:
+			ou |= minimask;
+			od &= ~minimask;
+			break;
+		case GPIO_CFG_MODE_OUTPUT_OD:
+			ou |= minimask;
+			od |= minimask;
+			break;
+		default:
+			return DeviceResult::NotSupported;
+		}
+		
+		gpioConfBuffer[port] = (od << 4) | ou;
+		return max310x_port_write(port, MAX310X_GPIOCFG_REG, gpioConfBuffer[port]);
+	}
+	return DeviceResult::Ok;
+}
+
+DeviceResult MAX14830::SetPins(uint8_t port, uint8_t mask, uint8_t value)
+{
+	ContextLock lock(mutex);
+	uint8_t minimask = ((uint32_t)mask >> (4*port)) & 0xF;
+	uint8_t minivalue = ((uint32_t)value >> (4*port)) & 0xF;
+	if (minimask > 0)
+	{
+		uint8_t ou = (gpioDataBuffer[port]) & 0xf;
+		ou &= ~minimask;
+		ou |= minivalue & minimask;
+		gpioDataBuffer[port] = ou;
+		return max310x_port_write(port, MAX310X_GPIODATA_REG, gpioDataBuffer[port]);
+	}
+	return DeviceResult::Ok;
+}

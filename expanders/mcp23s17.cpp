@@ -69,7 +69,7 @@ DeviceResult MCP23S17::init()
 	return DeviceResult::Ok;
 }
 
-DeviceResult MCP23S17::portConfigure(uint32_t port, uint8_t mask, GpioConfig *config)
+DeviceResult MCP23S17::portConfigure(uint32_t port, uint8_t mask, const GpioConfig* config)
 {	
 	ContextLock lock(mutex);
 

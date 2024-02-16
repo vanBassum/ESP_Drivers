@@ -55,11 +55,14 @@ DeviceResult EspGpio::portWrite(uint32_t port, uint8_t mask, uint8_t value)
     return DeviceResult::Ok;
 }
 
-DeviceResult EspGpio::portConfigure(uint32_t port, uint8_t mask, GpioConfig* config)
+DeviceResult EspGpio::portConfigure(uint32_t port, uint8_t mask, const GpioConfig* config)
 {
     ContextLock lock(mutex);
     gpio_config_t gpioConfig;
     gpioConfig.pin_bit_mask = mask << (port * 8); // Adjust the mask for the port
+    ESP_LOGI(TAG, "portConfigure mask = %llx", gpioConfig.pin_bit_mask);
+    if(gpioConfig.pin_bit_mask == 0)
+        return DeviceResult::Ok;
 
     // Map GPIO mode from GpioConfig to gpio_config_t
     switch (config->mode) {

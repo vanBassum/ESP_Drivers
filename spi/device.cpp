@@ -28,7 +28,7 @@ DeviceResult SpiDevice::setDeviceConfig(IDeviceConfig &config)
 		{
 			devConfig.pre_cb = Select;
 			devConfig.post_cb = Deselect;
-			ESP_LOGI(TAG, "'%s' Using CS pin, Device ='%s' Port = %hhu, Pin = %hhu", key, csDeviceKey, csPort, csPin);
+			//ESP_LOGI(TAG, "'%s' Using CS pin, Device ='%s' Port = %hhu, Pin = %hhu", key, csDeviceKey, csPort, csPin);
 		}
 	}
 
