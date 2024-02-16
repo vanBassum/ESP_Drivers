@@ -59,8 +59,8 @@ DeviceResult EspGpio::portConfigure(uint32_t port, uint8_t mask, const GpioConfi
 {
     ContextLock lock(mutex);
     gpio_config_t gpioConfig;
-    gpioConfig.pin_bit_mask = mask << (port * 8); // Adjust the mask for the port
-    ESP_LOGI(TAG, "portConfigure mask = %llx", gpioConfig.pin_bit_mask);
+    gpioConfig.pin_bit_mask = mask;
+    gpioConfig.pin_bit_mask <<= port * 8; // Adjust the mask for the port
     if(gpioConfig.pin_bit_mask == 0)
         return DeviceResult::Ok;
 
@@ -136,7 +136,6 @@ DeviceResult EspGpio::portConfigure(uint32_t port, uint8_t mask, const GpioConfi
         ESP_LOGE("GPIO", "Failed to configure GPIO: %s", esp_err_to_name(err));
         return DeviceResult::Error;
     }
-
     return DeviceResult::Ok;
 }
 

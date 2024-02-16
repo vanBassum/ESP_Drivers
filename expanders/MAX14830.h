@@ -16,7 +16,7 @@ class MAX14830 : public IDevice
     std::shared_ptr<IGpio> isrDevice;	
 
     const char* spiDeviceKey = nullptr;		
-    std::shared_ptr<SpiDevice> spiDevice;	
+    std::shared_ptr<SpiDevice> spiDevice;	   //TODO: Change this so it can use the ISpiDevice
 
     //Local variables
     uint8_t gpioConfBuffer[4] = {};
@@ -36,13 +36,15 @@ class MAX14830 : public IDevice
     void isr_handler();
     static void processIsr( void * pvParameter1, uint32_t ulParameter2 );
     DeviceResult handleIRQForPort(uint8_t port);
-
+    DeviceResult portInit(uint8_t port);
 
 public:
 	virtual DeviceResult setDeviceConfig(IDeviceConfig& config) override;
     virtual DeviceResult loadDeviceDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
     virtual DeviceResult init() override;
+
     DeviceResult SetPinsMode(uint8_t port, uint8_t mask, GpioMode mode);
     DeviceResult SetPins(uint8_t port, uint8_t mask, uint8_t value);
+    DeviceResult GetPins(uint8_t port, uint8_t mask, uint8_t* value);
 };
 

@@ -18,6 +18,7 @@ DeviceResult MAX14830::setDeviceConfig(IDeviceConfig &config)
     const char *isrPinStr = nullptr;
     DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("isrPin", &isrPinStr),  DeviceStatus::ConfigError, DeviceResult::Error, TAG, "Missing parameter: isrPin");
     DEV_SET_STATUS_AND_RETURN_ON_FALSE(sscanf(isrPinStr, "%m[^,],%hhu,%hhu", &isrDeviceKey, &isrPort, &isrPin) == 3,  DeviceStatus::ConfigError, DeviceResult::Error, TAG, "Error parsing isrPin");
+
 	setStatus(DeviceStatus::Dependencies);
 	return DeviceResult::Ok;
 }
@@ -44,9 +45,14 @@ DeviceResult MAX14830::init()
     DEV_RETURN_ON_FALSE(SetRefClock(&clk, &clkError) == DeviceResult::Ok, DeviceResult::Error, TAG, "Error while setting reference clock");
     DEV_RETURN_ON_FALSE(clkError, DeviceResult::Error, TAG, "Clock error");
 
-    //TODO: Enable the ISR handling
-	//isrDevice->portIsrAddCallback(isrPort, isrPin, [&](){isr_handler();});
-	//isrDevice->portConfigure(isrPort, isrPin, &isrEnabledConfig);
+	DEV_RETURN_ON_ERROR(portInit(0x00), TAG, "Error while port 0 init");
+	DEV_RETURN_ON_ERROR(portInit(0x01), TAG, "Error while port 1 init");
+	DEV_RETURN_ON_ERROR(portInit(0x02), TAG, "Error while port 2 init");
+	DEV_RETURN_ON_ERROR(portInit(0x03), TAG, "Error while port 3 init");
+
+    // Enable the ISR handling
+	DEV_RETURN_ON_ERROR_SILENT(isrDevice->portIsrAddCallback(isrPort, isrPin, [&](){isr_handler();}));
+	DEV_RETURN_ON_ERROR_SILENT(isrDevice->portConfigure(isrPort, 1<<isrPin, &isrEnabledConfig));
 
 	// Tell the driver the device is initialized and ready to use.
 	setStatus(DeviceStatus::Ready);
@@ -262,6 +268,7 @@ void MAX14830::processIsr(void * pvParameter1, uint32_t ulParameter2)
 
 DeviceResult MAX14830::handleIRQForPort(uint8_t port)
 {
+	ESP_LOGI(TAG, "ISR");
 	uint8_t isrReg;
 	DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_IRQSTS_REG, &isrReg));		
 	bool hasData = HAS_BIT(isrReg, MAX310X_IRQ_RXEMPTY_BIT); //inverted in the config
@@ -276,9 +283,20 @@ DeviceResult MAX14830::handleIRQForPort(uint8_t port)
 	return DeviceResult::Ok;
 }
 
+DeviceResult MAX14830::portInit(uint8_t port)
+{
+	// Clear IRQ status registers
+	uint8_t dummy;
+	DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_STS_IRQSTS_REG, &dummy));
+	DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_GLOBALIRQ_REG, &dummy));
+
+	// Enable IO IRQ
+	DEV_RETURN_ON_ERROR_SILENT(max310x_port_write(port, MAX310X_IRQEN_REG, MAX310X_IRQ_STS_BIT));
+	return DeviceResult::Ok;
+}
+
 DeviceResult MAX14830::SetPinsMode(uint8_t port, uint8_t mask, GpioMode mode)
 {
-	ContextLock lock(mutex);
 
 	uint8_t minimask = mask & 0xF;
 	if (minimask > 0)
@@ -311,8 +329,8 @@ DeviceResult MAX14830::SetPinsMode(uint8_t port, uint8_t mask, GpioMode mode)
 DeviceResult MAX14830::SetPins(uint8_t port, uint8_t mask, uint8_t value)
 {
 	ContextLock lock(mutex);
-	uint8_t minimask = ((uint32_t)mask >> (4*port)) & 0xF;
-	uint8_t minivalue = ((uint32_t)value >> (4*port)) & 0xF;
+	uint8_t minimask = mask & 0xF;
+	uint8_t minivalue = value & 0xF;
 	if (minimask > 0)
 	{
 		uint8_t ou = (gpioDataBuffer[port]) & 0xf;
@@ -320,6 +338,19 @@ DeviceResult MAX14830::SetPins(uint8_t port, uint8_t mask, uint8_t value)
 		ou |= minivalue & minimask;
 		gpioDataBuffer[port] = ou;
 		return max310x_port_write(port, MAX310X_GPIODATA_REG, gpioDataBuffer[port]);
+	}
+	return DeviceResult::Ok;
+}
+
+DeviceResult MAX14830::GetPins(uint8_t port, uint8_t mask, uint8_t* value)
+{
+	ContextLock lock(mutex);
+	uint8_t minimask = mask & 0xF;
+	if (minimask > 0)
+	{
+		uint8_t reg;
+		DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_GPIODATA_REG, &reg));
+		*value = reg & minimask;
 	}
 	return DeviceResult::Ok;
 }

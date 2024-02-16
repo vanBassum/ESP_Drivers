@@ -51,10 +51,11 @@ DeviceResult MAX14830Gpio::portConfigure(uint32_t port, uint8_t mask, const Gpio
     return DeviceResult::Ok;
 }
 
-DeviceResult MAX14830Gpio::portRead(uint32_t port, uint8_t mask, uint8_t *value)
+DeviceResult MAX14830Gpio::portRead(uint32_t port, uint8_t mask, uint8_t* value)
 {
     ContextLock lock(mutex);
-    return DeviceResult::NotSupported;
+    DEV_RETURN_ON_ERROR_SILENT(maxDevice->GetPins(port, mask, value));
+    return DeviceResult::Ok;
 }
 
 DeviceResult MAX14830Gpio::portWrite(uint32_t port, uint8_t mask, uint8_t value)
