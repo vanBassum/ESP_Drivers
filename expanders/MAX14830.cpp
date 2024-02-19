@@ -12,7 +12,7 @@ static const GpioConfig isrEnabledConfig  = CREATE_GPIO_CONFIG(GpioMode::GPIO_CF
 
 std::list<std::shared_ptr<MAX14830::IsrHandle>> MAX14830::callbacks; 	//Initialize callbacks
 
-DeviceResult MAX14830::setDeviceConfig(IDeviceConfig &config)
+DeviceResult MAX14830::DeviceSetConfig(IDeviceConfig &config)
 {
     ContextLock lock(mutex);
 	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiDevice", &spiDeviceKey),  DeviceStatus::ConfigError, DeviceResult::Error, TAG, "Missing parameter: spiDevice");
@@ -21,20 +21,20 @@ DeviceResult MAX14830::setDeviceConfig(IDeviceConfig &config)
     DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("isrPin", &isrPinStr),  DeviceStatus::ConfigError, DeviceResult::Error, TAG, "Missing parameter: isrPin");
     DEV_SET_STATUS_AND_RETURN_ON_FALSE(sscanf(isrPinStr, "%m[^,],%hhu,%hhu", &isrDeviceKey, &isrPort, &isrPin) == 3,  DeviceStatus::ConfigError, DeviceResult::Error, TAG, "Error parsing isrPin");
 
-	setStatus(DeviceStatus::Dependencies);
+	DeviceSetStatus(DeviceStatus::Dependencies);
 	return DeviceResult::Ok;
 }
 
-DeviceResult MAX14830::loadDeviceDependencies(std::shared_ptr<DeviceManager> deviceManager)
+DeviceResult MAX14830::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
 	GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<SpiDevice>(spiDeviceKey), DeviceStatus::Dependencies, DeviceResult::Error, TAG, "Missing dependency: spiDevice");
 	GET_DEV_OR_RETURN(isrDevice, deviceManager->getDeviceByKey<IGpio>(isrDeviceKey), DeviceStatus::Dependencies, DeviceResult::Error, TAG, "Missing dependency: isrDevice");
-	setStatus(DeviceStatus::Initializing);
+	DeviceSetStatus(DeviceStatus::Initializing);
 	return DeviceResult::Ok;
 }
 
-DeviceResult MAX14830::init()
+DeviceResult MAX14830::DeviceInit()
 {
 	ContextLock lock(mutex);
 	
@@ -47,19 +47,17 @@ DeviceResult MAX14830::init()
     DEV_RETURN_ON_FALSE(SetRefClock(&clk, &clkError) == DeviceResult::Ok, DeviceResult::Error, TAG, "Error while setting reference clock");
     DEV_RETURN_ON_FALSE(clkError, DeviceResult::Error, TAG, "Clock error");
 
-
-
 	DEV_RETURN_ON_ERROR(portInit(0x00), TAG, "Error while port 0 init");
 	DEV_RETURN_ON_ERROR(portInit(0x01), TAG, "Error while port 1 init");
 	DEV_RETURN_ON_ERROR(portInit(0x02), TAG, "Error while port 2 init");
 	DEV_RETURN_ON_ERROR(portInit(0x03), TAG, "Error while port 3 init");
 
     // Enable the ISR handling
-	DEV_RETURN_ON_ERROR_SILENT(isrDevice->portIsrAddCallback(isrPort, isrPin, [&](){isr_handler();}));
-	DEV_RETURN_ON_ERROR_SILENT(isrDevice->portConfigure(isrPort, 1<<isrPin, &isrEnabledConfig));
+	DEV_RETURN_ON_ERROR_SILENT(isrDevice->GpioIsrAddCallback(isrPort, isrPin, [&](){isr_handler();}));
+	DEV_RETURN_ON_ERROR_SILENT(isrDevice->GpioConfigure(isrPort, 1<<isrPin, &isrEnabledConfig));
 
 	// Tell the driver the device is initialized and ready to use.
-	setStatus(DeviceStatus::Ready);
+	DeviceSetStatus(DeviceStatus::Ready);
 	return DeviceResult::Ok;
 }
 
@@ -187,7 +185,7 @@ DeviceResult MAX14830::SetRefClock(uint32_t* clk, bool* clkError)
 
 DeviceResult MAX14830::Max14830_WriteBufferPolled(uint8_t cmd, const uint8_t * cmdData, uint8_t count)
 {
-    spi_transaction_t t = {0};
+    spi_transaction_t t;
 	memset(&t, 0, sizeof(t));       				    //Zero out the transaction
 	t.length = (count * 8);                   		    //amount of bits
 	t.tx_buffer = cmdData;               			    //The data is the cmd itself
@@ -198,7 +196,7 @@ DeviceResult MAX14830::Max14830_WriteBufferPolled(uint8_t cmd, const uint8_t * c
 
 DeviceResult MAX14830::Max14830_ReadBufferPolled(uint8_t cmd, uint8_t * cmdData, uint8_t * replyData, uint8_t count)
 {
-	spi_transaction_t t = {0};
+	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));       				//Zero out the transaction
 	t.length = (count * 8);              			//amount of bits
 	t.tx_buffer = cmdData;               			//The data is the cmd itself
@@ -207,8 +205,6 @@ DeviceResult MAX14830::Max14830_ReadBufferPolled(uint8_t cmd, uint8_t * cmdData,
     DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->Transmit(&t, SPIFlags::POLLED) == DeviceResult::Ok, DeviceStatus::Dependencies, DeviceResult::Error, TAG, "Error in spi transmit");
 	return DeviceResult::Ok;
 }
-
-
 
 DeviceResult MAX14830::regmap_write(uint8_t cmd, uint8_t value)
 {
@@ -334,7 +330,7 @@ DeviceResult MAX14830::portInit(uint8_t port)
 
 
 
-DeviceResult MAX14830::portConfigure(uint32_t port, uint8_t mask, const GpioConfig *config)
+DeviceResult MAX14830::GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig *config)
 {
     ContextLock lock(mutex);
 	uint8_t minimask = mask & 0xF;
@@ -391,7 +387,7 @@ DeviceResult MAX14830::portConfigure(uint32_t port, uint8_t mask, const GpioConf
     return DeviceResult::Ok;
 }
 
-DeviceResult MAX14830::portRead(uint32_t port, uint8_t mask, uint8_t * value)
+DeviceResult MAX14830::GpioRead(uint32_t port, uint8_t mask, uint8_t * value)
 {
 	ContextLock lock(mutex);
 	uint8_t minimask = mask & 0xF;
@@ -405,7 +401,7 @@ DeviceResult MAX14830::portRead(uint32_t port, uint8_t mask, uint8_t * value)
 	return DeviceResult::Ok;
 }
 
-DeviceResult MAX14830::portWrite(uint32_t port, uint8_t mask, uint8_t value)
+DeviceResult MAX14830::GpioWrite(uint32_t port, uint8_t mask, uint8_t value)
 {
 	ContextLock lock(mutex);
 	uint8_t minimask = mask & 0xF;
@@ -421,8 +417,7 @@ DeviceResult MAX14830::portWrite(uint32_t port, uint8_t mask, uint8_t value)
 	return DeviceResult::Ok;
 }
 
-
-DeviceResult MAX14830::portIsrAddCallback(uint32_t port, uint8_t pin, std::function<void()> callback)
+DeviceResult MAX14830::GpioIsrAddCallback(uint32_t port, uint8_t pin, std::function<void()> callback)
 {
     ContextLock lock(mutex);
     // Store the callback in a member variable to ensure its lifetime.
@@ -432,11 +427,10 @@ DeviceResult MAX14830::portIsrAddCallback(uint32_t port, uint8_t pin, std::funct
     handle->pin = pin;
     handle->callback = callback;
     callbacks.push_back(handle);
-	ESP_LOGI(TAG, "Callback registered for pin %d.%d", (int)port, pin);
     return DeviceResult::Ok;
 }
 
-DeviceResult MAX14830::portIsrRemoveCallback(uint32_t port, uint8_t pin)
+DeviceResult MAX14830::GpioIsrRemoveCallback(uint32_t port, uint8_t pin)
 {
     ContextLock lock(mutex);
     // Search for the callback associated with the GPIO pin and remove it from the list
@@ -450,3 +444,5 @@ DeviceResult MAX14830::portIsrRemoveCallback(uint32_t port, uint8_t pin)
     // If the callback is not found, return an error
     return DeviceResult::Error;
 }
+
+

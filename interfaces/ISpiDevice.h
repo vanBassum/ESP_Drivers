@@ -10,6 +10,6 @@ enum SPIFlags
 class ISpiDevice : public IDevice {
 public:
     virtual ~ISpiDevice() {}
-    virtual DeviceResult Transmit(uint8_t* txData, uint8_t* rxData, size_t size, SPIFlags flags = SPIFlags::NONE) = 0;    //data does accept nullptr
+    virtual DeviceResult SpiTransmit(uint8_t* txData, uint8_t* rxData, size_t size, SPIFlags flags = SPIFlags::NONE) = 0;    //data does accept nullptr
 };
 

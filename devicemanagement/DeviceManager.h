@@ -49,13 +49,13 @@ private:
 
     int pollDevice(std::shared_ptr<IDevice> device)
     {
-        switch (device->getDeviceStatus())
+        switch (device->DeviceGetStatus())
         {
         case DeviceStatus::Dependencies: 
-            return device->loadDeviceDependencies(shared_from_this()) == DeviceResult::Ok ? 1 : 0;
+            return device->DeviceLoadDependencies(shared_from_this()) == DeviceResult::Ok ? 1 : 0;
 
         case DeviceStatus::Initializing:
-            return device->init() == DeviceResult::Ok ? 1 : 0;
+            return device->DeviceInit() == DeviceResult::Ok ? 1 : 0;
 
         case DeviceStatus::Error:            // Driver is end of life
             return 2;

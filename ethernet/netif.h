@@ -22,10 +22,11 @@ public:
 	
 	void SetDNS(esp_ip4_addr_t ip, esp_netif_dns_type_t type)
 	{
-		esp_netif_dns_info_t dns;
-		dns.ip.u_addr.ip4.addr = ip.addr;
-		dns.ip.type = IPADDR_TYPE_V4;
-		ESP_ERROR_CHECK(esp_netif_set_dns_info(netIF, type, &dns));
+		assert(false && "Doenst compile anymore, fix this");
+		//esp_netif_dns_info_t dns;
+		//dns.ip.u_addr.ip4.addr = ip.addr;
+		//dns.ip.type = IPADDR_TYPE_V4;
+		//ESP_ERROR_CHECK(esp_netif_set_dns_info(netIF, type, &dns));
 	}
 	
 		

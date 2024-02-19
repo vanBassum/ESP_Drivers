@@ -16,7 +16,7 @@ public:
     virtual ~SpiBus() {}
 
     // Since this is handeled by the devicemanager, assume this is only called on apropiate times. So no need to check the status of the driver.
-    virtual DeviceResult setDeviceConfig(IDeviceConfig &config) override
+    virtual DeviceResult DeviceSetConfig(IDeviceConfig &config) override
     {
         ContextLock lock(mutex);
         DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("host", (int32_t *)&host), DeviceStatus::Error, DeviceResult::Error, TAG, "No property found for 'host'");
@@ -34,35 +34,35 @@ public:
         config.getProperty("flags", (int32_t *)&busConfig.flags);
         config.getProperty("intr_flags", (int32_t *)&busConfig.intr_flags);
 
-        setStatus(DeviceStatus::Dependencies);
+        DeviceSetStatus(DeviceStatus::Dependencies);
         return DeviceResult::Ok;
     }
 
     // Since this is handeled by the devicemanager, assume this is only called on apropiate times. So no need to check the status of the driver. Also assume the devicemanger is not null.
-    virtual DeviceResult loadDeviceDependencies(std::shared_ptr<DeviceManager> deviceManager) override
+    virtual DeviceResult DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) override
     {
         ContextLock lock(mutex);
-        setStatus(DeviceStatus::Initializing);
+        DeviceSetStatus(DeviceStatus::Initializing);
         return DeviceResult::Ok;
     }
 
     // Since this is handeled by the devicemanager, assume this is only called on apropiate times. So no need to check the status of the driver.
-    virtual DeviceResult init() override
+    virtual DeviceResult DeviceInit() override
     {
         ContextLock lock(mutex);
         if(spi_bus_initialize(host, &busConfig, dmaChannel) != ESP_OK)
         {
-            setStatus(DeviceStatus::Error);
+            DeviceSetStatus(DeviceStatus::Error);
             return DeviceResult::Error;
         }
-        setStatus(DeviceStatus::Ready);
+        DeviceSetStatus(DeviceStatus::Ready);
         return DeviceResult::Ok;
     }
 
     DeviceResult GetHost(spi_host_device_t* host)
     {
         ContextLock lock(mutex);
-        DEV_RETURN_ON_FALSE(checkDeviceStatus(DeviceStatus::Ready), DeviceResult::Error, TAG, "Driver not ready, status %d", (int)getDeviceStatus());
+        DEV_RETURN_ON_FALSE(DeviceCheckStatus(DeviceStatus::Ready), DeviceResult::Error, TAG, "Driver not ready, status %d", (int)DeviceGetStatus());
         *host = this->host;
         return DeviceResult::Ok;
     }

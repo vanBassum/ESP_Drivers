@@ -44,7 +44,7 @@ public:
                 if(device)
                 {
                     device->key = deviceKey;
-                    device->setDeviceConfig(config);
+                    device->DeviceSetConfig(config);
                 }
                 return device;
             }

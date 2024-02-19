@@ -7,6 +7,7 @@ idf_component_register(
 		ethernet/lan87xx.cpp
 		ethernet/wifi.cpp
 		expanders/MAX14830.cpp
+		expanders/MAX14830Uart.cpp
 		expanders/mcp23s17.cpp
 		gpio/espgpio.cpp
 		i2c/bus.cpp

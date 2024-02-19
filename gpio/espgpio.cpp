@@ -3,59 +3,30 @@
 // Initialize static member variable
 std::list<std::shared_ptr<EspGpio::IsrHandle>> EspGpio::callbacks;
 
-DeviceResult EspGpio::setDeviceConfig(IDeviceConfig &config)
+DeviceResult EspGpio::DeviceSetConfig(IDeviceConfig &config)
 {
     ContextLock lock(mutex);
-	setStatus(DeviceStatus::Dependencies);
+	DeviceSetStatus(DeviceStatus::Dependencies);
 	return DeviceResult::Ok;
 }
 
-DeviceResult EspGpio::loadDeviceDependencies(std::shared_ptr<DeviceManager> deviceManager)
+DeviceResult EspGpio::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
-    setStatus(DeviceStatus::Initializing);
+    DeviceSetStatus(DeviceStatus::Initializing);
 	return DeviceResult::Ok;
 }
 
 
-DeviceResult EspGpio::init()
+DeviceResult EspGpio::DeviceInit()
 {
 	ContextLock lock(mutex);
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1 | ESP_INTR_FLAG_SHARED);
-	setStatus(DeviceStatus::Ready);
+	DeviceSetStatus(DeviceStatus::Ready);
 	return DeviceResult::Ok;
 }
 
-DeviceResult EspGpio::portRead(uint32_t port, uint8_t mask, uint8_t* value)      
-{
-    ContextLock lock(mutex);
-    *value = 0x00;
-    if(mask & 0x01) *value += gpio_get_level((gpio_num_t)(port + 0x01)) * 0x01;
-    if(mask & 0x02) *value += gpio_get_level((gpio_num_t)(port + 0x02)) * 0x02;
-    if(mask & 0x04) *value += gpio_get_level((gpio_num_t)(port + 0x04)) * 0x04;
-    if(mask & 0x08) *value += gpio_get_level((gpio_num_t)(port + 0x08)) * 0x08;
-    if(mask & 0x10) *value += gpio_get_level((gpio_num_t)(port + 0x10)) * 0x10;
-    if(mask & 0x20) *value += gpio_get_level((gpio_num_t)(port + 0x20)) * 0x20;
-    if(mask & 0x40) *value += gpio_get_level((gpio_num_t)(port + 0x40)) * 0x40;
-    if(mask & 0x80) *value += gpio_get_level((gpio_num_t)(port + 0x80)) * 0x80;
-    return DeviceResult::Ok;
-}
-
-DeviceResult EspGpio::portWrite(uint32_t port, uint8_t mask, uint8_t value)      
-{
-    ContextLock lock(mutex);
-    if(mask & 0x01) gpio_set_level((gpio_num_t)(port + 0x01), value & 0x01);
-    if(mask & 0x02) gpio_set_level((gpio_num_t)(port + 0x02), value & 0x02);
-    if(mask & 0x04) gpio_set_level((gpio_num_t)(port + 0x04), value & 0x04);
-    if(mask & 0x08) gpio_set_level((gpio_num_t)(port + 0x08), value & 0x08);
-    if(mask & 0x10) gpio_set_level((gpio_num_t)(port + 0x10), value & 0x10);
-    if(mask & 0x20) gpio_set_level((gpio_num_t)(port + 0x20), value & 0x20);
-    if(mask & 0x40) gpio_set_level((gpio_num_t)(port + 0x40), value & 0x40);
-    if(mask & 0x80) gpio_set_level((gpio_num_t)(port + 0x80), value & 0x80);
-    return DeviceResult::Ok;
-}
-
-DeviceResult EspGpio::portConfigure(uint32_t port, uint8_t mask, const GpioConfig* config)
+DeviceResult EspGpio::GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig* config)
 {
     ContextLock lock(mutex);
     gpio_config_t gpioConfig;
@@ -136,11 +107,41 @@ DeviceResult EspGpio::portConfigure(uint32_t port, uint8_t mask, const GpioConfi
         ESP_LOGE("GPIO", "Failed to configure GPIO: %s", esp_err_to_name(err));
         return DeviceResult::Error;
     }
-    ESP_LOGI("TEST", "ISR configured %d mask %x", (int)port, mask);
     return DeviceResult::Ok;
 }
 
-DeviceResult EspGpio::portIsrAddCallback(uint32_t port, uint8_t pin, std::function<void()> callback)
+DeviceResult EspGpio::GpioRead(uint32_t port, uint8_t mask, uint8_t* value)      
+{
+    ContextLock lock(mutex);
+    *value = 0x00;
+    if(mask & 0x01) *value += gpio_get_level((gpio_num_t)(port + 0x01)) * 0x01;
+    if(mask & 0x02) *value += gpio_get_level((gpio_num_t)(port + 0x02)) * 0x02;
+    if(mask & 0x04) *value += gpio_get_level((gpio_num_t)(port + 0x04)) * 0x04;
+    if(mask & 0x08) *value += gpio_get_level((gpio_num_t)(port + 0x08)) * 0x08;
+    if(mask & 0x10) *value += gpio_get_level((gpio_num_t)(port + 0x10)) * 0x10;
+    if(mask & 0x20) *value += gpio_get_level((gpio_num_t)(port + 0x20)) * 0x20;
+    if(mask & 0x40) *value += gpio_get_level((gpio_num_t)(port + 0x40)) * 0x40;
+    if(mask & 0x80) *value += gpio_get_level((gpio_num_t)(port + 0x80)) * 0x80;
+    return DeviceResult::Ok;
+}
+
+DeviceResult EspGpio::GpioWrite(uint32_t port, uint8_t mask, uint8_t value)      
+{
+    ContextLock lock(mutex);
+    if(mask & 0x01) gpio_set_level((gpio_num_t)(port + 0x01), value & 0x01);
+    if(mask & 0x02) gpio_set_level((gpio_num_t)(port + 0x02), value & 0x02);
+    if(mask & 0x04) gpio_set_level((gpio_num_t)(port + 0x04), value & 0x04);
+    if(mask & 0x08) gpio_set_level((gpio_num_t)(port + 0x08), value & 0x08);
+    if(mask & 0x10) gpio_set_level((gpio_num_t)(port + 0x10), value & 0x10);
+    if(mask & 0x20) gpio_set_level((gpio_num_t)(port + 0x20), value & 0x20);
+    if(mask & 0x40) gpio_set_level((gpio_num_t)(port + 0x40), value & 0x40);
+    if(mask & 0x80) gpio_set_level((gpio_num_t)(port + 0x80), value & 0x80);
+    return DeviceResult::Ok;
+}
+
+
+
+DeviceResult EspGpio::GpioIsrAddCallback(uint32_t port, uint8_t pin, std::function<void()> callback)
 {
     ContextLock lock(mutex);
     gpio_num_t gpioNum = static_cast<gpio_num_t>(port * 8 + pin);
@@ -157,12 +158,10 @@ DeviceResult EspGpio::portIsrAddCallback(uint32_t port, uint8_t pin, std::functi
         callbacks.remove(handle); // Remove callback on failure
         return DeviceResult::Error; // Return error if registration fails
     }
-    ESP_LOGI("TEST", "ISR handler %d.%d", (int)port, (int)pin);
-
     return DeviceResult::Ok;
 }
 
-DeviceResult EspGpio::portIsrRemoveCallback(uint32_t port, uint8_t pin)
+DeviceResult EspGpio::GpioIsrRemoveCallback(uint32_t port, uint8_t pin)
 {
     ContextLock lock(mutex);
     gpio_num_t gpioNum = static_cast<gpio_num_t>(port * 8 + pin);

@@ -37,7 +37,7 @@ public:
     const char* key;
 
 protected: 
-    void setStatus(DeviceStatus newStatus) 
+    void DeviceSetStatus(DeviceStatus newStatus) 
     {
         if(newStatus == DeviceStatus::Ready || status == DeviceStatus::Ready)  //Only show transistions from and to Ready
             ESP_LOGI(TAG, "'%s' is '%s'", key, StatusStr[(int)newStatus]);
@@ -48,9 +48,9 @@ protected:
 
 public:
     virtual ~IDevice() {}
-    virtual DeviceResult setDeviceConfig(IDeviceConfig& config) = 0;
-    virtual DeviceResult loadDeviceDependencies(std::shared_ptr<DeviceManager> deviceManager) = 0;
-    virtual DeviceResult init() = 0;
-    DeviceStatus getDeviceStatus() {return status;}
-    bool checkDeviceStatus(DeviceStatus cStatus) { return cStatus == status;}
+    virtual DeviceResult DeviceSetConfig(IDeviceConfig& config) = 0;
+    virtual DeviceResult DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) = 0;
+    virtual DeviceResult DeviceInit() = 0;
+    DeviceStatus DeviceGetStatus() {return status;}
+    bool DeviceCheckStatus(DeviceStatus cStatus) { return cStatus == status;}
 };

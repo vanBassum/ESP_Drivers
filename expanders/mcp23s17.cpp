@@ -45,31 +45,31 @@ typedef enum
 }mcp23s17_iocr_t;
 
 
-DeviceResult MCP23S17::setDeviceConfig(IDeviceConfig &config)
+DeviceResult MCP23S17::DeviceSetConfig(IDeviceConfig &config)
 {
     ContextLock lock(mutex);
 	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiDevice", &spiDeviceKey),  DeviceStatus::ConfigError, DeviceResult::Error, TAG, "Missing parameter: spiDevice");
-	setStatus(DeviceStatus::Dependencies);
+	DeviceSetStatus(DeviceStatus::Dependencies);
 	return DeviceResult::Ok;
 }
 
-DeviceResult MCP23S17::loadDeviceDependencies(std::shared_ptr<DeviceManager> deviceManager)
+DeviceResult MCP23S17::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
-	GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey), DeviceStatus::Dependencies, DeviceResult::Error, TAG, "Dependencies not ready %d", (int)getDeviceStatus());
-	setStatus(DeviceStatus::Initializing);
+	GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey), DeviceStatus::Dependencies, DeviceResult::Error, TAG, "Dependencies not ready %d", (int)DeviceGetStatus());
+	DeviceSetStatus(DeviceStatus::Initializing);
 	return DeviceResult::Ok;
 }
 
-DeviceResult MCP23S17::init()
+DeviceResult MCP23S17::DeviceInit()
 {
 	ContextLock lock(mutex);
 	Write8(MCP23S17_REG_IOCON_A, 0x08);    					// Set up ICON A,B to auto increment
-	setStatus(DeviceStatus::Ready);
+	DeviceSetStatus(DeviceStatus::Ready);
 	return DeviceResult::Ok;
 }
 
-DeviceResult MCP23S17::portConfigure(uint32_t port, uint8_t mask, const GpioConfig* config)
+DeviceResult MCP23S17::GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig* config)
 {	
 	ContextLock lock(mutex);
 
@@ -108,7 +108,7 @@ DeviceResult MCP23S17::portConfigure(uint32_t port, uint8_t mask, const GpioConf
 	return Write16(MCP23S17_REG_DIR_A, val);
 }
 
-DeviceResult MCP23S17::portRead(uint32_t port, uint8_t mask, uint8_t* value) 		 
+DeviceResult MCP23S17::GpioRead(uint32_t port, uint8_t mask, uint8_t* value) 		 
 {
    	ContextLock lock(mutex);
 	uint16_t val;
@@ -117,7 +117,7 @@ DeviceResult MCP23S17::portRead(uint32_t port, uint8_t mask, uint8_t* value)
 	return result;
 }
 
-DeviceResult MCP23S17::portWrite(uint32_t port, uint8_t mask, uint8_t value) 		 
+DeviceResult MCP23S17::GpioWrite(uint32_t port, uint8_t mask, uint8_t value) 		 
 {
 	ContextLock lock(mutex);
 	pinBuffer[port] = (pinBuffer[port] & ~mask) | (value & mask);
@@ -128,7 +128,7 @@ DeviceResult MCP23S17::portWrite(uint32_t port, uint8_t mask, uint8_t value)
 DeviceResult MCP23S17::Transmit(uint8_t *txData, uint8_t *rxData, uint8_t count)
 {
 	//TODO: Claim the bus!
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->Transmit(txData, rxData, count) == DeviceResult::Ok, DeviceStatus::Dependencies, DeviceResult::Error, TAG, "spiDevice->Transmit returned error");
+	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->SpiTransmit(txData, rxData, count) == DeviceResult::Ok, DeviceStatus::Dependencies, DeviceResult::Error, TAG, "spiDevice->Transmit returned error");
     return DeviceResult::Ok;
 }
 

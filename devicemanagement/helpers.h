@@ -14,7 +14,7 @@
 #define DEV_SET_STATUS_AND_RETURN_ON_FALSE(a, newStatus, returnValue, log_tag, format, ...) do { \
         if (unlikely(!(a))) {                                                                   \
             ESP_LOGE(log_tag, "%s(%d): " format, __FUNCTION__, __LINE__, ##__VA_ARGS__);        \
-            setStatus(newStatus);                                                               \
+            DeviceSetStatus(newStatus);                                                               \
             return returnValue;                                                                 \
         }                                                                                       \
     } while(0)
@@ -41,7 +41,7 @@
 
 #define GET_DEV_OR_RETURN(dst, device, newStatus, returnValue, log_tag, format, ...) do {       \
         if (device == NULL) {                                                                   \
-            setStatus(newStatus);                                                               \
+            DeviceSetStatus(newStatus);                                                               \
             ESP_LOGE(log_tag, format, ##__VA_ARGS__);                                           \
             return returnValue;                                                                 \
         }                                                                                       \
