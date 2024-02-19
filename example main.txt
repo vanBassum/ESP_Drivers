@@ -1,0 +1,127 @@
+// #include "framework/ServiceLocator.h"
+// #include "config/ServiceConfig.h"
+// #include "devices/detectors/PeripheralDetector.h"
+// #include "ChipSelect.h"
+#include "esp_system.h"
+#include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "devicemanagement.h"
+#include "DeviceTree.h"
+#include "esp_drivers.h"
+#include "esp_drivers/spi/bus.h"
+#include "esp_drivers/spi/device.h"
+#include "ServiceLocator.h"
+#include "CsLogic.h"
+
+Builder builder;
+
+extern "C" void app_main(void)
+{
+    esp_log_level_set("wifi", ESP_LOG_WARN);
+    esp_log_level_set("wifi_init", ESP_LOG_WARN);
+    esp_log_level_set("phy_init", ESP_LOG_WARN);
+    esp_log_level_set("system_api", ESP_LOG_WARN);
+
+    ESP_LOGI("app_main", "-------------------------------------");
+    ESP_LOGI("app_main", "--------- Starting services ---------");
+    ESP_LOGI("app_main", "-------------------------------------");
+
+    // ChipSelectLogicInit();
+
+    std::shared_ptr<DriverRegistry> driverRegistery = builder.Services.addService<DriverRegistry>("DriverRegistry").Setup([](std::shared_ptr<DriverRegistry> service)
+    {
+        service->RegisterDriver<SpiBus>("espSpiBus");
+        service->RegisterDriver<SpiDevice>("espSpiDevice");
+        service->RegisterDriver<MCP23S17>("mcp23s17");
+        service->RegisterDriver<CsLogic>("CsLogic");
+        service->RegisterDriver<EspGpio>("EspGpio");
+        service->RegisterDriver<MAX14830>("max14830"); 
+    });
+
+    std::shared_ptr<DeviceManager> deviceManager = builder.Services.addService<DeviceManager>("DeviceManager", driverRegistery).Setup([](std::shared_ptr<DeviceManager> service)
+    {
+        // service->setConfig(); Use default config for now
+        service->init();
+        service->RegisterDetector(std::make_shared<DeviceTreeDetector>(deviceTree)); 
+    });
+
+    const GpioConfig cfg_output = CREATE_GPIO_CONFIG(GpioMode::GPIO_CFG_MODE_OUTPUT, GpioIntr::GPIO_CFG_INTR_DISABLE, GpioPullFlags::GPIO_CFG_PULL_DISABLE);
+    const GpioConfig cfg_input = CREATE_GPIO_CONFIG(GpioMode::GPIO_CFG_MODE_INPUT, GpioIntr::GPIO_CFG_INTR_DISABLE, GpioPullFlags::GPIO_CFG_PULL_DISABLE);
+    const GpioConfig cfg_input_isr = CREATE_GPIO_CONFIG(GpioMode::GPIO_CFG_MODE_INPUT, GpioIntr::GPIO_CFG_INTR_ANYEDGE, GpioPullFlags::GPIO_CFG_PULL_DISABLE);
+
+    std::shared_ptr<MCP23S17> mcp;
+    std::shared_ptr<MAX14830> max;
+
+    uint32_t i = 0;
+    while (1)
+    {
+        if (mcp == nullptr)
+        {
+            mcp = deviceManager->getDeviceByKey<MCP23S17>("mcp23s17_0");
+            if (mcp != nullptr)
+            {
+                mcp->GpioConfigure(1, 0x18, &cfg_output);
+            }
+        }
+        else
+        {
+            uint8_t val = (i % 2) * 0x18;
+            DeviceResult code = mcp->GpioWrite(1, 0x18, val);
+            // ESP_LOGI("MAIN", "mcp bank 1 = 0x%02x, code = %d", val, (int)code);
+        }
+
+        if (max == nullptr)
+        {
+            max = deviceManager->getDeviceByKey<MAX14830>("max14830_0");
+            if (max != nullptr)
+            {
+                max->GpioConfigure(0, 0x01, &cfg_output);     //GPIO0 Relais 1
+                max->GpioConfigure(1, 0x0F, &cfg_input);      //GPIO4 Detect 1, 2, 3 and reset button
+                max->GpioConfigure(1, 0x01, &cfg_input_isr);  //GPIO4 Detect 1, enable isr
+
+                max->GpioIsrAddCallback(0x01, 0x01, [&](){
+                    uint8_t val = 0;
+                    DeviceResult code = max->GpioRead(1, 0x0F, &val); //Read port 1
+                    val = val & 0x01 ? 0x01 : 0x00;                     //Filter out Detect 1
+                    max->GpioWrite(0, 0x01, val);                     //Set relais according to Detect 1
+                });
+            }
+        }
+
+
+        vTaskDelay(500);
+        i++;
+    }
+
+    // auto peripheralManager = builder.Services.addService<PeripheralManager>("PeripheralManager").Setup([] (std::shared_ptr<PeripheralManager> service) {
+    //     service->setConfig(peripheralManagerConfig);
+    //     service->init();
+    // });
+    //
+    // auto deviceManager = builder.Services.addService<DeviceManager>("DeviceManager").Setup([&] (std::shared_ptr<DeviceManager> service) {
+    //     service->setConfig(deviceManagerConfig);
+    //     service->init();
+    //	service->addDetector<PeripheralDetector>(peripheralManager);
+    // });
+    //  Print the device tree
+
+    // for (int i = 0; deviceTree[i] != nullptr; i++) {
+    //	Device device = deviceTree[i];
+    //     std::cout << "Device " << i + 1 << " properties:" << std::endl;
+    //     for (int j = 0; device[j].key != nullptr; j++) {
+    //
+    //		if(device[j].value.str != nullptr)//Assume strings:
+    //		{
+    //			std::cout << "  " << device[j].key << ": " << device[j].value.str << std::endl;
+    //		}
+    //     }
+    //     std::cout << std::endl;
+    // }
+
+    // Start of quick and dirty testing.
+
+    ESP_LOGI("app_main", "-------------------------------------");
+    ESP_LOGI("app_main", "---------- Exit application ---------");
+    ESP_LOGI("app_main", "-------------------------------------");
+}
