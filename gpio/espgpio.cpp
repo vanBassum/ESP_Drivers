@@ -1,7 +1,7 @@
 #include "espgpio.h"
-#include "driver/gpio.h"
 
-
+// Initialize static member variable
+std::list<std::shared_ptr<EspGpio::IsrHandle>> EspGpio::callbacks;
 
 DeviceResult EspGpio::setDeviceConfig(IDeviceConfig &config)
 {
@@ -136,19 +136,28 @@ DeviceResult EspGpio::portConfigure(uint32_t port, uint8_t mask, const GpioConfi
         ESP_LOGE("GPIO", "Failed to configure GPIO: %s", esp_err_to_name(err));
         return DeviceResult::Error;
     }
+    ESP_LOGI("TEST", "ISR configured %d mask %x", (int)port, mask);
     return DeviceResult::Ok;
 }
-
 
 DeviceResult EspGpio::portIsrAddCallback(uint32_t port, uint8_t pin, std::function<void()> callback)
 {
     ContextLock lock(mutex);
     gpio_num_t gpioNum = static_cast<gpio_num_t>(port * 8 + pin);
 
+    // Store the callback in a member variable to ensure its lifetime.
+    std::shared_ptr<IsrHandle> handle = std::make_shared<IsrHandle>();
+    handle->device = this;
+    handle->pin = gpioNum;
+    handle->callback = callback;
+    callbacks.push_back(handle);
+
     // Register ISR handler for the GPIO pin
-    if (gpio_isr_handler_add(gpioNum, gpio_isr_handler, (void*)&callback) != ESP_OK) {
+    if (gpio_isr_handler_add(gpioNum, gpio_isr_handler, handle.get()) != ESP_OK) {
+        callbacks.remove(handle); // Remove callback on failure
         return DeviceResult::Error; // Return error if registration fails
     }
+    ESP_LOGI("TEST", "ISR handler %d.%d", (int)port, (int)pin);
 
     return DeviceResult::Ok;
 }
@@ -163,12 +172,34 @@ DeviceResult EspGpio::portIsrRemoveCallback(uint32_t port, uint8_t pin)
         return DeviceResult::Error; // Return error if removal fails
     }
 
-    return DeviceResult::Ok;
+    // Search for the callback associated with the GPIO pin and remove it from the list
+    for (auto it = callbacks.begin(); it != callbacks.end(); ++it) {
+        if ((*it)->device == this && (*it)->pin == gpioNum) {
+            callbacks.erase(it);
+            return DeviceResult::Ok; // Callback removed successfully
+        }
+    }
+
+    // If the callback is not found, return an error
+    return DeviceResult::Error;
 }
 
 void IRAM_ATTR EspGpio::gpio_isr_handler(void* arg)
 {
-    std::function<void()>* callback = reinterpret_cast<std::function<void()>*>(arg);
-    (*callback)(); // Call the registered callback function
+    IsrHandle* handle = static_cast<IsrHandle*>(arg);
+
+    // Ensure handle is not null
+    if (handle != nullptr) {
+        // Access the members of the IsrHandle object
+        EspGpio* device = handle->device;
+        gpio_num_t pin = handle->pin;
+        std::function<void()> callback = handle->callback;
+
+        // Check if the callback is valid before invoking it
+        if (callback) {
+            callback(); // Call the registered callback function
+        }
+    }
 }
+
 

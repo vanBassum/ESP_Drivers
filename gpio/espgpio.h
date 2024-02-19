@@ -3,16 +3,24 @@
 #include "DeviceManager.h"
 #include <unordered_map>
 #include <functional>
-#include <vector>
+#include <list>
+#include "driver/gpio.h"
 
 class EspGpio : public IGpio // Prefer to use interface, otherwise use IDevice
 {
     constexpr static const char *TAG = "ESPGpio";
     Mutex mutex;
-    std::unordered_map<uint32_t, std::unordered_map<uint8_t, std::function<void()>>> isrCallbacks;
-
-    void triggerCallbacks(uint32_t port, uint8_t changedPins);
+    void triggerCallbacks(uint32_t pin, uint8_t changedPins);
     static void gpio_isr_handler(void *arg);
+
+    struct IsrHandle
+    {
+        EspGpio* device;
+        gpio_num_t pin;
+        std::function<void()> callback;
+    };
+
+    static std::list<std::shared_ptr<IsrHandle>> callbacks;
 
 public:
     virtual DeviceResult setDeviceConfig(IDeviceConfig &config) override;

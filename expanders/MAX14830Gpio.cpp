@@ -29,26 +29,7 @@ DeviceResult MAX14830Gpio::init()
 DeviceResult MAX14830Gpio::portConfigure(uint32_t port, uint8_t mask, const GpioConfig *config)
 {
     ContextLock lock(mutex);
-    switch (config->intr)
-    {
-    case GPIO_CFG_INTR_DISABLE: //TODO: Implement later!
-        break;
-    
-    default:
-        return DeviceResult::NotSupported;
-    }
-
-    DEV_RETURN_ON_ERROR_SILENT(maxDevice->SetPinsMode(port, mask, config->mode));
-
-    switch (config->pull)
-    {
-    case GPIO_CFG_PULL_DISABLE:  //TODO: Implement later!
-        break;
-    
-    default:
-        return DeviceResult::NotSupported;
-    }
-    return DeviceResult::Ok;
+    return maxDevice->portConfigure(port, mask, config);
 }
 
 DeviceResult MAX14830Gpio::portRead(uint32_t port, uint8_t mask, uint8_t* value)
@@ -63,4 +44,16 @@ DeviceResult MAX14830Gpio::portWrite(uint32_t port, uint8_t mask, uint8_t value)
     ContextLock lock(mutex);
     DEV_RETURN_ON_ERROR_SILENT(maxDevice->SetPins(port, mask, value));
     return DeviceResult::Ok;
+}
+
+DeviceResult MAX14830Gpio::portIsrAddCallback(uint32_t port, uint8_t pin, std::function<void()> callback)
+{
+    ContextLock lock(mutex);
+    return maxDevice->portIsrAddCallback(port, pin, callback);
+}
+
+DeviceResult MAX14830Gpio::portIsrRemoveCallback(uint32_t port, uint8_t pin)
+{
+    ContextLock lock(mutex);
+    return maxDevice->portIsrRemoveCallback(port, pin);
 }

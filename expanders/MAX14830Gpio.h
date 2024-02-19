@@ -20,5 +20,8 @@ public:
     virtual DeviceResult portConfigure(uint32_t port, uint8_t mask, const GpioConfig* config) override;
     virtual DeviceResult portRead(uint32_t port, uint8_t mask, uint8_t *value) override;
     virtual DeviceResult portWrite(uint32_t port, uint8_t mask, uint8_t value) override;
+    DeviceResult portIsrAddCallback(uint32_t port, uint8_t pin, std::function<void()> callback);
+    DeviceResult portIsrRemoveCallback(uint32_t port, uint8_t pin);
+
 };
 

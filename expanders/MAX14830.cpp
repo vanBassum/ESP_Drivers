@@ -8,7 +8,9 @@
 #define MAX14830_FIFO_MAX				128
 
 static const GpioConfig isrDisabledConfig = CREATE_GPIO_CONFIG(GpioMode::GPIO_CFG_MODE_INPUT, GpioIntr::GPIO_CFG_INTR_DISABLE, GpioPullFlags::GPIO_CFG_PULL_DISABLE);
-static const GpioConfig isrEnabledConfig  = CREATE_GPIO_CONFIG(GpioMode::GPIO_CFG_MODE_INPUT, GpioIntr::GPIO_CFG_INTR_LOW_LEVEL, GpioPullFlags::GPIO_CFG_PULL_DISABLE);
+static const GpioConfig isrEnabledConfig  = CREATE_GPIO_CONFIG(GpioMode::GPIO_CFG_MODE_INPUT, GpioIntr::GPIO_CFG_INTR_NEGEDGE, GpioPullFlags::GPIO_CFG_PULL_DISABLE);
+
+std::list<std::shared_ptr<MAX14830::IsrHandle>> MAX14830::callbacks; 	//Initialize callbacks
 
 DeviceResult MAX14830::setDeviceConfig(IDeviceConfig &config)
 {
@@ -44,6 +46,8 @@ DeviceResult MAX14830::init()
     DEV_RETURN_ON_FALSE(detected, DeviceResult::Error, TAG, "Chip not detected");
     DEV_RETURN_ON_FALSE(SetRefClock(&clk, &clkError) == DeviceResult::Ok, DeviceResult::Error, TAG, "Error while setting reference clock");
     DEV_RETURN_ON_FALSE(clkError, DeviceResult::Error, TAG, "Clock error");
+
+
 
 	DEV_RETURN_ON_ERROR(portInit(0x00), TAG, "Error while port 0 init");
 	DEV_RETURN_ON_ERROR(portInit(0x01), TAG, "Error while port 1 init");
@@ -229,6 +233,15 @@ DeviceResult MAX14830::max310x_port_write(uint8_t port, uint8_t cmd, uint8_t val
 	return regmap_write(cmd, value);
 }
 
+DeviceResult MAX14830::max310x_port_update(uint8_t port, uint8_t cmd, uint8_t mask, uint8_t value)
+{
+	uint8_t val = 0;
+	DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, cmd, &val));
+	val &= ~mask;
+	val |= (mask & value);
+	return max310x_port_write(port, cmd, val);
+}
+
 uint8_t MAX14830::max310x_update_best_err(uint64_t f, int64_t * besterr)
 {
 	/* Use baudrate 115200 for calculate error */
@@ -243,88 +256,141 @@ uint8_t MAX14830::max310x_update_best_err(uint64_t f, int64_t * besterr)
 
 void MAX14830::isr_handler()
 {
-	//TODO: How do we ensure that this code is callable from ISR?
-	//Or we dont call this from the ISR, and work with detecting flanks.
-	isrDevice->portConfigure(isrPort, isrPin, &isrDisabledConfig);	//Disable isr, until task has handled the work.
-
+	// Switching context, don't do SPI things from the ISR.
 	xTimerPendFunctionCallFromISR(processIsr, this, 0, NULL);
 }
 
 void MAX14830::processIsr(void * pvParameter1, uint32_t ulParameter2)
 {
 	MAX14830* device = (MAX14830*)pvParameter1;
-	ContextLock lock(device->mutex);
+	//Do not lock, otherwise the isr callbacks will have problems!
 
 	//TODO: We should check the returns of this!!!
 	device->handleIRQForPort(0x00); 
 	device->handleIRQForPort(0x01); 
 	device->handleIRQForPort(0x02); 
 	device->handleIRQForPort(0x03); 	
-
-	//All reasons for ISR should be gone now, so re-enable the isr pin.
-	//TODO: We should check the returns of this!!!
-	device->isrDevice->portConfigure(device->isrPort, device->isrPin, &isrEnabledConfig);
 }
+
+
 
 DeviceResult MAX14830::handleIRQForPort(uint8_t port)
 {
-	ESP_LOGI(TAG, "ISR");
-	uint8_t isrReg;
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_IRQSTS_REG, &isrReg));		
-	bool hasData = HAS_BIT(isrReg, MAX310X_IRQ_RXEMPTY_BIT); //inverted in the config
-	//TODO: Do something with the knowledge that there is data avaiable
+	uint8_t isr;
+	uint8_t sts = 0;
 
-	if (HAS_BIT(isrReg, MAX310X_IRQ_STS_BIT))
+	DEV_RETURN_ON_ERROR_SILENT(readIsrRegisters(port, &isr, &sts));
+
+	//TODO: Do something with the knowledge that there is data avaiable HAS_BIT(isr, MAX310X_IRQ_RXEMPTY_BIT)
+
+	//TODO: Optimize this code
+	for(int bit=0; bit < 4; bit++)	//Only 4 pins
 	{
-		uint8_t sts;
-		DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_STS_IRQSTS_REG, &sts));
-		//TODO: Do something with the knowledge that there are pinchanges.
+		uint8_t pin = 1<<bit;
+		if(sts & pin)
+		{
+			// Search for the callback associated with the GPIO pin and call the callback
+			for (auto it = callbacks.begin(); it != callbacks.end(); ++it) {
+				if ((*it)->port == port && (*it)->pin == pin) {
+					(*it)->callback();
+				}
+			}
+		}
+	}
+
+	return DeviceResult::Ok;
+}
+
+DeviceResult MAX14830::readIsrRegisters(uint8_t port, uint8_t* isr, uint8_t* sts)
+{
+	ContextLock lock(mutex);
+
+	DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_IRQSTS_REG, isr));		
+	bool pinChanges = HAS_BIT(*isr, MAX310X_IRQ_STS_BIT);
+	if (pinChanges)
+	{
+		DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_STS_IRQSTS_REG, sts));
 	}
 	return DeviceResult::Ok;
 }
+
 
 DeviceResult MAX14830::portInit(uint8_t port)
 {
-	// Clear IRQ status registers
 	uint8_t dummy;
+
+	// Clear IRQ status registers
 	DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_STS_IRQSTS_REG, &dummy));
 	DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_GLOBALIRQ_REG, &dummy));
 
+	// Route GlobalIRQ to IRQPIN
+	DEV_RETURN_ON_ERROR_SILENT(max310x_port_update(port, MAX310X_MODE1_REG, MAX310X_MODE1_IRQSEL_BIT, MAX310X_MODE1_IRQSEL_BIT));
+
 	// Enable IO IRQ
 	DEV_RETURN_ON_ERROR_SILENT(max310x_port_write(port, MAX310X_IRQEN_REG, MAX310X_IRQ_STS_BIT));
+
 	return DeviceResult::Ok;
 }
 
-DeviceResult MAX14830::SetPinsMode(uint8_t port, uint8_t mask, GpioMode mode)
+
+
+DeviceResult MAX14830::portConfigure(uint32_t port, uint8_t mask, const GpioConfig *config)
 {
-
+    ContextLock lock(mutex);
 	uint8_t minimask = mask & 0xF;
-	if (minimask > 0)
+	if (minimask == 0)
+		return DeviceResult::Error;
+
+	//Setup the interrupts
+    switch (config->intr)
+    {
+    case GPIO_CFG_INTR_DISABLE:
+		DEV_RETURN_ON_ERROR_SILENT(max310x_port_update(port, MAX310X_STS_IRQEN_REG, minimask, 0x00));	//Disable interrupts
+        break;
+    
+	case GPIO_CFG_INTR_ANYEDGE:
+		DEV_RETURN_ON_ERROR_SILENT(max310x_port_update(port, MAX310X_STS_IRQEN_REG, minimask, 0x0F));	//Enable interrupts
+		break;
+    default:
+        return DeviceResult::NotSupported;
+    }
+
+
+	//Setup the pinMode
+	uint8_t od = (gpioConfBuffer[port] >> 4) & 0xf;
+	uint8_t ou = (gpioConfBuffer[port]) & 0xf;
+	switch (config->mode)
 	{
-		uint8_t od = (gpioConfBuffer[port] >> 4) & 0xf;
-		uint8_t ou = (gpioConfBuffer[port]) & 0xf;
-		switch (mode)
-		{
-		case GPIO_CFG_MODE_INPUT:
-			ou &= ~minimask;
-			break;
-		case GPIO_CFG_MODE_OUTPUT:
-			ou |= minimask;
-			od &= ~minimask;
-			break;
-		case GPIO_CFG_MODE_OUTPUT_OD:
-			ou |= minimask;
-			od |= minimask;
-			break;
-		default:
-			return DeviceResult::NotSupported;
-		}
-		
-		gpioConfBuffer[port] = (od << 4) | ou;
-		return max310x_port_write(port, MAX310X_GPIOCFG_REG, gpioConfBuffer[port]);
+	case GPIO_CFG_MODE_INPUT:
+		ou &= ~minimask;
+		break;
+	case GPIO_CFG_MODE_OUTPUT:
+		ou |= minimask;
+		od &= ~minimask;
+		break;
+	case GPIO_CFG_MODE_OUTPUT_OD:
+		ou |= minimask;
+		od |= minimask;
+		break;
+	default:
+		return DeviceResult::NotSupported;
 	}
-	return DeviceResult::Ok;
+	
+	gpioConfBuffer[port] = (od << 4) | ou;
+	DEV_RETURN_ON_ERROR_SILENT(max310x_port_write(port, MAX310X_GPIOCFG_REG, gpioConfBuffer[port]));
+
+	//Setup pull up / down
+    switch (config->pull)
+    {
+    case GPIO_CFG_PULL_DISABLE:  //TODO: Implement later!
+        break;
+    
+    default:
+        return DeviceResult::NotSupported;
+    }
+    return DeviceResult::Ok;
 }
+
 
 DeviceResult MAX14830::SetPins(uint8_t port, uint8_t mask, uint8_t value)
 {
@@ -354,4 +420,33 @@ DeviceResult MAX14830::GetPins(uint8_t port, uint8_t mask, uint8_t* value)
 		*value |= (reg>>4) & minimask;
 	}
 	return DeviceResult::Ok;
+}
+
+DeviceResult MAX14830::portIsrAddCallback(uint32_t port, uint8_t pin, std::function<void()> callback)
+{
+    ContextLock lock(mutex);
+    // Store the callback in a member variable to ensure its lifetime.
+    std::shared_ptr<IsrHandle> handle = std::make_shared<IsrHandle>();
+    handle->device = this;
+	handle->port = port;
+    handle->pin = pin;
+    handle->callback = callback;
+    callbacks.push_back(handle);
+	ESP_LOGI(TAG, "Callback registered for pin %d.%d", (int)port, pin);
+    return DeviceResult::Ok;
+}
+
+DeviceResult MAX14830::portIsrRemoveCallback(uint32_t port, uint8_t pin)
+{
+    ContextLock lock(mutex);
+    // Search for the callback associated with the GPIO pin and remove it from the list
+    for (auto it = callbacks.begin(); it != callbacks.end(); ++it) {
+        if ((*it)->device == this && (*it)->port == port && (*it)->pin == pin) {
+            callbacks.erase(it);
+            return DeviceResult::Ok; // Callback removed successfully
+        }
+    }
+
+    // If the callback is not found, return an error
+    return DeviceResult::Error;
 }
