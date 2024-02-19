@@ -3,7 +3,7 @@
 #include <functional>
 
 
-#define CREATE_GPIO_CONFIG(mode, intr, pull) \
+#define GPIO_CREATE_CONFIG(mode, intr, pull) \
     {                                         \
         mode,                         \
         intr,                         \

@@ -7,8 +7,8 @@
 #define MAX14830_CLK					4000000
 #define MAX14830_FIFO_MAX				128
 
-static const GpioConfig isrDisabledConfig = CREATE_GPIO_CONFIG(GpioMode::GPIO_CFG_MODE_INPUT, GpioIntr::GPIO_CFG_INTR_DISABLE, GpioPullFlags::GPIO_CFG_PULL_DISABLE);
-static const GpioConfig isrEnabledConfig  = CREATE_GPIO_CONFIG(GpioMode::GPIO_CFG_MODE_INPUT, GpioIntr::GPIO_CFG_INTR_NEGEDGE, GpioPullFlags::GPIO_CFG_PULL_DISABLE);
+static const GpioConfig isrDisabledConfig = GPIO_CREATE_CONFIG(GpioMode::GPIO_CFG_MODE_INPUT, GpioIntr::GPIO_CFG_INTR_DISABLE, GpioPullFlags::GPIO_CFG_PULL_DISABLE);
+static const GpioConfig isrEnabledConfig  = GPIO_CREATE_CONFIG(GpioMode::GPIO_CFG_MODE_INPUT, GpioIntr::GPIO_CFG_INTR_NEGEDGE, GpioPullFlags::GPIO_CFG_PULL_DISABLE);
 
 std::list<std::shared_ptr<MAX14830::IsrHandle>> MAX14830::callbacks; 	//Initialize callbacks
 

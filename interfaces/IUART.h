@@ -2,6 +2,16 @@
 #include "IStream.h"
 
 
+#define CREATE_UART_CONFIG(baud, parity, stopbits, databits, flowctrl)  \
+    {                                                                   \
+        baud,                                                           \
+        parity,                                                         \
+        stopbits,                                                       \
+        databits,                                                       \
+        flowctrl                                                        \
+    }
+
+
 enum UartConfigParity
 {
     UART_CFG_PARITY_NONE    = 0x00,
