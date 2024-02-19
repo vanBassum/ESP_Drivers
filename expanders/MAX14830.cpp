@@ -219,13 +219,13 @@ DeviceResult MAX14830::regmap_read(uint8_t cmd, uint8_t * value)
 
 DeviceResult MAX14830::max310x_port_read(uint8_t port, uint8_t cmd, uint8_t* value)
 {
-	cmd = ((uint32_t)port << 5) | cmd;
+	cmd = (port << 5) | cmd;
 	return regmap_read(cmd, value);
 }
 
 DeviceResult MAX14830::max310x_port_write(uint8_t port, uint8_t cmd, uint8_t value)
 {
-	cmd = ((uint32_t)port << 5) | cmd;
+	cmd = (port << 5) | cmd;
 	return regmap_write(cmd, value);
 }
 
@@ -350,7 +350,8 @@ DeviceResult MAX14830::GetPins(uint8_t port, uint8_t mask, uint8_t* value)
 	{
 		uint8_t reg;
 		DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_GPIODATA_REG, &reg));
-		*value = reg & minimask;
+		*value &= ~minimask;
+		*value |= (reg>>4) & minimask;
 	}
 	return DeviceResult::Ok;
 }
