@@ -391,8 +391,21 @@ DeviceResult MAX14830::portConfigure(uint32_t port, uint8_t mask, const GpioConf
     return DeviceResult::Ok;
 }
 
+DeviceResult MAX14830::portRead(uint32_t port, uint8_t mask, uint8_t * value)
+{
+	ContextLock lock(mutex);
+	uint8_t minimask = mask & 0xF;
+	if (minimask > 0)
+	{
+		uint8_t reg;
+		DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_GPIODATA_REG, &reg));
+		*value &= ~minimask;
+		*value |= (reg>>4) & minimask;
+	}
+	return DeviceResult::Ok;
+}
 
-DeviceResult MAX14830::SetPins(uint8_t port, uint8_t mask, uint8_t value)
+DeviceResult MAX14830::portWrite(uint32_t port, uint8_t mask, uint8_t value)
 {
 	ContextLock lock(mutex);
 	uint8_t minimask = mask & 0xF;
@@ -408,19 +421,6 @@ DeviceResult MAX14830::SetPins(uint8_t port, uint8_t mask, uint8_t value)
 	return DeviceResult::Ok;
 }
 
-DeviceResult MAX14830::GetPins(uint8_t port, uint8_t mask, uint8_t* value)
-{
-	ContextLock lock(mutex);
-	uint8_t minimask = mask & 0xF;
-	if (minimask > 0)
-	{
-		uint8_t reg;
-		DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_GPIODATA_REG, &reg));
-		*value &= ~minimask;
-		*value |= (reg>>4) & minimask;
-	}
-	return DeviceResult::Ok;
-}
 
 DeviceResult MAX14830::portIsrAddCallback(uint32_t port, uint8_t pin, std::function<void()> callback)
 {
