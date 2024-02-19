@@ -65,12 +65,12 @@ DeviceResult SpiDevice::DeviceInit()
 	return DeviceResult::Ok;
 }
 
-DeviceResult SpiDevice::SpiTransmit(uint8_t *txData, uint8_t *rxData, size_t size, SPIFlags flags)
+DeviceResult SpiDevice::SpiTransmit(const uint8_t *txData, uint8_t *rxData, size_t size, SPIFlags flags)
 {
 	ContextLock lock(mutex);
 	DEV_RETURN_ON_FALSE(DeviceCheckStatus(DeviceStatus::Ready), DeviceResult::Error, TAG, "Driver not ready, status %d", (int)DeviceGetStatus());
 
-	spi_transaction_t transaction{};
+	spi_transaction_t transaction = {};
 	transaction.length = size * 8; // In bits
 	transaction.tx_buffer = txData;
 	transaction.rx_buffer = rxData;

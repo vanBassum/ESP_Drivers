@@ -4,6 +4,7 @@ idf_component_register(
 	SRCS
 		esp_drivers.cpp
 		analog/ina3221.cpp
+		displays/ST7796S.cpp
 		ethernet/lan87xx.cpp
 		ethernet/wifi.cpp
 		expanders/MAX14830.cpp
@@ -19,6 +20,7 @@ idf_component_register(
 		analog
 		common
 		devicemanagement
+		displays
 		ethernet
 		expanders
 		flash

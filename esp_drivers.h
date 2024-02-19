@@ -5,6 +5,7 @@
 #include "analog/analog.h"
 #include "common/common.h"
 #include "devicemanagement/devicemanagement.h"
+#include "displays/displays.h"
 #include "ethernet/ethernet.h"
 #include "expanders/expanders.h"
 #include "flash/flash.h"

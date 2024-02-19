@@ -114,28 +114,28 @@ DeviceResult EspGpio::GpioRead(uint32_t port, uint8_t mask, uint8_t* value)
 {
     ContextLock lock(mutex);
     *value = 0x00;
-    if(mask & 0x01) *value += gpio_get_level((gpio_num_t)(port + 0x01)) * 0x01;
-    if(mask & 0x02) *value += gpio_get_level((gpio_num_t)(port + 0x02)) * 0x02;
-    if(mask & 0x04) *value += gpio_get_level((gpio_num_t)(port + 0x04)) * 0x04;
-    if(mask & 0x08) *value += gpio_get_level((gpio_num_t)(port + 0x08)) * 0x08;
-    if(mask & 0x10) *value += gpio_get_level((gpio_num_t)(port + 0x10)) * 0x10;
-    if(mask & 0x20) *value += gpio_get_level((gpio_num_t)(port + 0x20)) * 0x20;
-    if(mask & 0x40) *value += gpio_get_level((gpio_num_t)(port + 0x40)) * 0x40;
-    if(mask & 0x80) *value += gpio_get_level((gpio_num_t)(port + 0x80)) * 0x80;
+    if(mask & 0x01) *value += gpio_get_level(static_cast<gpio_num_t>(port * 8 + 0)) * 0x01;
+    if(mask & 0x02) *value += gpio_get_level(static_cast<gpio_num_t>(port * 8 + 1)) * 0x02;
+    if(mask & 0x04) *value += gpio_get_level(static_cast<gpio_num_t>(port * 8 + 2)) * 0x04;
+    if(mask & 0x08) *value += gpio_get_level(static_cast<gpio_num_t>(port * 8 + 3)) * 0x08;
+    if(mask & 0x10) *value += gpio_get_level(static_cast<gpio_num_t>(port * 8 + 4)) * 0x10;
+    if(mask & 0x20) *value += gpio_get_level(static_cast<gpio_num_t>(port * 8 + 5)) * 0x20;
+    if(mask & 0x40) *value += gpio_get_level(static_cast<gpio_num_t>(port * 8 + 6)) * 0x40;
+    if(mask & 0x80) *value += gpio_get_level(static_cast<gpio_num_t>(port * 8 + 7)) * 0x80;
     return DeviceResult::Ok;
 }
 
 DeviceResult EspGpio::GpioWrite(uint32_t port, uint8_t mask, uint8_t value)      
 {
     ContextLock lock(mutex);
-    if(mask & 0x01) gpio_set_level((gpio_num_t)(port + 0x01), value & 0x01);
-    if(mask & 0x02) gpio_set_level((gpio_num_t)(port + 0x02), value & 0x02);
-    if(mask & 0x04) gpio_set_level((gpio_num_t)(port + 0x04), value & 0x04);
-    if(mask & 0x08) gpio_set_level((gpio_num_t)(port + 0x08), value & 0x08);
-    if(mask & 0x10) gpio_set_level((gpio_num_t)(port + 0x10), value & 0x10);
-    if(mask & 0x20) gpio_set_level((gpio_num_t)(port + 0x20), value & 0x20);
-    if(mask & 0x40) gpio_set_level((gpio_num_t)(port + 0x40), value & 0x40);
-    if(mask & 0x80) gpio_set_level((gpio_num_t)(port + 0x80), value & 0x80);
+    if(mask & 0x01) gpio_set_level(static_cast<gpio_num_t>(port * 8 + 0), value & 0x01);
+    if(mask & 0x02) gpio_set_level(static_cast<gpio_num_t>(port * 8 + 1), value & 0x02);
+    if(mask & 0x04) gpio_set_level(static_cast<gpio_num_t>(port * 8 + 2), value & 0x04);
+    if(mask & 0x08) gpio_set_level(static_cast<gpio_num_t>(port * 8 + 3), value & 0x08);
+    if(mask & 0x10) gpio_set_level(static_cast<gpio_num_t>(port * 8 + 4), value & 0x10);
+    if(mask & 0x20) gpio_set_level(static_cast<gpio_num_t>(port * 8 + 5), value & 0x20);
+    if(mask & 0x40) gpio_set_level(static_cast<gpio_num_t>(port * 8 + 6), value & 0x40);
+    if(mask & 0x80) gpio_set_level(static_cast<gpio_num_t>(port * 8 + 7), value & 0x80);
     return DeviceResult::Ok;
 }
 

@@ -38,7 +38,7 @@ public:
     virtual DeviceResult DeviceSetConfig(IDeviceConfig& config) override ;
     virtual DeviceResult DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
     virtual DeviceResult DeviceInit() override;
-    virtual DeviceResult SpiTransmit(uint8_t* txData, uint8_t* rxData, size_t size, SPIFlags flags) override;
+    virtual DeviceResult SpiTransmit(const uint8_t* txData, uint8_t* rxData, size_t size, SPIFlags flags) override;
     DeviceResult Transmit(spi_transaction_t* transaction, SPIFlags flags);
     
 };
