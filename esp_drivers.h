@@ -14,4 +14,5 @@
 #include "interfaces/interfaces.h"
 #include "kernel/kernel.h"
 #include "onewire/onewire.h"
+#include "rtc/rtc.h"
 #include "spi/spi.h"
