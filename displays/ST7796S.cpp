@@ -112,7 +112,7 @@ const lcd_init_cmd_t init_cmds[] = {
 };
 
 
-const GpioConfig gpioOutput = GPIO_CREATE_CONFIG(GpioMode::GPIO_CFG_MODE_OUTPUT, GpioIntr::GPIO_CFG_INTR_DISABLE, GpioPullFlags::GPIO_CFG_PULL_DISABLE); 
+const GpioConfig gpioOutput = GPIO_CREATE_CONFIG(GpioConfigMode::GPIO_CFG_MODE_OUTPUT, GpioConfigIntr::GPIO_CFG_INTR_DISABLE, GpioConfigPull::GPIO_CFG_PULL_DISABLE); 
 
 void disp_wait_for_pending_transactions(void)
 {

@@ -11,7 +11,7 @@
     }
 
 // Here I opted to mimic the ESP way.
-enum GpioMode : uint8_t
+enum GpioConfigMode : uint8_t
 {
     GPIO_CFG_MODE_DISABLE = 0x00,         /*!< GPIO mode : disable input and output               */
     GPIO_CFG_MODE_INPUT = 0x01,           /*!< GPIO mode : input only                              */
@@ -21,7 +21,7 @@ enum GpioMode : uint8_t
     // GPIO_CFG_MODE_INPUT_OUTPUT      = 0x05,   /*!< GPIO mode : output and input mode                   */
 };
 
-enum GpioIntr : uint8_t
+enum GpioConfigIntr : uint8_t
 {
     GPIO_CFG_INTR_DISABLE = 0x00,    /*!< Disable GPIO interrupt                             */
     GPIO_CFG_INTR_POSEDGE = 0x01,    /*!< GPIO interrupt type : rising edge                  */
@@ -31,7 +31,7 @@ enum GpioIntr : uint8_t
     GPIO_CFG_INTR_HIGH_LEVEL = 0x05, /*!< GPIO interrupt type : input high level trigger     */
 };
 
-enum GpioPullFlags : uint8_t
+enum GpioConfigPull : uint8_t
 {
     GPIO_CFG_PULL_DISABLE = 0x00,    /*!< Enable GPIO pull-up resistor                        */
     GPIO_CFG_PULLUP_ENABLE = 0x01,   /*!< Enable GPIO pull-up resistor                        */
@@ -40,9 +40,9 @@ enum GpioPullFlags : uint8_t
 
 struct GpioConfig
 {
-    GpioMode mode;
-    GpioIntr intr;
-    GpioPullFlags pull;
+    GpioConfigMode mode;
+    GpioConfigIntr intr;
+    GpioConfigPull pull;
 };
 
 class IGpio : public IDevice

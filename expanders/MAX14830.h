@@ -6,6 +6,8 @@
 #include <functional>
 #include <list>
 
+
+
 class MAX14830 : public IGpio
 {
     constexpr static const char *TAG = "MAX14830";
@@ -50,6 +52,8 @@ class MAX14830 : public IGpio
     DeviceResult handleIRQForPort(uint8_t port);
     DeviceResult portInit(uint8_t port);
     DeviceResult readIsrRegisters(uint8_t port, uint8_t *isr, uint8_t *sts);
+    DeviceResult max310x_get_ref_clk(uint32_t* refClk);
+    DeviceResult max310x_set_baud(uint8_t port, uint32_t baud, uint32_t* actualBaud);
 
 public:
     virtual DeviceResult DeviceSetConfig(IDeviceConfig &config) override;
@@ -61,4 +65,18 @@ public:
     virtual DeviceResult GpioWrite(uint32_t port, uint8_t mask, uint8_t value) override;
     virtual DeviceResult GpioIsrAddCallback(uint32_t port, uint8_t pin, std::function<void()> callback) override;
     virtual DeviceResult GpioIsrRemoveCallback(uint32_t port, uint8_t pin)  override;
+
+
+    DeviceResult UartConfigure(uint8_t port, const UartConfig* config);
+    DeviceResult StreamWrite(uint8_t port, const uint8_t* data, size_t length, size_t* written = nullptr, TickType_t timeout = portMAX_DELAY);
+    DeviceResult StreamRead(uint8_t port, uint8_t* data, size_t length, size_t* read = nullptr, TickType_t timeout = portMAX_DELAY);
+
+
 };
+
+
+
+
+// QR!!!!
+
+

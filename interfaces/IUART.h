@@ -2,7 +2,7 @@
 #include "IStream.h"
 
 
-#define CREATE_UART_CONFIG(baud, parity, stopbits, databits, flowctrl)  \
+#define UART_CREATE_CONFIG(baud, parity, stopbits, databits, flowctrl)  \
     {                                                                   \
         baud,                                                           \
         parity,                                                         \
@@ -66,7 +66,7 @@ public:
     /// @param written  Number of bytes actually send, pass null if not used
     /// @param timeout  Max time to wait for data to be send
     /// @return 
-    virtual DeviceResult StreamWrite(const uint8_t* data, size_t length, size_t* written = nullptr, TickType_t timeout = portMAX_DELAY ) { return DeviceResult::NotSupported; }
+    virtual DeviceResult StreamWrite(const uint8_t* data, size_t length, size_t* written = nullptr, TickType_t timeout = portMAX_DELAY ) override { return DeviceResult::NotSupported; }
 
     /// @brief          Blocking call, reads data from stream.
     /// @param data     Buffer for received data
@@ -74,7 +74,7 @@ public:
     /// @param read     Actual number of bytes read, pass null if not used
     /// @param timeout  Max time to wait for data to be read
     /// @return         
-    virtual DeviceResult StreamRead(uint8_t* data, size_t length, size_t* read = nullptr, TickType_t timeout = portMAX_DELAY) { return DeviceResult::NotSupported; }
+    virtual DeviceResult StreamRead(uint8_t* data, size_t length, size_t* read = nullptr, TickType_t timeout = portMAX_DELAY) override { return DeviceResult::NotSupported; }
 
 };
 
