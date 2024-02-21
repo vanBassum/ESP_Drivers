@@ -2,7 +2,7 @@
 #include "IDevice.h"
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
-#include "kernel.h"
+#include "rtos.h"
 
 class SpiBus : public IDevice
 {

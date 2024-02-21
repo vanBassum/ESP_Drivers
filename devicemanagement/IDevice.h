@@ -2,17 +2,22 @@
 #include "helpers.h"
 #include "deviceConfig.h"
 
-enum class DeviceResult : uint32_t
+
+enum class Result : uint32_t
 {
     Ok = 0,                                             // No error
     Error = 1,                                          // Something was null
     NotSupported = 2,
 };
 
+
+using DeviceResult [[deprecated]] = Result;
+
+
 enum class DeviceStatus : uint32_t
 {
     Ready = 0,                                          // Device is initialized and ready to use.
-    Created = 1,                                        // Device was created, waiting for configuration.
+    Configuring = 1,                                    // Device was created, waiting for configuration.
     Dependencies = 2,                                   // Device was configured, waiting for dependencies.
     Initializing = 3,                                   // Device needs initialisation.
     ConfigError = 4,                                    // Device couldn't be created because of a configuration error.
@@ -23,13 +28,13 @@ enum class DeviceStatus : uint32_t
 class DeviceManager;
 class IDevice {
     constexpr static const char* TAG = "IDevice";
-    DeviceStatus status = DeviceStatus::Created;
+    DeviceStatus status = DeviceStatus::Configuring;
     constexpr static const char* StatusStr[] = {
         "Ready",         
         "Created",    
         "Dependencies",    
         "Initializing",           
-        "Error",     
+        "ConfigError",     
         "Error",           
     };
 

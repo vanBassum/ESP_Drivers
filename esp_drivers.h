@@ -12,6 +12,5 @@
 #include "gpio/gpio.h"
 #include "i2c/i2c.h"
 #include "interfaces/interfaces.h"
-#include "kernel/kernel.h"
 #include "onewire/onewire.h"
 #include "spi/spi.h"

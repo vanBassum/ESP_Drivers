@@ -3,7 +3,7 @@
 #include "DriverRegistry.h"
 #include "IDeviceDetector.h"
 #include "IDevice.h"
-#include "kernel.h"
+#include "rtos.h"
 
 class DeviceManager : public std::enable_shared_from_this<DeviceManager> {
     constexpr static const char* TAG = "DeviceManager";
@@ -63,7 +63,7 @@ private:
         case DeviceStatus::ConfigError:      // Unrecoverable error!
             ESP_LOGE(TAG, "Error in device configuration!");
             assert(false);
-        case DeviceStatus::Created:          // This should not be possible, CreateDriver configures the device!
+        case DeviceStatus::Configuring:          // This should not be possible, CreateDriver configures the device!
         case DeviceStatus::Ready:
         default:
             return 0;
@@ -120,12 +120,14 @@ public:
     }
 
     // Register a new detector
+
     void RegisterDetector(std::shared_ptr<IDeviceDetector> detector) {
         assert(initialized_);
         detectors.push_back(detector);
     }
 
-    template<typename Device>
+    
+    template<typename Device> 
     std::shared_ptr<Device> getDeviceByKey(const char* key) {
         assert(initialized_);
         auto it = std::find_if(devices.begin(), devices.end(), [key](const auto& device) {
@@ -139,5 +141,22 @@ public:
         } else {
             return nullptr;
         }
+    }
+
+
+    template<typename Device>
+    DeviceResult getDeviceByKey(const char* key, std::shared_ptr<Device>& dev) {
+        assert(initialized_);
+        auto it = std::find_if(devices.begin(), devices.end(), [key](const auto& device) {
+            return std::strcmp(device->key, key) == 0;
+        });
+
+        if (it != devices.end()) {
+            // Attempt to cast to the specified Device type TODO: Add typeinformation to IDevice to prevent problems!
+            std::shared_ptr<Device> castedDevice = std::static_pointer_cast<Device>(*it);
+            dev = castedDevice;
+            return DeviceResult::Ok;
+        }
+        return DeviceResult::Error;
     }
 };

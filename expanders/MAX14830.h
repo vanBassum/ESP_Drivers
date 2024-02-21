@@ -1,7 +1,7 @@
 #pragma once
 #include "interfaces.h"
 #include "DeviceManager.h"
-#include "kernel.h"
+#include "rtos.h"
 #include "spi/device.h"
 #include <functional>
 #include <list>

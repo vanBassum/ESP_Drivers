@@ -11,6 +11,7 @@
 #include <cstring>
 #include "esp_check.h"
 
+
 #define DEV_SET_STATUS_AND_RETURN_ON_FALSE(a, newStatus, returnValue, log_tag, format, ...) do { \
         if (unlikely(!(a))) {                                                                   \
             ESP_LOGE(log_tag, "%s(%d): " format, __FUNCTION__, __LINE__, ##__VA_ARGS__);        \

@@ -56,7 +56,9 @@ DeviceResult MCP23S17::DeviceSetConfig(IDeviceConfig &config)
 DeviceResult MCP23S17::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
-	GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey), DeviceStatus::Dependencies, DeviceResult::Error, TAG, "Dependencies not ready %d", (int)DeviceGetStatus());
+	DEV_RETURN_ON_ERROR(deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey, spiDevice), TAG, "Dependencies not found %s", spiDeviceKey);
+
+	//GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey), DeviceStatus::Dependencies, DeviceResult::Error, TAG, "Dependencies not ready %d", (int)DeviceGetStatus());
 	DeviceSetStatus(DeviceStatus::Initializing);
 	return DeviceResult::Ok;
 }

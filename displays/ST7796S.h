@@ -1,5 +1,5 @@
 #pragma once
-#include "kernel.h"
+#include "rtos.h"
 #include "esp_base.h"
 #include "spi/device.h"
 #include "gpio.h"

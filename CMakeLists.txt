@@ -27,7 +27,6 @@ idf_component_register(
 		gpio
 		i2c
 		interfaces
-		kernel
 		onewire
 		spi
 	REQUIRES ESP_Base driver esp_wifi esp_eth)
