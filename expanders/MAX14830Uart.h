@@ -19,16 +19,16 @@ class MAX14830Uart : public IUART
     uint8_t port = 0;
 
     // Methods:
-	DeviceResult max310x_set_baud(uint32_t baud);
+	Result max310x_set_baud(uint32_t baud);
 
 public:
-    virtual DeviceResult DeviceSetConfig(IDeviceConfig &config) override;
-    virtual DeviceResult DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
-    virtual DeviceResult DeviceInit() override;
+    virtual Result DeviceSetConfig(IDeviceConfig &config) override;
+    virtual Result DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
+    virtual Result DeviceInit() override;
 
-    virtual DeviceResult UartConfigure(const UartConfig* config) override;
-    virtual DeviceResult StreamWrite(const uint8_t* data, size_t length, size_t* written = nullptr, TickType_t timeout = portMAX_DELAY ) override;
-    virtual DeviceResult StreamRead(uint8_t* data, size_t length, size_t* read = nullptr, TickType_t timeout = portMAX_DELAY) override;
+    virtual Result UartConfigure(const UartConfig* config) override;
+    virtual Result StreamWrite(const uint8_t* data, size_t length, size_t* written = nullptr, TickType_t timeout = portMAX_DELAY ) override;
+    virtual Result StreamRead(uint8_t* data, size_t length, size_t* read = nullptr, TickType_t timeout = portMAX_DELAY) override;
 
 
 };

@@ -45,33 +45,33 @@ typedef enum
 }mcp23s17_iocr_t;
 
 
-DeviceResult MCP23S17::DeviceSetConfig(IDeviceConfig &config)
+Result MCP23S17::DeviceSetConfig(IDeviceConfig &config)
 {
     ContextLock lock(mutex);
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiDevice", &spiDeviceKey),  DeviceStatus::ConfigError, DeviceResult::Error, TAG, "Missing parameter: spiDevice");
+	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiDevice", &spiDeviceKey),  DeviceStatus::FatalError, Result::Error, TAG, "Missing parameter: spiDevice");
 	DeviceSetStatus(DeviceStatus::Dependencies);
-	return DeviceResult::Ok;
+	return Result::Ok;
 }
 
-DeviceResult MCP23S17::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager)
+Result MCP23S17::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
 	DEV_RETURN_ON_ERROR(deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey, spiDevice), TAG, "Dependencies not found %s", spiDeviceKey);
 
 	//GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey), DeviceStatus::Dependencies, DeviceResult::Error, TAG, "Dependencies not ready %d", (int)DeviceGetStatus());
 	DeviceSetStatus(DeviceStatus::Initializing);
-	return DeviceResult::Ok;
+	return Result::Ok;
 }
 
-DeviceResult MCP23S17::DeviceInit()
+Result MCP23S17::DeviceInit()
 {
 	ContextLock lock(mutex);
 	Write8(MCP23S17_REG_IOCON_A, 0x08);    					// Set up ICON A,B to auto increment
 	DeviceSetStatus(DeviceStatus::Ready);
-	return DeviceResult::Ok;
+	return Result::Ok;
 }
 
-DeviceResult MCP23S17::GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig* config)
+Result MCP23S17::GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig* config)
 {	
 	ContextLock lock(mutex);
 
@@ -81,7 +81,7 @@ DeviceResult MCP23S17::GpioConfigure(uint32_t port, uint8_t mask, const GpioConf
         break;
     
     default:
-        return DeviceResult::NotSupported;
+        return Result::NotSupported;
     }
 
     switch (config->mode)
@@ -94,7 +94,7 @@ DeviceResult MCP23S17::GpioConfigure(uint32_t port, uint8_t mask, const GpioConf
         break;
     
     default:
-        return DeviceResult::NotSupported;
+        return Result::NotSupported;
     }
 
     switch (config->pull)
@@ -103,23 +103,23 @@ DeviceResult MCP23S17::GpioConfigure(uint32_t port, uint8_t mask, const GpioConf
         break;
     
     default:
-        return DeviceResult::NotSupported;
+        return Result::NotSupported;
     }
 	
 	uint16_t val = pinDirBuffer[1] << 8 | pinDirBuffer[0];
 	return Write16(MCP23S17_REG_DIR_A, val);
 }
 
-DeviceResult MCP23S17::GpioRead(uint32_t port, uint8_t mask, uint8_t* value) 		 
+Result MCP23S17::GpioRead(uint32_t port, uint8_t mask, uint8_t* value) 		 
 {
    	ContextLock lock(mutex);
 	uint16_t val;
-	DeviceResult result = Read16(MCP23S17_REG_GPIO_A, &val);
+	Result result = Read16(MCP23S17_REG_GPIO_A, &val);
 	*value = ((uint8_t*)&val)[port];
 	return result;
 }
 
-DeviceResult MCP23S17::GpioWrite(uint32_t port, uint8_t mask, uint8_t value) 		 
+Result MCP23S17::GpioWrite(uint32_t port, uint8_t mask, uint8_t value) 		 
 {
 	ContextLock lock(mutex);
 	pinBuffer[port] = (pinBuffer[port] & ~mask) | (value & mask);
@@ -127,14 +127,14 @@ DeviceResult MCP23S17::GpioWrite(uint32_t port, uint8_t mask, uint8_t value)
 	return Write16(MCP23S17_REG_GPIO_A, val);
 }
 
-DeviceResult MCP23S17::Transmit(uint8_t *txData, uint8_t *rxData, uint8_t count)
+Result MCP23S17::Transmit(uint8_t *txData, uint8_t *rxData, uint8_t count)
 {
 	//TODO: Claim the bus!
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->SpiTransmit(txData, rxData, count) == DeviceResult::Ok, DeviceStatus::Dependencies, DeviceResult::Error, TAG, "spiDevice->Transmit returned error");
-    return DeviceResult::Ok;
+	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->SpiTransmit(txData, rxData, count) == Result::Ok, DeviceStatus::Dependencies, Result::Error, TAG, "spiDevice->Transmit returned error");
+    return Result::Ok;
 }
 
-DeviceResult MCP23S17::Write8(uint8_t reg, uint8_t value)
+Result MCP23S17::Write8(uint8_t reg, uint8_t value)
 {
 	uint8_t txData[3];
 	txData[0] = MCP23S17_MANUF_CHIP_ADDRESS | (devAddr << 1);
@@ -143,19 +143,19 @@ DeviceResult MCP23S17::Write8(uint8_t reg, uint8_t value)
 	return Transmit(txData, NULL, 3);
 }
 
-DeviceResult MCP23S17::Read8(uint8_t reg, uint8_t *value)
+Result MCP23S17::Read8(uint8_t reg, uint8_t *value)
 {
 	uint8_t txData[3];
 	uint8_t rxData[3];	
 	txData[0] = MCP23S17_MANUF_CHIP_ADDRESS | (devAddr << 1) | 0x01;
 	txData[1] = reg;
 	txData[2] = 0x00;
-	DeviceResult result = Transmit(txData, rxData, 3);
+	Result result = Transmit(txData, rxData, 3);
 	*value = rxData[2];
     return result;
 }
 
-DeviceResult MCP23S17::Read16(uint8_t reg, uint16_t *value)
+Result MCP23S17::Read16(uint8_t reg, uint16_t *value)
 {
 	uint8_t txData[4];
 	uint8_t rxData[4];	
@@ -163,12 +163,12 @@ DeviceResult MCP23S17::Read16(uint8_t reg, uint16_t *value)
 	txData[1] = reg;
 	txData[2] = 0x00;
 	txData[3] = 0x00;
-	DeviceResult result = Transmit(txData, rxData, 4);
+	Result result = Transmit(txData, rxData, 4);
 	*value = (rxData[3] << 8) | rxData[2];
 	return result;
 }
 
-DeviceResult MCP23S17::Write16(uint8_t reg, uint16_t value)
+Result MCP23S17::Write16(uint8_t reg, uint16_t value)
 {
 	uint8_t txData[4];
 	txData[0] = MCP23S17_MANUF_CHIP_ADDRESS | (devAddr << 1);

@@ -20,20 +20,20 @@ class MCP23S17 : public IGpio
 	uint8_t pinBuffer[2] = {0};
 	uint8_t pinDirBuffer[2] = {0};
 	
-	DeviceResult Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count);
-	DeviceResult Read8(uint8_t reg, uint8_t* value);
-	DeviceResult Write8(uint8_t reg, uint8_t value);
-	DeviceResult Read16(uint8_t reg, uint16_t* value);
-	DeviceResult Write16(uint8_t reg, uint16_t value);
+	Result Transmit(uint8_t * txData, uint8_t * rxData, uint8_t count);
+	Result Read8(uint8_t reg, uint8_t* value);
+	Result Write8(uint8_t reg, uint8_t value);
+	Result Read16(uint8_t reg, uint16_t* value);
+	Result Write16(uint8_t reg, uint16_t value);
 
 public:
-	virtual DeviceResult DeviceSetConfig(IDeviceConfig& config) override;
-    virtual DeviceResult DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
-    virtual DeviceResult DeviceInit() override;
+	virtual Result DeviceSetConfig(IDeviceConfig& config) override;
+    virtual Result DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
+    virtual Result DeviceInit() override;
 
-    virtual DeviceResult GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig* config)  override;
-    virtual DeviceResult GpioRead(uint32_t port, uint8_t mask, uint8_t *value)  override;
-    virtual DeviceResult GpioWrite(uint32_t port, uint8_t mask, uint8_t value)  override;
+    virtual Result GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig* config)  override;
+    virtual Result GpioRead(uint32_t port, uint8_t mask, uint8_t *value)  override;
+    virtual Result GpioWrite(uint32_t port, uint8_t mask, uint8_t value)  override;
 
 };
 
