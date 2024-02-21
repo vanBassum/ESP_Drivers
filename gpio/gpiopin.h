@@ -20,19 +20,19 @@ public:
         ContextLock lock(mutex);
         const char* temp = nullptr;
         RETURN_ON_ERR(config.getProperty(propertyKey, &temp));
-        DEV_RETURN_ON_FALSE(sscanf(temp, "%m[^,],%hhu,%hhu", &deviceKey, &port, &pin) == 3,  Result::Error,  TAG, "Error parsing %s", propertyKey);
+        int result = sscanf(temp, "%m[^,],%hhu,%hhu", &deviceKey, &port, &pin);
+        if(result != 3)
+        {
+            ESP_LOGE(TAG, "Error parsing %s", propertyKey);
+            return Result::Error;
+        }
         return Result::Ok;
     }
 
     Result DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager)
     {
         ContextLock lock(mutex);
-        device = deviceManager->getDeviceByKey<IGpio>(deviceKey);
-        if(device == nullptr)
-        {
-            ESP_LOGE(TAG, "Dependencies not ready %s", deviceKey);
-            return Result::Error;
-        }
+        RETURN_ON_ERR(deviceManager->getDeviceByKey<IGpio>(deviceKey, device));
         return Result::Ok;
     }
 
@@ -52,7 +52,7 @@ public:
     {
         ContextLock lock(mutex);
         uint8_t val;
-        DEV_RETURN_ON_ERROR_SILENT(device->GpioRead(port, 1<<pin, &val));
+        RETURN_ON_ERR(device->GpioRead(port, 1<<pin, &val));
         *value = val?true:false;
         return Result::Ok;
     }

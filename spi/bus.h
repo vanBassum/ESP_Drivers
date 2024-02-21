@@ -62,7 +62,7 @@ public:
     Result GetHost(spi_host_device_t* host)
     {
         ContextLock lock(mutex);
-        DEV_RETURN_ON_FALSE(DeviceCheckStatus(DeviceStatus::Ready), Result::Error, TAG, "Driver not ready, status %d", (int)DeviceGetStatus());
+        RETURN_ON_ERR(DeviceCheckStatus(DeviceStatus::Ready));
         *host = this->host;
         return Result::Ok;
     }

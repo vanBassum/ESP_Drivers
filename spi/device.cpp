@@ -40,10 +40,10 @@ Result SpiDevice::DeviceSetConfig(IDeviceConfig &config)
 Result SpiDevice::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
-	GET_DEV_OR_RETURN(spiBus, deviceManager->getDeviceByKey<SpiBus>(spiBusKey), DeviceStatus::Dependencies, Result::Error, TAG, "spiBus not available");
+	RETURN_ON_ERR(deviceManager->getDeviceByKey<SpiBus>(spiBusKey, spiBus));
 
 	if (csDeviceKey != nullptr)
-		GET_DEV_OR_RETURN(csDevice, deviceManager->getDeviceByKey<IGpio>(csDeviceKey), DeviceStatus::Dependencies, Result::Error, TAG, "csDevice not available");
+		RETURN_ON_ERR(deviceManager->getDeviceByKey<IGpio>(csDeviceKey, csDevice));
 
 	DeviceSetStatus(DeviceStatus::Initializing);
 	return Result::Ok;
@@ -52,7 +52,7 @@ Result SpiDevice::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceMa
 Result SpiDevice::DeviceInit()
 {
 	ContextLock lock(mutex);
-	spi_host_device_t host;
+	spi_host_device_t host = SPI_HOST_MAX;
 	RETURN_ON_ERR(spiBus->GetHost(&host));
 
 	if (spi_bus_add_device(host, &devConfig, &handle) != ESP_OK)
@@ -69,8 +69,7 @@ Result SpiDevice::DeviceInit()
 Result SpiDevice::SpiTransmit(const uint8_t *txData, uint8_t *rxData, size_t size, SPIFlags flags)
 {
 	ContextLock lock(mutex);
-	DEV_RETURN_ON_FALSE(DeviceCheckStatus(DeviceStatus::Ready), Result::Error, TAG, "Driver not ready, status %d", (int)DeviceGetStatus());
-
+	RETURN_ON_ERR(DeviceCheckStatus(DeviceStatus::Ready));
 	spi_transaction_t transaction = {};
 	transaction.length = size * 8; // In bits
 	transaction.tx_buffer = txData;

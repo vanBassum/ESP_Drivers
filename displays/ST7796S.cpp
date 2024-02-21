@@ -122,24 +122,24 @@ void disp_wait_for_pending_transactions(void)
 Result ST7796S::st7796s_send_cmd(uint8_t cmd)
 {
 	disp_wait_for_pending_transactions();
-    DEV_RETURN_ON_ERROR_SILENT(dcPin.GpioPinWrite(0));/*Command mode*/
-    DEV_RETURN_ON_ERROR_SILENT(st7796s_spi_transfer(&cmd, nullptr, 1));
+    RETURN_ON_ERR(dcPin.GpioPinWrite(0));/*Command mode*/
+    RETURN_ON_ERR(st7796s_spi_transfer(&cmd, nullptr, 1));
 	return Result::Ok;
 }
 
 Result ST7796S::st7796s_send_data(const uint8_t * data, uint16_t length)
 {
 	disp_wait_for_pending_transactions();
-    DEV_RETURN_ON_ERROR_SILENT(dcPin.GpioPinWrite(1)); /*Data mode*/
-    DEV_RETURN_ON_ERROR_SILENT(st7796s_spi_transfer(data, nullptr, length));
+    RETURN_ON_ERR(dcPin.GpioPinWrite(1)); /*Data mode*/
+    RETURN_ON_ERR(st7796s_spi_transfer(data, nullptr, length));
 	return Result::Ok;
 }
 
 Result ST7796S::st7796s_send_color(const uint16_t* data, uint16_t length)
 {
 	disp_wait_for_pending_transactions();
-    DEV_RETURN_ON_ERROR_SILENT(dcPin.GpioPinWrite(1)); /*Data mode*/
-    DEV_RETURN_ON_ERROR_SILENT(st7796s_spi_transfer((uint8_t*)data, nullptr, length * 2));
+    RETURN_ON_ERR(dcPin.GpioPinWrite(1)); /*Data mode*/
+    RETURN_ON_ERR(st7796s_spi_transfer((uint8_t*)data, nullptr, length * 2));
 	return Result::Ok;
 }
 
@@ -147,8 +147,8 @@ Result ST7796S::st7796s_set_orientation(uint8_t orientation)
 {
 	const char *orientation_str[] = {"PORTRAIT", "PORTRAIT_INVERTED", "LANDSCAPE", "LANDSCAPE_INVERTED"};
 	uint8_t data[] = {0x48, 0x88, 0x28, 0xE8};
-	DEV_RETURN_ON_ERROR_SILENT(st7796s_send_cmd(0x36));
-	DEV_RETURN_ON_ERROR_SILENT(st7796s_send_data(&data[orientation], 1));
+	RETURN_ON_ERR(st7796s_send_cmd(0x36));
+	RETURN_ON_ERR(st7796s_send_data(&data[orientation], 1));
 	return Result::Ok;
 }
 
@@ -168,9 +168,9 @@ Result ST7796S::DeviceSetConfig(IDeviceConfig &config)
 {
     ContextLock lock(mutex);
 	RETURN_ON_ERR(config.getProperty("spiDevice", &spiDeviceKey));
-    DEV_RETURN_ON_ERROR_SILENT(dcPin.DeviceSetConfig(config, "dcPin"));
-    DEV_RETURN_ON_ERROR_SILENT(rstPin.DeviceSetConfig(config, "rstPin"));
-    DEV_RETURN_ON_ERROR_SILENT(blckPin.DeviceSetConfig(config, "blckPin"));
+    RETURN_ON_ERR(dcPin.DeviceSetConfig(config, "dcPin"));
+    RETURN_ON_ERR(rstPin.DeviceSetConfig(config, "rstPin"));
+    RETURN_ON_ERR(blckPin.DeviceSetConfig(config, "blckPin"));
 
 	DeviceSetStatus(DeviceStatus::Dependencies);
 	return Result::Ok;
@@ -179,10 +179,10 @@ Result ST7796S::DeviceSetConfig(IDeviceConfig &config)
 Result ST7796S::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
-	GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey), DeviceStatus::Dependencies, Result::Error, TAG, "Dependencies not ready %s", spiDeviceKey);
-	DEV_RETURN_ON_ERROR_SILENT(dcPin.DeviceLoadDependencies(deviceManager));
-	DEV_RETURN_ON_ERROR_SILENT(rstPin.DeviceLoadDependencies(deviceManager));
-	DEV_RETURN_ON_ERROR_SILENT(blckPin.DeviceLoadDependencies(deviceManager));
+	RETURN_ON_ERR(deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey, spiDevice));
+	RETURN_ON_ERR(dcPin.DeviceLoadDependencies(deviceManager));
+	RETURN_ON_ERR(rstPin.DeviceLoadDependencies(deviceManager));
+	RETURN_ON_ERR(blckPin.DeviceLoadDependencies(deviceManager));
 
 	DeviceSetStatus(DeviceStatus::Initializing);
 	return Result::Ok;
@@ -191,34 +191,34 @@ Result ST7796S::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceMana
 Result ST7796S::DeviceInit()
 {
 	ContextLock lock(mutex);
-    DEV_RETURN_ON_ERROR_SILENT(dcPin.DeviceInit());
-    DEV_RETURN_ON_ERROR_SILENT(rstPin.DeviceInit());
-    DEV_RETURN_ON_ERROR_SILENT(blckPin.DeviceInit());
+    RETURN_ON_ERR(dcPin.DeviceInit());
+    RETURN_ON_ERR(rstPin.DeviceInit());
+    RETURN_ON_ERR(blckPin.DeviceInit());
 
 
 	//Initialize non-SPI GPIOs
-    DEV_RETURN_ON_ERROR_SILENT(dcPin.GpioConfigure(&gpioOutput));
-    DEV_RETURN_ON_ERROR_SILENT(rstPin.GpioConfigure(&gpioOutput));
-    DEV_RETURN_ON_ERROR_SILENT(blckPin.GpioConfigure(&gpioOutput));
+    RETURN_ON_ERR(dcPin.GpioConfigure(&gpioOutput));
+    RETURN_ON_ERR(rstPin.GpioConfigure(&gpioOutput));
+    RETURN_ON_ERR(blckPin.GpioConfigure(&gpioOutput));
 
     //Default the dc pin
-    DEV_RETURN_ON_ERROR_SILENT(dcPin.GpioPinWrite(0));
+    RETURN_ON_ERR(dcPin.GpioPinWrite(0));
 
     //Turn on backlight
-    DEV_RETURN_ON_ERROR_SILENT(blckPin.GpioPinWrite(1));   
+    RETURN_ON_ERR(blckPin.GpioPinWrite(1));   
 
     //Reset the display
-    DEV_RETURN_ON_ERROR_SILENT(rstPin.GpioPinWrite(0));
+    RETURN_ON_ERR(rstPin.GpioPinWrite(0));
 	vTaskDelay(100 / portTICK_PERIOD_MS);
-    DEV_RETURN_ON_ERROR_SILENT(rstPin.GpioPinWrite(1));
+    RETURN_ON_ERR(rstPin.GpioPinWrite(1));
 	vTaskDelay(100 / portTICK_PERIOD_MS);
 
 	//Send all the commands
 	uint16_t cmd = 0;
     while (init_cmds[cmd].databytes != 0xff)
 	{
-		DEV_RETURN_ON_ERROR_SILENT(st7796s_send_cmd(init_cmds[cmd].cmd));
-		DEV_RETURN_ON_ERROR_SILENT(st7796s_send_data(init_cmds[cmd].data, init_cmds[cmd].databytes & 0x1F));
+		RETURN_ON_ERR(st7796s_send_cmd(init_cmds[cmd].cmd));
+		RETURN_ON_ERR(st7796s_send_data(init_cmds[cmd].data, init_cmds[cmd].databytes & 0x1F));
 		if (init_cmds[cmd].databytes & 0x80)
 		{
 			vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -227,8 +227,8 @@ Result ST7796S::DeviceInit()
 	}
 
 
-	DEV_RETURN_ON_ERROR_SILENT(st7796s_set_orientation(0));
-	DEV_RETURN_ON_ERROR_SILENT(st7796s_send_cmd(0x20));		//ST7796S_INVERT_COLORS 0x21 or 0x20
+	RETURN_ON_ERR(st7796s_set_orientation(0));
+	RETURN_ON_ERR(st7796s_send_cmd(0x20));		//ST7796S_INVERT_COLORS 0x21 or 0x20
 
 	DeviceSetStatus(DeviceStatus::Ready);
 	return Result::Ok;
@@ -236,8 +236,8 @@ Result ST7796S::DeviceInit()
 
 Result ST7796S::DrawPixel(uint16_t x, uint16_t y, uint16_t color)
 {
-  	DEV_RETURN_ON_ERROR_SILENT(SetWindow(x, y, x + 1, y + 1));
-  	DEV_RETURN_ON_ERROR_SILENT(WriteWindow(&color, 1));
+  	RETURN_ON_ERR(SetWindow(x, y, x + 1, y + 1));
+  	RETURN_ON_ERR(WriteWindow(&color, 1));
     return Result::Ok;
 }
 
@@ -246,28 +246,28 @@ Result ST7796S::SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
     ContextLock lock(mutex);
     uint8_t data[4];
 	/*Column addresses*/
-	DEV_RETURN_ON_ERROR_SILENT(st7796s_send_cmd(0x2A));
+	RETURN_ON_ERR(st7796s_send_cmd(0x2A));
 	data[0] = (x1 >> 8) & 0xFF;
 	data[1] = x1 & 0xFF;
 	data[2] = (x2 >> 8) & 0xFF;
 	data[3] = x2 & 0xFF;
-	DEV_RETURN_ON_ERROR_SILENT(st7796s_send_data(data, 4));
+	RETURN_ON_ERR(st7796s_send_data(data, 4));
 
 	/*Page addresses*/
-	DEV_RETURN_ON_ERROR_SILENT(st7796s_send_cmd(0x2B));
+	RETURN_ON_ERR(st7796s_send_cmd(0x2B));
 	data[0] = (y1 >> 8) & 0xFF;
 	data[1] = y1 & 0xFF;
 	data[2] = (y2 >> 8) & 0xFF;
 	data[3] = y2 & 0xFF;
-	DEV_RETURN_ON_ERROR_SILENT(st7796s_send_data(data, 4));
+	RETURN_ON_ERR(st7796s_send_data(data, 4));
     return Result::Ok;
 }
 
 Result ST7796S::WriteWindow(uint16_t * colors, size_t size)
 {
     ContextLock lock(mutex);
-	DEV_RETURN_ON_ERROR_SILENT(st7796s_send_cmd(0x2C));
-	DEV_RETURN_ON_ERROR_SILENT(st7796s_send_color(colors, size));
+	RETURN_ON_ERR(st7796s_send_cmd(0x2C));
+	RETURN_ON_ERR(st7796s_send_color(colors, size));
     return Result::Ok;
 }
 
