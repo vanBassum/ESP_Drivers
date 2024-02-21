@@ -19,7 +19,6 @@ idf_component_register(
 		.
 		analog
 		common
-		devicemanagement
 		displays
 		ethernet
 		expanders

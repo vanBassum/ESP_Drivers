@@ -1,6 +1,6 @@
 #pragma once
 #include "interfaces.h"
-#include "DeviceManager.h"
+#include "devicemanagement.h"
 #include "rtos.h"
 #include "MAX14830.h"
 #include <functional>
