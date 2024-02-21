@@ -48,7 +48,7 @@ typedef enum
 Result MCP23S17::DeviceSetConfig(IDeviceConfig &config)
 {
     ContextLock lock(mutex);
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiDevice", &spiDeviceKey),  DeviceStatus::FatalError, Result::Error, TAG, "Missing parameter: spiDevice");
+	RETURN_ON_ERR(config.getProperty("spiDevice", &spiDeviceKey));
 	DeviceSetStatus(DeviceStatus::Dependencies);
 	return Result::Ok;
 }
@@ -56,9 +56,7 @@ Result MCP23S17::DeviceSetConfig(IDeviceConfig &config)
 Result MCP23S17::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
-	DEV_RETURN_ON_ERROR(deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey, spiDevice), TAG, "Dependencies not found %s", spiDeviceKey);
-
-	//GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey), DeviceStatus::Dependencies, DeviceResult::Error, TAG, "Dependencies not ready %d", (int)DeviceGetStatus());
+	RETURN_ON_ERR(deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey, spiDevice));
 	DeviceSetStatus(DeviceStatus::Initializing);
 	return Result::Ok;
 }
@@ -66,7 +64,7 @@ Result MCP23S17::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceMan
 Result MCP23S17::DeviceInit()
 {
 	ContextLock lock(mutex);
-	Write8(MCP23S17_REG_IOCON_A, 0x08);    					// Set up ICON A,B to auto increment
+	RETURN_ON_ERR(Write8(MCP23S17_REG_IOCON_A, 0x08));    					// Set up ICON A,B to auto increment
 	DeviceSetStatus(DeviceStatus::Ready);
 	return Result::Ok;
 }
@@ -129,8 +127,7 @@ Result MCP23S17::GpioWrite(uint32_t port, uint8_t mask, uint8_t value)
 
 Result MCP23S17::Transmit(uint8_t *txData, uint8_t *rxData, uint8_t count)
 {
-	//TODO: Claim the bus!
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->SpiTransmit(txData, rxData, count) == Result::Ok, DeviceStatus::Dependencies, Result::Error, TAG, "spiDevice->Transmit returned error");
+	RETURN_ON_ERR(spiDevice->SpiTransmit(txData, rxData, count));
     return Result::Ok;
 }
 

@@ -5,8 +5,9 @@
 Result MAX14830Uart::DeviceSetConfig(IDeviceConfig &config)
 {
     ContextLock lock(mutex);
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("maxDevice", &maxDeviceKey),  DeviceStatus::FatalError, Result::Error, TAG, "Missing parameter: maxDevice");
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("port", &port),  DeviceStatus::FatalError, Result::Error, TAG, "Missing parameter: port");
+	
+	RETURN_ON_ERR(config.getProperty("maxDevice", &maxDeviceKey));
+	RETURN_ON_ERR(config.getProperty("port", &port));
 	DeviceSetStatus(DeviceStatus::Dependencies);
 	return Result::Ok;
 }
@@ -14,7 +15,7 @@ Result MAX14830Uart::DeviceSetConfig(IDeviceConfig &config)
 Result MAX14830Uart::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
-	GET_DEV_OR_RETURN(maxDevice, deviceManager->getDeviceByKey<MAX14830>(maxDeviceKey), DeviceStatus::Dependencies, Result::Error, TAG, "Missing dependency: maxDevice");
+	RETURN_ON_ERR(deviceManager->getDeviceByKey<MAX14830>(maxDeviceKey, maxDevice));
 	DeviceSetStatus(DeviceStatus::Initializing);
 	return Result::Ok;
 }

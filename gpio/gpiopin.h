@@ -19,7 +19,7 @@ public:
     {
         ContextLock lock(mutex);
         const char* temp = nullptr;
-        DEV_RETURN_ON_FALSE(config.getProperty(propertyKey, &temp), Result::Error,  TAG, "Missing parameter: %s", propertyKey);
+        RETURN_ON_ERR(config.getProperty(propertyKey, &temp));
         DEV_RETURN_ON_FALSE(sscanf(temp, "%m[^,],%hhu,%hhu", &deviceKey, &port, &pin) == 3,  Result::Error,  TAG, "Error parsing %s", propertyKey);
         return Result::Ok;
     }

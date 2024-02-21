@@ -4,7 +4,7 @@
 Result SpiDevice::DeviceSetConfig(IDeviceConfig &config)
 {
 	ContextLock lock(mutex);
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiBus", &spiBusKey), DeviceStatus::FatalError, Result::Error, TAG, "No property found for 'spiBus'");
+	RETURN_ON_ERR(config.getProperty("spiBus", &spiBusKey));
 	config.getProperty("command_bits", &devConfig.command_bits);
 	config.getProperty("address_bits", &devConfig.address_bits);
 	config.getProperty("dummy_bits", &devConfig.dummy_bits);
@@ -22,7 +22,8 @@ Result SpiDevice::DeviceSetConfig(IDeviceConfig &config)
 	config.getProperty("key", &key);
 
 	const char *customCsPin = nullptr; // Use nullptr for clarity
-	if (config.getProperty("customCS", &customCsPin))
+
+	if (config.getProperty("customCS", &customCsPin) == Result::Ok)
 	{
 		if (sscanf(customCsPin, "%m[^,],%hhu,%hhu", &csDeviceKey, &csPort, &csPin) == 3)
 		{
@@ -52,7 +53,7 @@ Result SpiDevice::DeviceInit()
 {
 	ContextLock lock(mutex);
 	spi_host_device_t host;
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiBus->GetHost(&host) == Result::Ok, DeviceStatus::Dependencies, Result::Error, TAG, "spiBus->GetHost error");
+	RETURN_ON_ERR(spiBus->GetHost(&host));
 
 	if (spi_bus_add_device(host, &devConfig, &handle) != ESP_OK)
 	{

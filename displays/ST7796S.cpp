@@ -167,7 +167,7 @@ Result ST7796S::st7796s_spi_transfer(const uint8_t * txData, uint8_t * rxData, s
 Result ST7796S::DeviceSetConfig(IDeviceConfig &config)
 {
     ContextLock lock(mutex);
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiDevice", &spiDeviceKey),  DeviceStatus::FatalError, Result::Error, TAG, "Missing parameter: spiDevice");
+	RETURN_ON_ERR(config.getProperty("spiDevice", &spiDeviceKey));
     DEV_RETURN_ON_ERROR_SILENT(dcPin.DeviceSetConfig(config, "dcPin"));
     DEV_RETURN_ON_ERROR_SILENT(rstPin.DeviceSetConfig(config, "rstPin"));
     DEV_RETURN_ON_ERROR_SILENT(blckPin.DeviceSetConfig(config, "blckPin"));

@@ -19,7 +19,7 @@ public:
     virtual Result DeviceSetConfig(IDeviceConfig &config) override
     {
         ContextLock lock(mutex);
-        DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("host", (int32_t *)&host), DeviceStatus::EndOfLife, Result::Error, TAG, "No property found for 'host'");
+        RETURN_ON_ERR(config.getProperty("host", (int32_t *)&host));
         config.getProperty("dmaChannel", (int32_t *)&dmaChannel);
         config.getProperty("mosi_io_num", (int32_t *)&busConfig.mosi_io_num);
         config.getProperty("miso_io_num", (int32_t *)&busConfig.miso_io_num);

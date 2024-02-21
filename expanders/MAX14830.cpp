@@ -15,11 +15,16 @@ std::list<std::shared_ptr<MAX14830::IsrHandle>> MAX14830::callbacks; 	//Initiali
 Result MAX14830::DeviceSetConfig(IDeviceConfig &config)
 {
     ContextLock lock(mutex);
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiDevice", &spiDeviceKey),  DeviceStatus::FatalError, Result::Error, TAG, "Missing parameter: spiDevice");
+	RETURN_ON_ERR(config.getProperty("spiDevice", &spiDeviceKey));
 
     const char *isrPinStr = nullptr;
-    DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("isrPin", &isrPinStr),  DeviceStatus::FatalError, Result::Error, TAG, "Missing parameter: isrPin");
-    DEV_SET_STATUS_AND_RETURN_ON_FALSE(sscanf(isrPinStr, "%m[^,],%hhu,%hhu", &isrDeviceKey, &isrPort, &isrPin) == 3,  DeviceStatus::FatalError, Result::Error, TAG, "Error parsing isrPin");
+    RETURN_ON_ERR(config.getProperty("isrPin", &isrPinStr));
+	int result = sscanf(isrPinStr, "%m[^,],%hhu,%hhu", &isrDeviceKey, &isrPort, &isrPin);
+	if(result != 3)
+	{
+		ESP_LOGE(TAG, "Error parsing isrPin");
+		return Result::Error;
+	}
 
 	DeviceSetStatus(DeviceStatus::Dependencies);
 	return Result::Ok;
@@ -28,8 +33,8 @@ Result MAX14830::DeviceSetConfig(IDeviceConfig &config)
 Result MAX14830::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
-	GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<SpiDevice>(spiDeviceKey), DeviceStatus::Dependencies, Result::Error, TAG, "Missing dependency: spiDevice");
-	GET_DEV_OR_RETURN(isrDevice, deviceManager->getDeviceByKey<IGpio>(isrDeviceKey), DeviceStatus::Dependencies, Result::Error, TAG, "Missing dependency: isrDevice");
+	RETURN_ON_ERR(deviceManager->getDeviceByKey<SpiDevice>(spiDeviceKey, spiDevice));
+	RETURN_ON_ERR(deviceManager->getDeviceByKey<IGpio>(isrDeviceKey, isrDevice));
 	DeviceSetStatus(DeviceStatus::Initializing);
 	return Result::Ok;
 }
@@ -42,19 +47,29 @@ Result MAX14830::DeviceInit()
     bool detected;
     uint32_t clk;
     bool clkError;
-    DEV_RETURN_ON_FALSE(Detect(&detected) == Result::Ok, Result::Error, TAG, "Error while detecting chip");
-    DEV_RETURN_ON_FALSE(detected, Result::Error, TAG, "Chip not detected");
-    DEV_RETURN_ON_FALSE(SetRefClock(&clk, &clkError) == Result::Ok, Result::Error, TAG, "Error while setting reference clock");
-    DEV_RETURN_ON_FALSE(clkError, Result::Error, TAG, "Clock error");
+    RETURN_ON_ERR(Detect(&detected));
+	if(!detected)
+	{
+		ESP_LOGE(TAG, "Chip not detected");
+		return Result::Error;
+	}
 
-	DEV_RETURN_ON_ERROR(portInit(0x00), TAG, "Error while port 0 init");
-	DEV_RETURN_ON_ERROR(portInit(0x01), TAG, "Error while port 1 init");
-	DEV_RETURN_ON_ERROR(portInit(0x02), TAG, "Error while port 2 init");
-	DEV_RETURN_ON_ERROR(portInit(0x03), TAG, "Error while port 3 init");
+    RETURN_ON_ERR(SetRefClock(&clk, &clkError));
+	if(!clkError)
+	{
+		ESP_LOGE(TAG, "Clock error");
+		return Result::Error;
+	}
+
+
+	RETURN_ON_ERR(portInit(0x00));
+	RETURN_ON_ERR(portInit(0x01));
+	RETURN_ON_ERR(portInit(0x02));
+	RETURN_ON_ERR(portInit(0x03));
 
     // Enable the ISR handling
-	DEV_RETURN_ON_ERROR_SILENT(isrDevice->GpioIsrAddCallback(isrPort, isrPin, [&](){isr_handler();}));
-	DEV_RETURN_ON_ERROR_SILENT(isrDevice->GpioConfigure(isrPort, 1<<isrPin, &isrEnabledConfig));
+	RETURN_ON_ERR(isrDevice->GpioIsrAddCallback(isrPort, isrPin, [&](){isr_handler();}));
+	RETURN_ON_ERR(isrDevice->GpioConfigure(isrPort, 1<<isrPin, &isrEnabledConfig));
 
 	// Tell the driver the device is initialized and ready to use.
 	DeviceSetStatus(DeviceStatus::Ready);
@@ -65,9 +80,9 @@ Result MAX14830::DeviceInit()
 Result MAX14830::Detect(bool* result)
 {
     uint8_t value;
-    DEV_RETURN_ON_ERROR_SILENT(regmap_write(MAX310X_GLOBALCMD_REG, MAX310X_EXTREG_ENBL));
-    DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(0x00, MAX310X_REVID_EXTREG, &value));
-    DEV_RETURN_ON_ERROR_SILENT(regmap_write(MAX310X_GLOBALCMD_REG, MAX310X_EXTREG_DSBL));
+    RETURN_ON_ERR(regmap_write(MAX310X_GLOBALCMD_REG, MAX310X_EXTREG_ENBL));
+    RETURN_ON_ERR(max310x_port_read(0x00, MAX310X_REVID_EXTREG, &value));
+    RETURN_ON_ERR(regmap_write(MAX310X_GLOBALCMD_REG, MAX310X_EXTREG_DSBL));
 
     if (((value & MAX310x_REV_MASK) != MAX14830_REV_ID))
 	{
@@ -191,7 +206,7 @@ Result MAX14830::Max14830_WriteBufferPolled(uint8_t cmd, const uint8_t * cmdData
 	t.length = (count * 8);                   		    //amount of bits
 	t.tx_buffer = cmdData;               			    //The data is the cmd itself
 	t.cmd = 0x80 | cmd;								    //Add write bit
-    DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->Transmit(&t, SPIFlags::POLLED) == Result::Ok, DeviceStatus::Dependencies, Result::Error, TAG, "Error in spi transmit");
+    RETURN_ON_ERR(spiDevice->Transmit(&t, SPIFlags::POLLED));
 	return Result::Ok;
 }
 
@@ -203,7 +218,7 @@ Result MAX14830::Max14830_ReadBufferPolled(uint8_t cmd, uint8_t * cmdData, uint8
 	t.tx_buffer = cmdData;               			//The data is the cmd itself
 	t.rx_buffer = replyData;
 	t.cmd = cmd;
-    DEV_SET_STATUS_AND_RETURN_ON_FALSE(spiDevice->Transmit(&t, SPIFlags::POLLED) == Result::Ok, DeviceStatus::Dependencies, Result::Error, TAG, "Error in spi transmit");
+    RETURN_ON_ERR(spiDevice->Transmit(&t, SPIFlags::POLLED));
 	return Result::Ok;
 }
 
@@ -233,7 +248,7 @@ Result MAX14830::max310x_port_write(uint8_t port, uint8_t cmd, uint8_t value)
 Result MAX14830::max310x_port_update(uint8_t port, uint8_t cmd, uint8_t mask, uint8_t value)
 {
 	uint8_t val = 0;
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, cmd, &val));
+	RETURN_ON_ERR(max310x_port_read(port, cmd, &val));
 	val &= ~mask;
 	val |= (mask & value);
 	return max310x_port_write(port, cmd, val);
@@ -276,7 +291,7 @@ Result MAX14830::handleIRQForPort(uint8_t port)
 	uint8_t isr;
 	uint8_t sts = 0;
 
-	DEV_RETURN_ON_ERROR_SILENT(readIsrRegisters(port, &isr, &sts));
+	RETURN_ON_ERR(readIsrRegisters(port, &isr, &sts));
 
 	//TODO: Do something with the knowledge that there is data avaiable HAS_BIT(isr, MAX310X_IRQ_RXEMPTY_BIT)
 
@@ -302,11 +317,11 @@ Result MAX14830::readIsrRegisters(uint8_t port, uint8_t* isr, uint8_t* sts)
 {
 	ContextLock lock(mutex);
 
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_IRQSTS_REG, isr));		
+	RETURN_ON_ERR(max310x_port_read(port, MAX310X_IRQSTS_REG, isr));		
 	bool pinChanges = HAS_BIT(*isr, MAX310X_IRQ_STS_BIT);
 	if (pinChanges)
 	{
-		DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_STS_IRQSTS_REG, sts));
+		RETURN_ON_ERR(max310x_port_read(port, MAX310X_STS_IRQSTS_REG, sts));
 	}
 	return Result::Ok;
 }
@@ -315,7 +330,7 @@ Result MAX14830::max310x_get_ref_clk(uint32_t* refClk)
 {
 	uint64_t clk = MAX14830_CLK;	//we only need 64bits for calculation..
 	uint8_t value = 0;
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(0x00, MAX310X_PLLCFG_REG, &value));
+	RETURN_ON_ERR(max310x_port_read(0x00, MAX310X_PLLCFG_REG, &value));
 	uint32_t clkDiv = value & MAX310X_PLLCFG_PREDIV_MASK;
 	uint32_t mul = (value >> 6) & 0x3;
 	if (mul == 0)
@@ -335,7 +350,7 @@ Result MAX14830::max310x_set_baud(uint8_t port, uint32_t baud, uint32_t* actualB
 {
 	uint8_t mode = 0;
 	uint32_t fref;
-	DEV_RETURN_ON_ERROR_SILENT(max310x_get_ref_clk(&fref));
+	RETURN_ON_ERR(max310x_get_ref_clk(&fref));
 	uint32_t clk = fref;
 	uint32_t div = clk / baud;
 
@@ -358,9 +373,9 @@ Result MAX14830::max310x_set_baud(uint8_t port, uint32_t baud, uint32_t* actualB
 		}
 	}
 
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_write(port, MAX310X_BRGDIVMSB_REG, (div / 16) >> 8));
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_write(port, MAX310X_BRGDIVLSB_REG, div / 16));
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_write(port, MAX310X_BRGCFG_REG, (div % 16) | mode));
+	RETURN_ON_ERR(max310x_port_write(port, MAX310X_BRGDIVMSB_REG, (div / 16) >> 8));
+	RETURN_ON_ERR(max310x_port_write(port, MAX310X_BRGDIVLSB_REG, div / 16));
+	RETURN_ON_ERR(max310x_port_write(port, MAX310X_BRGCFG_REG, (div % 16) | mode));
 	if(actualBaud != NULL)
 		*actualBaud = clk / div; //actual baudrate, this will never be exactly the value requested..
 	return Result::Ok;
@@ -373,24 +388,24 @@ Result MAX14830::portInit(uint8_t port)
 
 	//TODO: Init UART
 	// Configure MODE2 register & Reset FIFOs
-	// DEV_RETURN_ON_ERROR_SILENT(maxDevice->PortWrite(port, MAX310X_MODE2_REG, MAX310X_MODE2_RXEMPTINV_BIT | MAX310X_MODE2_FIFORST_BIT));
-	// DEV_RETURN_ON_ERROR_SILENT(maxDevice->PortUpdate(port, MAX310X_MODE2_REG, MAX310X_MODE2_FIFORST_BIT, 0));
+	// RETURN_ON_ERR(maxDevice->PortWrite(port, MAX310X_MODE2_REG, MAX310X_MODE2_RXEMPTINV_BIT | MAX310X_MODE2_FIFORST_BIT));
+	// RETURN_ON_ERR(maxDevice->PortUpdate(port, MAX310X_MODE2_REG, MAX310X_MODE2_FIFORST_BIT, 0));
 
 	/* Enable STS, RX, TX, CTS change interrupts */
 	//max310x_port_write(port, MAX310X_IRQEN_REG, MAX310X_IRQ_RXEMPTY_BIT | MAX310X_IRQ_TXEMPTY_BIT | MAX310X_IRQ_STS_BIT);
-	//DEV_RETURN_ON_ERROR_SILENT(maxDevice->PortUpdate(port, MAX310X_IRQEN_REG, MAX310X_IRQ_RXEMPTY_BIT, MAX310X_IRQ_RXEMPTY_BIT)); //Dont change the STS bit!
-	//DEV_RETURN_ON_ERROR_SILENT(maxDevice->PortWrite(port, MAX310X_LSR_IRQEN_REG, 0));
-	//DEV_RETURN_ON_ERROR_SILENT(maxDevice->PortWrite(port, MAX310X_SPCHR_IRQEN_REG, 0));
+	//RETURN_ON_ERR(maxDevice->PortUpdate(port, MAX310X_IRQEN_REG, MAX310X_IRQ_RXEMPTY_BIT, MAX310X_IRQ_RXEMPTY_BIT)); //Dont change the STS bit!
+	//RETURN_ON_ERR(maxDevice->PortWrite(port, MAX310X_LSR_IRQEN_REG, 0));
+	//RETURN_ON_ERR(maxDevice->PortWrite(port, MAX310X_SPCHR_IRQEN_REG, 0));
 
 	// Clear IRQ status registers
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_STS_IRQSTS_REG, &dummy));
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_GLOBALIRQ_REG, &dummy));
+	RETURN_ON_ERR(max310x_port_read(port, MAX310X_STS_IRQSTS_REG, &dummy));
+	RETURN_ON_ERR(max310x_port_read(port, MAX310X_GLOBALIRQ_REG, &dummy));
 
 	// Route GlobalIRQ to IRQPIN
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_update(port, MAX310X_MODE1_REG, MAX310X_MODE1_IRQSEL_BIT, MAX310X_MODE1_IRQSEL_BIT));
+	RETURN_ON_ERR(max310x_port_update(port, MAX310X_MODE1_REG, MAX310X_MODE1_IRQSEL_BIT, MAX310X_MODE1_IRQSEL_BIT));
 
 	// Enable IO IRQ
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_write(port, MAX310X_IRQEN_REG, MAX310X_IRQ_STS_BIT));
+	RETURN_ON_ERR(max310x_port_write(port, MAX310X_IRQEN_REG, MAX310X_IRQ_STS_BIT));
 
 	return Result::Ok;
 }
@@ -408,11 +423,11 @@ Result MAX14830::GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig *co
     switch (config->intr)
     {
     case GPIO_CFG_INTR_DISABLE:
-		DEV_RETURN_ON_ERROR_SILENT(max310x_port_update(port, MAX310X_STS_IRQEN_REG, minimask, 0x00));	//Disable interrupts
+		RETURN_ON_ERR(max310x_port_update(port, MAX310X_STS_IRQEN_REG, minimask, 0x00));	//Disable interrupts
         break;
     
 	case GPIO_CFG_INTR_ANYEDGE:
-		DEV_RETURN_ON_ERROR_SILENT(max310x_port_update(port, MAX310X_STS_IRQEN_REG, minimask, 0x0F));	//Enable interrupts
+		RETURN_ON_ERR(max310x_port_update(port, MAX310X_STS_IRQEN_REG, minimask, 0x0F));	//Enable interrupts
 		break;
     default:
         return Result::NotSupported;
@@ -440,7 +455,7 @@ Result MAX14830::GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig *co
 	}
 	
 	gpioConfBuffer[port] = (od << 4) | ou;
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_write(port, MAX310X_GPIOCFG_REG, gpioConfBuffer[port]));
+	RETURN_ON_ERR(max310x_port_write(port, MAX310X_GPIOCFG_REG, gpioConfBuffer[port]));
 
 	//Setup pull up / down
     switch (config->pull)
@@ -461,7 +476,7 @@ Result MAX14830::GpioRead(uint32_t port, uint8_t mask, uint8_t * value)
 	if (minimask > 0)
 	{
 		uint8_t reg;
-		DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_GPIODATA_REG, &reg));
+		RETURN_ON_ERR(max310x_port_read(port, MAX310X_GPIODATA_REG, &reg));
 		*value &= ~minimask;
 		*value |= (reg>>4) & minimask;
 	}
@@ -522,20 +537,20 @@ Result MAX14830::UartConfigure(uint8_t port, const UartConfig * config)
 	switch (config->flowCtrl)
 	{
 	case UartConfigFlowControl::UART_CFG_FLOW_CTRL_NONE:
-		DEV_RETURN_ON_ERROR_SILENT(max310x_port_update(port, MAX310X_MODE1_REG, MAX310X_MODE1_TXDIS_BIT, 0));
-		DEV_RETURN_ON_ERROR_SILENT(max310x_port_update(port, MAX310X_MODE1_REG, (MAX310X_MODE1_TRNSCVCTRL_BIT | MAX310X_MODE1_IRQSEL_BIT), (0 | MAX310X_MODE1_IRQSEL_BIT)));
-		DEV_RETURN_ON_ERROR_SILENT(max310x_port_write(port, MAX310X_HDPIXDELAY_REG, 0));
+		RETURN_ON_ERR(max310x_port_update(port, MAX310X_MODE1_REG, MAX310X_MODE1_TXDIS_BIT, 0));
+		RETURN_ON_ERR(max310x_port_update(port, MAX310X_MODE1_REG, (MAX310X_MODE1_TRNSCVCTRL_BIT | MAX310X_MODE1_IRQSEL_BIT), (0 | MAX310X_MODE1_IRQSEL_BIT)));
+		RETURN_ON_ERR(max310x_port_write(port, MAX310X_HDPIXDELAY_REG, 0));
 		break;
 
 	case UartConfigFlowControl::UART_CFG_FLOW_CTRL_RS485:
-		DEV_RETURN_ON_ERROR_SILENT(max310x_port_update(port, MAX310X_MODE1_REG, (MAX310X_MODE1_TRNSCVCTRL_BIT | MAX310X_MODE1_IRQSEL_BIT), (MAX310X_MODE1_TRNSCVCTRL_BIT | MAX310X_MODE1_IRQSEL_BIT)));
-		DEV_RETURN_ON_ERROR_SILENT(max310x_port_write(port, MAX310X_HDPIXDELAY_REG, 0x11));
+		RETURN_ON_ERR(max310x_port_update(port, MAX310X_MODE1_REG, (MAX310X_MODE1_TRNSCVCTRL_BIT | MAX310X_MODE1_IRQSEL_BIT), (MAX310X_MODE1_TRNSCVCTRL_BIT | MAX310X_MODE1_IRQSEL_BIT)));
+		RETURN_ON_ERR(max310x_port_write(port, MAX310X_HDPIXDELAY_REG, 0x11));
 		break;
 	
 	case UartConfigFlowControl::UART_CFG_FLOW_CTRL_RTS_CTS:
-		DEV_RETURN_ON_ERROR_SILENT(max310x_port_update(port, MAX310X_MODE1_REG, MAX310X_MODE1_TXDIS_BIT, MAX310X_MODE1_TXDIS_BIT));
-		DEV_RETURN_ON_ERROR_SILENT(max310x_port_update(port, MAX310X_MODE1_REG, (MAX310X_MODE1_TRNSCVCTRL_BIT | MAX310X_MODE1_IRQSEL_BIT), (0 | MAX310X_MODE1_IRQSEL_BIT)));
-		DEV_RETURN_ON_ERROR_SILENT(max310x_port_write(port, MAX310X_HDPIXDELAY_REG, 0));
+		RETURN_ON_ERR(max310x_port_update(port, MAX310X_MODE1_REG, MAX310X_MODE1_TXDIS_BIT, MAX310X_MODE1_TXDIS_BIT));
+		RETURN_ON_ERR(max310x_port_update(port, MAX310X_MODE1_REG, (MAX310X_MODE1_TRNSCVCTRL_BIT | MAX310X_MODE1_IRQSEL_BIT), (0 | MAX310X_MODE1_IRQSEL_BIT)));
+		RETURN_ON_ERR(max310x_port_write(port, MAX310X_HDPIXDELAY_REG, 0));
 		flowCtrlRegVal |= MAX310X_FLOWCTRL_AUTOCTS_BIT;
 		break;
 	default:
@@ -576,20 +591,20 @@ Result MAX14830::UartConfigure(uint8_t port, const UartConfig * config)
 		return Result::NotSupported;
 	}
 	
-	DEV_RETURN_ON_ERROR_SILENT(max310x_set_baud(port, config->baudrate, NULL));
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_write(port, MAX310X_LCR_REG, MAX310X_LCR_LENGTH0_BIT | MAX310X_LCR_LENGTH1_BIT));	// 8 bit - no parity - 1 stopbit
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_write(port, MAX310X_FLOWCTRL_REG, flowCtrlRegVal));
+	RETURN_ON_ERR(max310x_set_baud(port, config->baudrate, NULL));
+	RETURN_ON_ERR(max310x_port_write(port, MAX310X_LCR_REG, MAX310X_LCR_LENGTH0_BIT | MAX310X_LCR_LENGTH1_BIT));	// 8 bit - no parity - 1 stopbit
+	RETURN_ON_ERR(max310x_port_write(port, MAX310X_FLOWCTRL_REG, flowCtrlRegVal));
 	
 	// Configure MODE2 register & Reset FIFOs
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_write(port, MAX310X_MODE2_REG, MAX310X_MODE2_RXEMPTINV_BIT | MAX310X_MODE2_FIFORST_BIT));
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_update(port, MAX310X_MODE2_REG, MAX310X_MODE2_FIFORST_BIT, 0));
+	RETURN_ON_ERR(max310x_port_write(port, MAX310X_MODE2_REG, MAX310X_MODE2_RXEMPTINV_BIT | MAX310X_MODE2_FIFORST_BIT));
+	RETURN_ON_ERR(max310x_port_update(port, MAX310X_MODE2_REG, MAX310X_MODE2_FIFORST_BIT, 0));
 
 	// Do this in the port init!
 	// /* Enable STS, RX, TX, CTS change interrupts */
 	// //max310x_port_write(port, MAX310X_IRQEN_REG, MAX310X_IRQ_RXEMPTY_BIT | MAX310X_IRQ_TXEMPTY_BIT | MAX310X_IRQ_STS_BIT);
-	// DEV_RETURN_ON_ERROR_SILENT(max310x_port_update(port, MAX310X_IRQEN_REG, MAX310X_IRQ_RXEMPTY_BIT, MAX310X_IRQ_RXEMPTY_BIT));
-	// DEV_RETURN_ON_ERROR_SILENT(max310x_port_write(port, MAX310X_LSR_IRQEN_REG, 0));
-	// DEV_RETURN_ON_ERROR_SILENT(max310x_port_write(port, MAX310X_SPCHR_IRQEN_REG, 0));
+	// RETURN_ON_ERR(max310x_port_update(port, MAX310X_IRQEN_REG, MAX310X_IRQ_RXEMPTY_BIT, MAX310X_IRQ_RXEMPTY_BIT));
+	// RETURN_ON_ERR(max310x_port_write(port, MAX310X_LSR_IRQEN_REG, 0));
+	// RETURN_ON_ERR(max310x_port_write(port, MAX310X_SPCHR_IRQEN_REG, 0));
 	return Result::Ok;
 }
 
@@ -597,7 +612,7 @@ Result MAX14830::StreamWrite(uint8_t port, const uint8_t * data, size_t txLen, s
 {
 	ContextLock lock(mutex);
 	uint8_t fifolvl;
-	DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_TXFIFOLVL_REG, &fifolvl));	
+	RETURN_ON_ERR(max310x_port_read(port, MAX310X_TXFIFOLVL_REG, &fifolvl));	
 
 	if (txLen > SOC_SPI_MAXIMUM_BUFFER_SIZE)
 		txLen = SOC_SPI_MAXIMUM_BUFFER_SIZE;
@@ -623,7 +638,7 @@ Result MAX14830::StreamRead(uint8_t port, uint8_t * data, size_t size, size_t* r
 	{
 		ContextLock lock(mutex);
 		uint8_t rxlen;
-		DEV_RETURN_ON_ERROR_SILENT(max310x_port_read(port, MAX310X_RXFIFOLVL_REG, &rxlen));		
+		RETURN_ON_ERR(max310x_port_read(port, MAX310X_RXFIFOLVL_REG, &rxlen));		
 
 		if (rxlen > 0)
 		{
@@ -634,7 +649,7 @@ Result MAX14830::StreamRead(uint8_t port, uint8_t * data, size_t size, size_t* r
 				rxlen = SOC_SPI_MAXIMUM_BUFFER_SIZE;
 			
 			//TODO: USE DMA! If we do decide to use DMA, ensure chip select logic is protected!
-			DEV_RETURN_ON_ERROR_SILENT(Max14830_ReadBufferPolled(((uint32_t)port << 5), NULL, data, rxlen));
+			RETURN_ON_ERR(Max14830_ReadBufferPolled(((uint32_t)port << 5), NULL, data, rxlen));
 			*read = rxlen;
 
 			// TODO: Check here whats required!
