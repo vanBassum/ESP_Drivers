@@ -23,14 +23,14 @@ class EspGpio : public IGpio // Prefer to use interface, otherwise use IDevice
     static std::list<std::shared_ptr<IsrHandle>> callbacks;
 
 public:
-    virtual DeviceResult DeviceSetConfig(IDeviceConfig &config) override;
-    virtual DeviceResult DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
-    virtual DeviceResult DeviceInit() override;
+    virtual Result DeviceSetConfig(IDeviceConfig &config) override;
+    virtual Result DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
+    virtual Result DeviceInit() override;
 
-    virtual DeviceResult GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig* config)  override;
-    virtual DeviceResult GpioRead(uint32_t port, uint8_t mask, uint8_t *value)  override;
-    virtual DeviceResult GpioWrite(uint32_t port, uint8_t mask, uint8_t value) override;
-    virtual DeviceResult GpioIsrAddCallback(uint32_t port, uint8_t pin, std::function<void()> callback) override;
-    virtual DeviceResult GpioIsrRemoveCallback(uint32_t port, uint8_t pin)  override;
+    virtual Result GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig* config)  override;
+    virtual Result GpioRead(uint32_t port, uint8_t mask, uint8_t *value)  override;
+    virtual Result GpioWrite(uint32_t port, uint8_t mask, uint8_t value) override;
+    virtual Result GpioIsrAddCallback(uint32_t port, uint8_t pin, std::function<void()> callback) override;
+    virtual Result GpioIsrRemoveCallback(uint32_t port, uint8_t pin)  override;
 };
 

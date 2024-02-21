@@ -57,9 +57,9 @@ public:
     // https://docs.zephyrproject.org/latest/hardware/peripherals/gpio.html#c.gpio_port_get_raw
     // https://docs.zephyrproject.org/latest/hardware/peripherals/gpio.html#c.gpio_pin_interrupt_configure
 
-    virtual DeviceResult GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig* config) = 0;
-    virtual DeviceResult GpioRead(uint32_t port, uint8_t mask, uint8_t *value) = 0;
-    virtual DeviceResult GpioWrite(uint32_t port, uint8_t mask, uint8_t value) = 0;
-    virtual DeviceResult GpioIsrAddCallback(uint32_t port, uint8_t pin, std::function<void()> callback) { return DeviceResult::NotSupported; }
-    virtual DeviceResult GpioIsrRemoveCallback(uint32_t port, uint8_t pin) { return DeviceResult::NotSupported; }
+    virtual Result GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig* config) = 0;
+    virtual Result GpioRead(uint32_t port, uint8_t mask, uint8_t *value) = 0;
+    virtual Result GpioWrite(uint32_t port, uint8_t mask, uint8_t value) = 0;
+    virtual Result GpioIsrAddCallback(uint32_t port, uint8_t pin, std::function<void()> callback) { return Result::NotSupported; }
+    virtual Result GpioIsrRemoveCallback(uint32_t port, uint8_t pin) { return Result::NotSupported; }
 };
