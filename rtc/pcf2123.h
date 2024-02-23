@@ -25,11 +25,13 @@
 
 /* https://github.com/PaulStoffregen/Time */
 //https://github.com/torvalds/linux/blob/master/drivers/rtc/rtc-pcf2123.c
-#include "kernel.h"
+//#include "kernel.h"
 //#include "mtime.h"
 //#include "spi.h"
 //#include "driver/gpio.h"
+#include <memory>
 #include "spi/device.h"
+#include "IRtc.h"
 
 struct PCF2123_CtrlRegs
 {
@@ -134,20 +136,20 @@ public:
 		* @return  True if clock source integrity was
 		*          guaranteed
 		*/
-	DeviceResult time_get(DateTime* value);
+	DeviceResult TimeGet(DateTime& value);
 
 	/**
 		* Set current time of the RTC.
 		*
 		* @param   new_time      New time to set
 		*/
-	DeviceResult time_set(DateTime* value);
+	DeviceResult TimeSet(DateTime& value);
 
 	/**
 		* Reset the RTC.
 		* NXP recommends doing this after powering on.
 		*/
-	DeviceResult reset();
+	DeviceResult reset(void);
 
 	/**
 		* Stop/resume the RTC.
@@ -242,7 +244,7 @@ private:
 		* @param   buf     Buffer for reading/writing data
 		* @param   sz      Number of bytes to transact (don't count command byte)
 		*/
-	void rxt(uint8_t addr, uint8_t rw, uint8_t *buf, size_t sz);
+	DeviceResult rxt(uint8_t addr, uint8_t rw, uint8_t *buf, size_t sz);
 
 	/**
 		* Parse a BCD-encoded decimal into decimal.

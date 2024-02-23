@@ -22,10 +22,12 @@
  * SOFTWARE.
  */
 
-
+#include "datetime.h"
+#include "kernel.h"
 #include "pcf2123.h"
 #include "esp_log.h"
 #include "ISpiDevice.h"
+#include "spi/device.h"
 
 #define SPI_MAX_SPEED			  5000000
 
@@ -64,7 +66,7 @@ void PCF2123_CtrlRegs::mask_alarms(void)
 //	return DeviceResult::Ok;
 }
 
-void PCF2123::rxt(uint8_t addr, uint8_t rw, uint8_t *buf, size_t sz)
+DeviceResult PCF2123::rxt(uint8_t addr, uint8_t rw, uint8_t *buf, size_t sz)
 {
 	if (sz < 1)
 		return;
@@ -80,7 +82,7 @@ void PCF2123::rxt(uint8_t addr, uint8_t rw, uint8_t *buf, size_t sz)
 		spiDevice->Transmit(&t, SPIFlags::POLLED ) == DeviceResult::Ok,
 		 DeviceStatus::Dependencies, DeviceResult::Error, TAG, "spiDevice->Transmit returned error");
 
-//	return DeviceResult::Ok;		
+	return DeviceResult::Ok;		
 }
 
 
@@ -107,7 +109,7 @@ DeviceResult PCF2123::DeviceSetConfig(IDeviceConfig &config)
 DeviceResult PCF2123::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
-	GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey), DeviceStatus::Dependencies, DeviceResult::Error, TAG, "Dependencies not ready %d", (int)DeviceGetStatus());
+	GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey), DeviceResult::Error, TAG, "Dependencies not ready %d", (int)DeviceGetStatus());
 	DeviceSetStatus(DeviceStatus::Initializing);
 	return DeviceResult::Ok;
 }
@@ -136,7 +138,7 @@ DeviceResult PCF2123::DeviceInit()
 }
 
 
-DeviceResult PCF2123::time_get(DateTime* now)
+DeviceResult PCF2123::TimeGet(DateTime& now)
 {
 	//assert(initialized_);
 	uint8_t buf[7];
@@ -155,16 +157,17 @@ DeviceResult PCF2123::time_get(DateTime* now)
 	time.tm_year	= bcd_decode(buf[6]) + 100;		//1900 + 100 + PCF.year value 
 	//PCF year = 0 - 99 
 	//struct tm year = since 1900
-	now->SetFromUTC(&time);
-	return !(buf[0] & 0x80);
+//	now->SetFromUTC(&time); !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	if ( !(buf[0] & 0x80)) return DeviceResult::Ok;
+	else return DeviceResult::Error;
 }
 
-DeviceResult PCF2123::time_set(DateTime* new_time)
+DeviceResult PCF2123::TimeSet(DateTime& new_time)
 {
 	//assert(initialized_);
 	uint8_t buf[7];
 	struct tm time;
-	new_time->GetAsUTC(&time);
+//	new_time->GetAsUTC(&time); !!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 	buf[0] = bcd_encode(time.tm_sec);
 	buf[1] = bcd_encode(time.tm_min);
@@ -181,7 +184,7 @@ DeviceResult PCF2123::time_set(DateTime* new_time)
 	return DeviceResult::Ok;
 }
 
-DeviceResult PCF2123::reset()
+DeviceResult PCF2123::reset(void)
 {
 //	assert(initialized_);
 //	spidev->AcquireBus();
