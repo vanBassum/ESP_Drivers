@@ -8,6 +8,12 @@ Result MAX14830Uart::DeviceSetConfig(IDeviceConfig &config)
 	
 	RETURN_ON_ERR(config.getProperty("maxDevice", &maxDeviceKey));
 	RETURN_ON_ERR(config.getProperty("port", &port));
+	config.getProperty("baudrate", &initialConfig.baudrate);
+	config.getProperty("parity", (uint8_t*)&initialConfig.parity);
+	config.getProperty("stopBits", (uint8_t*)&initialConfig.stopBits);
+	config.getProperty("dataBits", (uint8_t*)&initialConfig.dataBits);
+	config.getProperty("flowCtrl", (uint8_t*)&initialConfig.flowCtrl);
+
 	DeviceSetStatus(DeviceStatus::Dependencies);
 	return Result::Ok;
 }
@@ -23,12 +29,7 @@ Result MAX14830Uart::DeviceLoadDependencies(std::shared_ptr<DeviceManager> devic
 Result MAX14830Uart::DeviceInit()
 {
 	ContextLock lock(mutex);
-	uint8_t flowCtrlRegVal = 0;
-
-	//TODO: Setup things like ISR 
-
-
-	// Tell the driver the device is initialized and ready to use.
+	RETURN_ON_ERR(maxDevice->UartConfigure(port, &initialConfig));
 	DeviceSetStatus(DeviceStatus::Ready);
 	return Result::Ok;
 }
