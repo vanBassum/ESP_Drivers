@@ -29,6 +29,7 @@ Result EspGpio::DeviceInit()
 Result EspGpio::GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig* config)
 {
     ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
     gpio_config_t gpioConfig;
     gpioConfig.pin_bit_mask = mask;
     gpioConfig.pin_bit_mask <<= port * 8; // Adjust the mask for the port
@@ -113,6 +114,7 @@ Result EspGpio::GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig* con
 Result EspGpio::GpioRead(uint32_t port, uint8_t mask, uint8_t* value)      
 {
     ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
     *value = 0x00;
     if(mask & 0x01) *value += gpio_get_level(static_cast<gpio_num_t>(port * 8 + 0)) * 0x01;
     if(mask & 0x02) *value += gpio_get_level(static_cast<gpio_num_t>(port * 8 + 1)) * 0x02;
@@ -128,6 +130,7 @@ Result EspGpio::GpioRead(uint32_t port, uint8_t mask, uint8_t* value)
 Result EspGpio::GpioWrite(uint32_t port, uint8_t mask, uint8_t value)      
 {
     ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
     if(mask & 0x01) gpio_set_level(static_cast<gpio_num_t>(port * 8 + 0), value & 0x01);
     if(mask & 0x02) gpio_set_level(static_cast<gpio_num_t>(port * 8 + 1), value & 0x02);
     if(mask & 0x04) gpio_set_level(static_cast<gpio_num_t>(port * 8 + 2), value & 0x04);
@@ -144,6 +147,7 @@ Result EspGpio::GpioWrite(uint32_t port, uint8_t mask, uint8_t value)
 Result EspGpio::GpioIsrAddCallback(uint32_t port, uint8_t pin, std::function<void()> callback)
 {
     ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
     gpio_num_t gpioNum = static_cast<gpio_num_t>(port * 8 + pin);
 
     // Store the callback in a member variable to ensure its lifetime.
@@ -164,6 +168,7 @@ Result EspGpio::GpioIsrAddCallback(uint32_t port, uint8_t pin, std::function<voi
 Result EspGpio::GpioIsrRemoveCallback(uint32_t port, uint8_t pin)
 {
     ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
     gpio_num_t gpioNum = static_cast<gpio_num_t>(port * 8 + pin);
 
     // Remove ISR handler for the GPIO pin

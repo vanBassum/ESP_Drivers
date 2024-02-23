@@ -66,19 +66,9 @@ Result SpiDevice::DeviceInit()
 	return Result::Ok;
 }
 
-Result SpiDevice::SpiTransmit(const uint8_t *txData, uint8_t *rxData, size_t size, SPIFlags flags)
+Result SpiDevice::DoTransmit(spi_transaction_t *transaction, SPIFlags flags)
 {
-	ContextLock lock(mutex);
-	RETURN_ON_ERR(DeviceCheckStatus(DeviceStatus::Ready));
-	spi_transaction_t transaction = {};
-	transaction.length = size * 8; // In bits
-	transaction.tx_buffer = txData;
-	transaction.rx_buffer = rxData;
-	return Transmit(&transaction, flags);
-}
-
-Result SpiDevice::Transmit(spi_transaction_t *transaction, SPIFlags flags)
-{
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
 	transaction->user = this;
 	esp_err_t err = ESP_OK;
 
@@ -98,6 +88,24 @@ Result SpiDevice::Transmit(spi_transaction_t *transaction, SPIFlags flags)
 	return Result::Ok;
 }
 
+Result SpiDevice::SpiTransmit(const uint8_t *txData, uint8_t *rxData, size_t size, SPIFlags flags)
+{
+	ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
+	spi_transaction_t transaction = {};
+	transaction.length = size * 8; // In bits
+	transaction.tx_buffer = txData;
+	transaction.rx_buffer = rxData;
+	return DoTransmit(&transaction, flags);
+}
+
+Result SpiDevice::Transmit(spi_transaction_t *transaction, SPIFlags flags)
+{
+	ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
+	return DoTransmit(transaction, flags);
+}
+
 void IRAM_ATTR SpiDevice::Select(spi_transaction_t *t)
 {
 	SpiDevice *device = (SpiDevice *)t->user;
@@ -111,3 +119,5 @@ void IRAM_ATTR SpiDevice::Deselect(spi_transaction_t *t)
 	assert(device);
 	device->csDevice->GpioWrite(device->csPort, 1 << device->csPin, 0); 				// Opted to not do checks, this function should remain small.
 }
+
+

@@ -415,6 +415,7 @@ Result MAX14830::portInit(uint8_t port)
 Result MAX14830::GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig *config)
 {
     ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
 	uint8_t minimask = mask & 0xF;
 	if (minimask == 0)
 		return Result::Error;
@@ -472,6 +473,7 @@ Result MAX14830::GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig *co
 Result MAX14830::GpioRead(uint32_t port, uint8_t mask, uint8_t * value)
 {
 	ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
 	uint8_t minimask = mask & 0xF;
 	if (minimask > 0)
 	{
@@ -486,6 +488,7 @@ Result MAX14830::GpioRead(uint32_t port, uint8_t mask, uint8_t * value)
 Result MAX14830::GpioWrite(uint32_t port, uint8_t mask, uint8_t value)
 {
 	ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
 	uint8_t minimask = mask & 0xF;
 	uint8_t minivalue = value & 0xF;
 	if (minimask > 0)
@@ -502,6 +505,7 @@ Result MAX14830::GpioWrite(uint32_t port, uint8_t mask, uint8_t value)
 Result MAX14830::GpioIsrAddCallback(uint32_t port, uint8_t pin, std::function<void()> callback)
 {
     ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
     // Store the callback in a member variable to ensure its lifetime.
     std::shared_ptr<IsrHandle> handle = std::make_shared<IsrHandle>();
     handle->device = this;
@@ -515,6 +519,7 @@ Result MAX14830::GpioIsrAddCallback(uint32_t port, uint8_t pin, std::function<vo
 Result MAX14830::GpioIsrRemoveCallback(uint32_t port, uint8_t pin)
 {
     ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
     // Search for the callback associated with the GPIO pin and remove it from the list
     for (auto it = callbacks.begin(); it != callbacks.end(); ++it) {
         if ((*it)->device == this && (*it)->port == port && (*it)->pin == pin) {
@@ -530,6 +535,7 @@ Result MAX14830::GpioIsrRemoveCallback(uint32_t port, uint8_t pin)
 Result MAX14830::UartConfigure(uint8_t port, const UartConfig * config)
 {
 	ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
 
 	uint8_t flowCtrlRegVal = 0;
 
@@ -611,6 +617,7 @@ Result MAX14830::UartConfigure(uint8_t port, const UartConfig * config)
 Result MAX14830::StreamWrite(uint8_t port, const uint8_t * data, size_t txLen, size_t * written, TickType_t timeout)
 {
 	ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
 	uint8_t fifolvl;
 	RETURN_ON_ERR(max310x_port_read(port, MAX310X_TXFIFOLVL_REG, &fifolvl));	
 
@@ -637,6 +644,7 @@ Result MAX14830::StreamRead(uint8_t port, uint8_t * data, size_t size, size_t* r
 	if(true)	//TODO: Change this 'true' for a semaphore thats set by the ISR
 	{
 		ContextLock lock(mutex);
+		RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
 		uint8_t rxlen;
 		RETURN_ON_ERR(max310x_port_read(port, MAX310X_RXFIFOLVL_REG, &rxlen));		
 

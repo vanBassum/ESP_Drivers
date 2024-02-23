@@ -72,6 +72,7 @@ Result MCP23S17::DeviceInit()
 Result MCP23S17::GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig* config)
 {	
 	ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
 
     switch (config->intr)
     {
@@ -111,6 +112,7 @@ Result MCP23S17::GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig* co
 Result MCP23S17::GpioRead(uint32_t port, uint8_t mask, uint8_t* value) 		 
 {
    	ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
 	uint16_t val;
 	Result result = Read16(MCP23S17_REG_GPIO_A, &val);
 	*value = ((uint8_t*)&val)[port];
@@ -120,6 +122,7 @@ Result MCP23S17::GpioRead(uint32_t port, uint8_t mask, uint8_t* value)
 Result MCP23S17::GpioWrite(uint32_t port, uint8_t mask, uint8_t value) 		 
 {
 	ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
 	pinBuffer[port] = (pinBuffer[port] & ~mask) | (value & mask);
 	uint16_t val = pinBuffer[1] << 8 | pinBuffer[0];
 	return Write16(MCP23S17_REG_GPIO_A, val);

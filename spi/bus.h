@@ -62,7 +62,7 @@ public:
     Result GetHost(spi_host_device_t* host)
     {
         ContextLock lock(mutex);
-        RETURN_ON_ERR(DeviceCheckStatus(DeviceStatus::Ready));
+        RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
         *host = this->host;
         return Result::Ok;
     }

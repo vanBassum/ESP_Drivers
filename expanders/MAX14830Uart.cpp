@@ -36,18 +36,21 @@ Result MAX14830Uart::DeviceInit()
 Result MAX14830Uart::UartConfigure(const UartConfig *config)
 {
 	ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
 	return maxDevice->UartConfigure(port, config);
 }
 
 Result MAX14830Uart::StreamWrite(const uint8_t *data, size_t txLen, size_t *written, TickType_t timeout)
 {
 	ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
 	return maxDevice->StreamWrite(port, data, txLen, written, timeout);
 }
 
 Result MAX14830Uart::StreamRead(uint8_t *data, size_t length, size_t *read, TickType_t timeout)
 {
 	ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
 	return maxDevice->StreamRead(port, data, length, read, timeout);
 }
 

@@ -32,6 +32,9 @@ class SpiDevice : public ISpiDevice {
     static void IRAM_ATTR Select(spi_transaction_t* t);
     static void IRAM_ATTR Deselect(spi_transaction_t* t);
 
+    //Helpers
+    Result DoTransmit(spi_transaction_t* transaction, SPIFlags flags);
+
 public:
     
     virtual ~SpiDevice() {}

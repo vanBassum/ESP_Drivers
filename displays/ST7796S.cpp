@@ -236,6 +236,7 @@ Result ST7796S::DeviceInit()
 
 Result ST7796S::DrawPixel(uint16_t x, uint16_t y, uint16_t color)
 {
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
   	RETURN_ON_ERR(SetWindow(x, y, x + 1, y + 1));
   	RETURN_ON_ERR(WriteWindow(&color, 1));
     return Result::Ok;
@@ -244,6 +245,7 @@ Result ST7796S::DrawPixel(uint16_t x, uint16_t y, uint16_t color)
 Result ST7796S::SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
 {
     ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
     uint8_t data[4];
 	/*Column addresses*/
 	RETURN_ON_ERR(st7796s_send_cmd(0x2A));
@@ -266,6 +268,7 @@ Result ST7796S::SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
 Result ST7796S::WriteWindow(uint16_t * colors, size_t size)
 {
     ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
 	RETURN_ON_ERR(st7796s_send_cmd(0x2C));
 	RETURN_ON_ERR(st7796s_send_color(colors, size));
     return Result::Ok;
@@ -274,6 +277,7 @@ Result ST7796S::WriteWindow(uint16_t * colors, size_t size)
 Result ST7796S::SetBacklight(bool value)
 {
     ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
     return blckPin.GpioPinWrite(value);
 }
 
