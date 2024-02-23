@@ -76,7 +76,6 @@ Result MAX14830::DeviceInit()
 	return Result::Ok;
 }
 
-
 Result MAX14830::Detect(bool* result)
 {
     uint8_t value;
@@ -277,23 +276,26 @@ void MAX14830::processIsr(void * pvParameter1, uint32_t ulParameter2)
 	MAX14830* device = (MAX14830*)pvParameter1;
 	//Do not lock, otherwise the isr callbacks will have problems!
 
+	uint8_t gisr;
+
 	//TODO: We should check the returns of this!!!
-	device->handleIRQForPort(0x00); 
-	device->handleIRQForPort(0x01); 
-	device->handleIRQForPort(0x02); 
-	device->handleIRQForPort(0x03); 	
+	device->regmap_read(MAX310X_GLOBALIRQ_REG, &gisr);
+	if((gisr & 0x01) == 0) device->handleIRQForPort(0x00); 
+	if((gisr & 0x02) == 0) device->handleIRQForPort(0x01); 
+	if((gisr & 0x04) == 0) device->handleIRQForPort(0x02); 
+	if((gisr & 0x08) == 0) device->handleIRQForPort(0x03); 	
 }
-
-
 
 Result MAX14830::handleIRQForPort(uint8_t port)
 {
 	uint8_t isr;
 	uint8_t sts = 0;
-
 	RETURN_ON_ERR(readIsrRegisters(port, &isr, &sts));
 
-	//TODO: Do something with the knowledge that there is data avaiable HAS_BIT(isr, MAX310X_IRQ_RXEMPTY_BIT)
+	if(HAS_BIT(isr, MAX310X_IRQ_RXEMPTY_BIT))
+	{
+		uartRxSemaphores[port].Give();
+	}
 
 	//TODO: Optimize this code
 	for(int bit=0; bit < 4; bit++)	//Only 4 pins
@@ -381,36 +383,30 @@ Result MAX14830::max310x_set_baud(uint8_t port, uint32_t baud, uint32_t* actualB
 	return Result::Ok;
 }
 
-
 Result MAX14830::portInit(uint8_t port)
 {
 	uint8_t dummy;
 
-	//TODO: Init UART
-	// Configure MODE2 register & Reset FIFOs
-	// RETURN_ON_ERR(maxDevice->PortWrite(port, MAX310X_MODE2_REG, MAX310X_MODE2_RXEMPTINV_BIT | MAX310X_MODE2_FIFORST_BIT));
-	// RETURN_ON_ERR(maxDevice->PortUpdate(port, MAX310X_MODE2_REG, MAX310X_MODE2_FIFORST_BIT, 0));
-
-	/* Enable STS, RX, TX, CTS change interrupts */
-	//max310x_port_write(port, MAX310X_IRQEN_REG, MAX310X_IRQ_RXEMPTY_BIT | MAX310X_IRQ_TXEMPTY_BIT | MAX310X_IRQ_STS_BIT);
-	//RETURN_ON_ERR(maxDevice->PortUpdate(port, MAX310X_IRQEN_REG, MAX310X_IRQ_RXEMPTY_BIT, MAX310X_IRQ_RXEMPTY_BIT)); //Dont change the STS bit!
-	//RETURN_ON_ERR(maxDevice->PortWrite(port, MAX310X_LSR_IRQEN_REG, 0));
-	//RETURN_ON_ERR(maxDevice->PortWrite(port, MAX310X_SPCHR_IRQEN_REG, 0));
+	// Configure MODE2 register 
+	RETURN_ON_ERR(max310x_port_update(port, MAX310X_MODE2_REG, MAX310X_MODE2_RXEMPTINV_BIT, MAX310X_MODE2_RXEMPTINV_BIT));
 
 	// Clear IRQ status registers
+	RETURN_ON_ERR(max310x_port_read(port, MAX310X_IRQSTS_REG, &dummy));
+	RETURN_ON_ERR(max310x_port_read(port, MAX310X_LSR_IRQSTS_REG, &dummy));
+	RETURN_ON_ERR(max310x_port_read(port, MAX310X_SPCHR_IRQSTS_REG, &dummy));
 	RETURN_ON_ERR(max310x_port_read(port, MAX310X_STS_IRQSTS_REG, &dummy));
 	RETURN_ON_ERR(max310x_port_read(port, MAX310X_GLOBALIRQ_REG, &dummy));
 
 	// Route GlobalIRQ to IRQPIN
 	RETURN_ON_ERR(max310x_port_update(port, MAX310X_MODE1_REG, MAX310X_MODE1_IRQSEL_BIT, MAX310X_MODE1_IRQSEL_BIT));
 
-	// Enable IO IRQ
-	RETURN_ON_ERR(max310x_port_write(port, MAX310X_IRQEN_REG, MAX310X_IRQ_STS_BIT));
-
+	/* Enable STS, RX, TX, CTS change interrupts */
+	RETURN_ON_ERR(max310x_port_write(port, MAX310X_IRQEN_REG, MAX310X_IRQ_RXEMPTY_BIT | MAX310X_IRQ_STS_BIT));
+	RETURN_ON_ERR(max310x_port_write(port, MAX310X_LSR_IRQEN_REG, 0));
+	RETURN_ON_ERR(max310x_port_write(port, MAX310X_SPCHR_IRQEN_REG, 0));
+	
 	return Result::Ok;
 }
-
-
 
 Result MAX14830::GpioConfigure(uint32_t port, uint8_t mask, const GpioConfig *config)
 {
@@ -601,16 +597,10 @@ Result MAX14830::UartConfigure(uint8_t port, const UartConfig * config)
 	RETURN_ON_ERR(max310x_port_write(port, MAX310X_LCR_REG, MAX310X_LCR_LENGTH0_BIT | MAX310X_LCR_LENGTH1_BIT));	// 8 bit - no parity - 1 stopbit
 	RETURN_ON_ERR(max310x_port_write(port, MAX310X_FLOWCTRL_REG, flowCtrlRegVal));
 	
-	// Configure MODE2 register & Reset FIFOs
-	RETURN_ON_ERR(max310x_port_write(port, MAX310X_MODE2_REG, MAX310X_MODE2_RXEMPTINV_BIT | MAX310X_MODE2_FIFORST_BIT));
+	// Reset FIFOs
+	RETURN_ON_ERR(max310x_port_update(port, MAX310X_MODE2_REG, MAX310X_MODE2_FIFORST_BIT, MAX310X_MODE2_FIFORST_BIT));
 	RETURN_ON_ERR(max310x_port_update(port, MAX310X_MODE2_REG, MAX310X_MODE2_FIFORST_BIT, 0));
 
-	// Do this in the port init!
-	// /* Enable STS, RX, TX, CTS change interrupts */
-	// //max310x_port_write(port, MAX310X_IRQEN_REG, MAX310X_IRQ_RXEMPTY_BIT | MAX310X_IRQ_TXEMPTY_BIT | MAX310X_IRQ_STS_BIT);
-	// RETURN_ON_ERR(max310x_port_update(port, MAX310X_IRQEN_REG, MAX310X_IRQ_RXEMPTY_BIT, MAX310X_IRQ_RXEMPTY_BIT));
-	// RETURN_ON_ERR(max310x_port_write(port, MAX310X_LSR_IRQEN_REG, 0));
-	// RETURN_ON_ERR(max310x_port_write(port, MAX310X_SPCHR_IRQEN_REG, 0));
 	return Result::Ok;
 }
 
@@ -641,36 +631,37 @@ Result MAX14830::StreamWrite(uint8_t port, const uint8_t * data, size_t txLen, s
 
 Result MAX14830::StreamRead(uint8_t port, uint8_t * data, size_t size, size_t* read, TickType_t timeout)
 {
-	if(true)	//TODO: Change this 'true' for a semaphore thats set by the ISR
+	//Wait for RX ISR
+	if(!uartRxSemaphores[port].Take(timeout))
+		return Result::Error;
+
+	ContextLock lock(mutex);
+	RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
+	uint8_t rxlen;
+	RETURN_ON_ERR(max310x_port_read(port, MAX310X_RXFIFOLVL_REG, &rxlen));		
+
+	if (rxlen > 0)
 	{
-		ContextLock lock(mutex);
-		RETURN_ON_ERR_LOGE(DeviceCheckStatus(DeviceStatus::Ready), TAG, "Device '%s' not ready", key);
-		uint8_t rxlen;
+		if (rxlen > size)
+			rxlen = size;
+		
+		if (rxlen > SOC_SPI_MAXIMUM_BUFFER_SIZE)
+			rxlen = SOC_SPI_MAXIMUM_BUFFER_SIZE;
+		
+		//TODO: USE DMA! If we do decide to use DMA, ensure chip select logic is protected!
+		RETURN_ON_ERR(Max14830_ReadBufferPolled(((uint32_t)port << 5), NULL, data, rxlen));
+		*read = rxlen;
+
+		// If data is received while we are reading it, the ISR won't be set. (Probably because the buffer never went completely empty?) 
+		// So, if data is available after reading, set the semaphore, we do want the caller to process data inbetween so we need to return.
+		// Otherwise the caller buffer could be full before we have read everything.
 		RETURN_ON_ERR(max310x_port_read(port, MAX310X_RXFIFOLVL_REG, &rxlen));		
-
-		if (rxlen > 0)
+		if(rxlen > 0)
 		{
-			if (rxlen > size)
-				rxlen = size;
-			
-			if (rxlen > SOC_SPI_MAXIMUM_BUFFER_SIZE)
-				rxlen = SOC_SPI_MAXIMUM_BUFFER_SIZE;
-			
-			//TODO: USE DMA! If we do decide to use DMA, ensure chip select logic is protected!
-			RETURN_ON_ERR(Max14830_ReadBufferPolled(((uint32_t)port << 5), NULL, data, rxlen));
-			*read = rxlen;
-
-			// TODO: Check here whats required!
-			// If data is received while we are reading it, the ISR won't be set. 
-			// So, if data is available after reading, set the semaphore, we do want the caller to process data inbetween so we need to return.
-			// Otherwise the caller buffer could be full before we have read everything.
-			// size_t more = max310x_port_read(port, MAX310X_RXFIFOLVL_REG);
-			// if(more > 0)
-			// {
-			// 	dataAvailable[(int)port].Give();
-			// }
+			uartRxSemaphores[port].Give();
 		}
 	}
+	
 	return Result::Ok;
 }
 

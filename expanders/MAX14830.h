@@ -30,7 +30,15 @@ class MAX14830 : public IGpio
         std::function<void()> callback;
     };
 
+    struct IsrUartHandle
+    {
+        MAX14830 *device;
+        uint8_t port;
+        std::function<void()> callback;
+    };
+
     // Local variables
+    Semaphore uartRxSemaphores[4];
     static std::list<std::shared_ptr<IsrHandle>> callbacks; // TODO: This can be optimized by using an array like so: std::function<void()> callbacks[port][pin]
     uint8_t gpioConfBuffer[4] = {};
     uint8_t gpioDataBuffer[4] = {};
