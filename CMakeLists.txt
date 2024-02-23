@@ -6,6 +6,7 @@ idf_component_register(
 		analog/ina3221.cpp
 		displays/ST7796S.cpp
 		ethernet/lan87xx.cpp
+		ethernet/TCPClient.cpp
 		ethernet/wifi.cpp
 		expanders/MAX14830.cpp
 		expanders/MAX14830Uart.cpp
