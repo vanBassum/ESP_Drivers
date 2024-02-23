@@ -14,6 +14,7 @@ idf_component_register(
 		gpio/espgpio.cpp
 		i2c/bus.cpp
 		i2c/device.cpp
+		rtc/pcf2123.cpp
 		spi/bus.cpp
 		spi/device.cpp
 	INCLUDE_DIRS
@@ -28,6 +29,7 @@ idf_component_register(
 		i2c
 		interfaces
 		onewire
+		rtc
 		spi
 	REQUIRES ESP_Base driver esp_wifi esp_eth)
 

@@ -12,4 +12,5 @@
 #include "i2c/i2c.h"
 #include "interfaces/interfaces.h"
 #include "onewire/onewire.h"
+#include "rtc/rtc.h"
 #include "spi/spi.h"
