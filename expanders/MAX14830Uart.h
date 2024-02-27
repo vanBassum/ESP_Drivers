@@ -11,12 +11,13 @@ class MAX14830Uart : public IUART
     constexpr static const char *TAG = "MAX14830Uart";
     Mutex mutex;
 
-    // Dependencies:
-    const char *maxDeviceKey = nullptr;
-    std::shared_ptr<MAX14830> maxDevice;
-
     // Config:
     uint8_t port = 0;
+    UartConfig initialConfig;
+    const char* maxDeviceKey;
+
+    // Dependencies:
+    std::shared_ptr<MAX14830> maxDevice;
 
     // Methods:
 	Result max310x_set_baud(uint32_t baud);

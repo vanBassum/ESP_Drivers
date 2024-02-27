@@ -47,12 +47,12 @@ enum UartConfigFlowControl
 };
 
 struct UartConfig
-{
-    uint32_t baudrate;
-    UartConfigParity parity;
-    UartConfigStopBits stopBits;
-    UartConfigDataBits dataBits;
-    UartConfigFlowControl flowCtrl; 
+{ 
+    uint32_t baudrate = 115200;
+    UartConfigParity parity = UART_CFG_PARITY_NONE;
+    UartConfigStopBits stopBits = UART_CFG_STOP_BITS_1;
+    UartConfigDataBits dataBits = UART_CFG_DATA_BITS_8;
+    UartConfigFlowControl flowCtrl = UART_CFG_FLOW_CTRL_NONE; 
 };
 
 class IUART : public IStream {
