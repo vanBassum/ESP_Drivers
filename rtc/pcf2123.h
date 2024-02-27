@@ -145,96 +145,22 @@ public:
 		*/
 	Result TimeSet(DateTime& value);
 
-	/**
-		* Reset the RTC.
-		* NXP recommends doing this after powering on.
-		*/
-	Result reset(void);
 
-	/**
-		* Stop/resume the RTC.
-		*
-		* @param  stopped  Whether the clock should be stopped
-		*                  or running
-		*/
-	//void stop(bool stopped);
-
-	/**
-		* Set the output frequency of the CLKOUT pin or disable
-		* it.
-		*
-		* Valid frequencies (in Hz) are: 0 (drive CLKOUT to
-		* high-Z), 1, 10, 1024, 2048, 4096, 8192, 16384, 32768.
-		*
-		* @param   freq    CLKOUT square wave frequency
-		*
-		* @return  True if the given frequency was valid
-		*/
-	//bool clkout_freq_set(uint16_t freq);
-
-	/**
-		* Configure the countdown timer.
-		* When the timer expires, the control register will
-		* be modified and an interrupt is generated, if enabled.
-		*
-		* The countdown period becomes: value / f, where f is
-		* the frequency selected by the source_clock parameter.
-		*
-		* Setting value to 0 stops the timer.
-		*
-		* Calling this function will reset the countdown timer,
-		* so the next interrupt after the call will occur after
-		* the configured period (1/f).
-		*
-		* @param   enable        Enable (or disable) countdown timer
-		* @param   source_clock  Source clock selection
-		* @param   value         Countdown timer value
-		*
-		* @return  True if the given parameters were valid
-		*/
-	//bool countdown_set(bool enable,
-	//	CountdownSrcClock source_clock,
-	//	uint8_t value);
-
-	/**
-		* Get the current countdown timer value.
-		*
-		* @return  Countdown timer value (see countdown_set()
-		*          comments for interpreting this)
-		*/
-	//uint8_t countdown_get();
-
-	/**
-		* Configure alarm.
-		*
-		* When the alarm triggers, the control register will be
-		* modified and an interrupt is generated, if enabled.
-		*
-		* The alarm triggers when all enabled (not -1) variables
-		* match the current time.
-		*
-		* @param   minute    Minute (0-59) on which the alarm should
-		*                    trigger. Set to -1 to ignore minutes.
-		*
-		* @param   hour      Hour (0-23) on which the alarm should
-		*                    trigger. Set to -1 to ignore hours.
-		*
-		* @param   day       Day (0-31) on which the alarm should
-		*                    trigger. Set to -1 to ignore days.
-		*
-		* @param   weekday   Weekday (0-6) on which the alarm shoould
-		*                    trigger. Set to -1 to ignore weekdays.
-		*
-		* @return  True if the given parameters were valid
-		*/
-	//bool alarm_set(int minute, int hour, int day, int weekday);
-	void mask_alarms(void);
 private:
 
 	enum RxtMode { RXT_READ, RXT_WRITE } ;
 
  	//SPIDevice& spi; 
 	gpio_num_t irq = GPIO_NUM_NC;
+	
+		/**
+		* Reset the RTC.
+		* NXP recommends doing this after powering on.
+		*/
+	Result reset(void);
+
+	//bool alarm_set(int minute, int hour, int day, int weekday);
+	void mask_alarms(void);
 	
 	/**
 		* Do SPI transmit and receive.

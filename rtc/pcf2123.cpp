@@ -124,7 +124,7 @@ Result PCF2123::DeviceInit()
 Result PCF2123::TimeGet(DateTime& time)
 {
 	ContextLock lock(mutex);
-	//assert(initialized_);
+	RETURN_ON_ERR(DeviceCheckStatus(DeviceStatus::Ready));
 	uint8_t buf[7] = {0};
 	//spidev->AcquireBus();
     RETURN_ON_ERR(this->rxt(REG_TIME_DATE_ADDR, RXT_READ, buf, sizeof(buf)) );   // @TODO error check toevoegen
@@ -144,6 +144,7 @@ Result PCF2123::TimeGet(DateTime& time)
 Result PCF2123::TimeSet(DateTime& new_time)
 {
 	ContextLock lock(mutex);
+	RETURN_ON_ERR(DeviceCheckStatus(DeviceStatus::Ready));
 	//DateTime is UTC Epoch seconds
 	uint8_t buf[7];	
 	time_t uTimeStamp = new_time.GetEpochUtc(DateTimeMode::UTC);
