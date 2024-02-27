@@ -124,9 +124,9 @@ public:
 		CNTDOWN_CLOCK_1PER60HZ = 3
 	};
 
-	virtual DeviceResult DeviceSetConfig(IDeviceConfig& config) override;
-    virtual DeviceResult DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
-    virtual DeviceResult DeviceInit() override;
+	virtual Result DeviceSetConfig(IDeviceConfig& config) override;
+    virtual Result DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
+    virtual Result DeviceInit() override;
 
 	/**
 		* Get current time of the RTC.
@@ -136,20 +136,20 @@ public:
 		* @return  True if clock source integrity was
 		*          guaranteed
 		*/
-	DeviceResult TimeGet(DateTime& value);
+	Result TimeGet(DateTime& value);
 
 	/**
 		* Set current time of the RTC.
 		*
 		* @param   new_time      New time to set
 		*/
-	DeviceResult TimeSet(DateTime& value);
+	Result TimeSet(DateTime& value);
 
 	/**
 		* Reset the RTC.
 		* NXP recommends doing this after powering on.
 		*/
-	DeviceResult reset(void);
+	Result reset(void);
 
 	/**
 		* Stop/resume the RTC.
@@ -244,7 +244,7 @@ private:
 		* @param   buf     Buffer for reading/writing data
 		* @param   sz      Number of bytes to transact (don't count command byte)
 		*/
-	DeviceResult rxt(uint8_t addr, uint8_t rw, uint8_t *buf, size_t sz);
+	Result rxt(uint8_t addr, uint8_t rw, uint8_t *buf, size_t sz);
 
 	/**
 		* Parse a BCD-encoded decimal into decimal.

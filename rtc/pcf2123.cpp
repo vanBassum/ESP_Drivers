@@ -23,7 +23,7 @@
  */
 
 #include "datetime.h"
-#include "kernel.h"
+//#include "kernel.h"
 #include "pcf2123.h"
 #include "esp_log.h"
 #include "ISpiDevice.h"
@@ -38,7 +38,6 @@
 #define REG_OFFSET_ADDR           0x0D
 #define REG_TIMER_CLKOUT_ADDR     0x0E
 #define REG_COUNTDOWN_TIMER_ADDR  0x0F
-
 
 bool
 PCF2123_CtrlRegs::get(int bit)
@@ -62,14 +61,12 @@ void PCF2123_CtrlRegs::mask_alarms(void)
 	this->set(MSF, true);
 	this->set(AF, true);
 	this->set(TF, true);
-
-//	return DeviceResult::Ok;
 }
 
-DeviceResult PCF2123::rxt(uint8_t addr, uint8_t rw, uint8_t *buf, size_t sz)
+Result PCF2123::rxt(uint8_t addr, uint8_t rw, uint8_t *buf, size_t sz)
 {
 	if (sz < 1)
-		return;
+		return Result::Error;
 
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));       				
@@ -77,14 +74,10 @@ DeviceResult PCF2123::rxt(uint8_t addr, uint8_t rw, uint8_t *buf, size_t sz)
 	t.tx_buffer = buf; 
 	t.rx_buffer = buf;               			
 	t.cmd = 0x10 | (rw == RXT_READ ? 0x80 : 0x00) | addr;								
-	//spidev->PollingTransmit(&t);  	
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(
-		spiDevice->Transmit(&t, SPIFlags::POLLED ) == DeviceResult::Ok,
-		 DeviceStatus::Dependencies, DeviceResult::Error, TAG, "spiDevice->Transmit returned error");
-
-	return DeviceResult::Ok;		
+	//spidev->PollingTransmit(&t);
+	RETURN_ON_ERR_LOGE(spiDevice->Transmit(&t, SPIFlags::POLLED), TAG, "PCF error");
+	return Result::Ok;		
 }
-
 
 uint8_t
 PCF2123::bcd_decode(uint8_t bcd)
@@ -98,102 +91,87 @@ PCF2123::bcd_encode(uint8_t dec)
 	return ((dec / 10) << 4) | (dec % 10);
 }
 
-DeviceResult PCF2123::DeviceSetConfig(IDeviceConfig &config)
+Result PCF2123::DeviceSetConfig(IDeviceConfig &config)
 {
     ContextLock lock(mutex);
-	DEV_SET_STATUS_AND_RETURN_ON_FALSE(config.getProperty("spiDevice", &spiDeviceKey),  DeviceStatus::ConfigError, DeviceResult::Error, TAG, "Missing parameter: spiDevice");
+	RETURN_ON_ERR(config.getProperty("spiDevice", &spiDeviceKey));
 	DeviceSetStatus(DeviceStatus::Dependencies);
-	return DeviceResult::Ok;
+	return Result::Ok;
 }
 
-DeviceResult PCF2123::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager)
+Result PCF2123::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
-	GET_DEV_OR_RETURN(spiDevice, deviceManager->getDeviceByKey<ISpiDevice>(spiDeviceKey), DeviceResult::Error, TAG, "Dependencies not ready %d", (int)DeviceGetStatus());
+	RETURN_ON_ERR(deviceManager->getDeviceByKey<SpiDevice>(spiDeviceKey, spiDevice));
 	DeviceSetStatus(DeviceStatus::Initializing);
-	return DeviceResult::Ok;
+	return Result::Ok;
 }
 
-DeviceResult PCF2123::DeviceInit()
+Result PCF2123::DeviceInit()
 {
 	ContextLock lock(mutex);
 
-	//assert(!initialized_ && "Already initialized");
-	//assert(spidev->isInitialized());
-	//initialized_ = true;
 	reset();
-	//spidev->AcquireBus();
-	// /* Make sure the clock is in 24h mode */
-	// PCF2123_CtrlRegs regs = this->ctrl_get();
-	// regs.set(PCF2123_CtrlRegs::HOUR_MODE, 0);
-	// this->ctrl_set(&regs, true, false, true);
-	
+
 	PCF2123_CtrlRegs regs = this->ctrl_get();
 	regs.ClearAll();
 	this->ctrl_set(&regs, true, true, false);
-	//spidev->ReleaseBus();
 
 	DeviceSetStatus(DeviceStatus::Ready);
-	return DeviceResult::Ok;
+	return Result::Ok;
 }
 
-
-DeviceResult PCF2123::TimeGet(DateTime& now)
+Result PCF2123::TimeGet(DateTime& time)
 {
 	//assert(initialized_);
-	uint8_t buf[7];
+	uint8_t buf[7] = {0};
 	//spidev->AcquireBus();
-	this->rxt(REG_TIME_DATE_ADDR, RXT_READ, buf, sizeof(buf));
+    RETURN_ON_ERR(this->rxt(REG_TIME_DATE_ADDR, RXT_READ, buf, sizeof(buf)) );   // @TODO error check toevoegen
 	//spidev->ReleaseBus();
-	struct tm time;
-	memset(&time, 0, sizeof(struct tm));
 
-	time.tm_sec		= bcd_decode(buf[0] & ~0x80);
-	time.tm_min		= bcd_decode(buf[1] & ~0x80);
-	time.tm_hour	= bcd_decode(buf[2] & ~0xC0); /* 24h clock */
-	time.tm_mday    = bcd_decode(buf[3] & ~0xC0);
-	time.tm_wday	= bcd_decode(buf[4] & ~0xF8);
-	time.tm_mon		= bcd_decode(buf[5] & ~0xE0);
-	time.tm_year	= bcd_decode(buf[6]) + 100;		//1900 + 100 + PCF.year value 
-	//PCF year = 0 - 99 
-	//struct tm year = since 1900
-//	now->SetFromUTC(&time); !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	if ( !(buf[0] & 0x80)) return DeviceResult::Ok;
-	else return DeviceResult::Error;
+	time = DateTime(bcd_decode(buf[0])+
+  			bcd_decode(buf[1])*60+
+			bcd_decode(buf[2])*60*60+
+    		(bcd_decode(buf[3]) - 1)*24*60*60+
+    		(bcd_decode(buf[5]) - 1)*31*24*60*60+
+    		(bcd_decode(buf[6]))*12*31*24*60*60 );
+
+	if (! (buf[0] & 0x80)) return Result::Ok;
+	else return Result::Error;
 }
 
-DeviceResult PCF2123::TimeSet(DateTime& new_time)
+Result PCF2123::TimeSet(DateTime& new_time)
 {
-	//assert(initialized_);
-	uint8_t buf[7];
-	struct tm time;
-//	new_time->GetAsUTC(&time); !!!!!!!!!!!!!!!!!!!!!!!!!!!
+	//DateTime is UTC Epoch seconds
+	uint8_t buf[7];	
+	time_t uTimeStamp = new_time.GetEpochUtc(DateTimeMode::UTC);
+	
+	buf[0] = bcd_encode(uTimeStamp % 60); // sec
+	uTimeStamp = uTimeStamp / 60;
+	buf[1] = bcd_encode(uTimeStamp % 60); // min
+	uTimeStamp = uTimeStamp / 60; 
+	buf[2] = bcd_encode(uTimeStamp % 24);  // hour
+	uTimeStamp = uTimeStamp / 24;
+	buf[3] = bcd_encode((uTimeStamp % 31) + 1); // day of month
+	buf[4] = 0; // Day of week   0 to 6
+	uTimeStamp = uTimeStamp / 31;
+	buf[5] = bcd_encode((uTimeStamp % 12) + 1); // months
+	buf[6] = bcd_encode((uTimeStamp / 12) ); // years 
 
-	buf[0] = bcd_encode(time.tm_sec);
-	buf[1] = bcd_encode(time.tm_min);
-	buf[2] = bcd_encode(time.tm_hour);
-	buf[3] = bcd_encode(time.tm_mday);
-	buf[4] = bcd_encode(time.tm_wday);
-	buf[5] = bcd_encode(time.tm_mon);
-	buf[6] = bcd_encode(time.tm_year - 100);	//2023 - 1900 - 100 = 23
-	//PCF year = 0 - 99 
-	//struct tm year = since 1900
 	//spidev->AcquireBus();
-	this->rxt(REG_TIME_DATE_ADDR, RXT_WRITE, buf, sizeof(buf));
+	RETURN_ON_ERR(this->rxt(REG_TIME_DATE_ADDR, RXT_WRITE, buf, sizeof(buf)));
 	//spidev->ReleaseBus();
-	return DeviceResult::Ok;
+	return Result::Ok;
 }
 
-DeviceResult PCF2123::reset(void)
+Result PCF2123::reset(void)
 {
-//	assert(initialized_);
 //	spidev->AcquireBus();
 	uint8_t buf = 0x58;
 	this->rxt(REG_CTRL1_ADDR, RXT_WRITE, &buf, sizeof(buf));
 //	spidev->ReleaseBus();
-	return DeviceResult::Ok;
+	return Result::Ok;
 }
-
 
 //void
 //PCF2123::stop(bool stopped)

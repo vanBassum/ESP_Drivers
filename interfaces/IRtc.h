@@ -8,10 +8,10 @@ public:
 
     virtual ~IRtc() {}
 
-    virtual DeviceResult DeviceSetConfig(IDeviceConfig& config) = 0;
-    virtual DeviceResult DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) = 0;
-    virtual DeviceResult DeviceInit() = 0;
+    virtual Result DeviceSetConfig(IDeviceConfig& config) = 0;
+    virtual Result DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) = 0;
+    virtual Result DeviceInit() = 0;
 
-    virtual DeviceResult TimeGet(DateTime& value)  { return DeviceResult::NotSupported; };
-	virtual DeviceResult TimeSet(DateTime& value)  { return DeviceResult::NotSupported; };
+    virtual Result TimeGet(DateTime& value)  { return Result::NotSupported; };
+	virtual Result TimeSet(DateTime& value)  { return Result::NotSupported; };
 };
