@@ -123,6 +123,7 @@ Result PCF2123::DeviceInit()
 
 Result PCF2123::TimeGet(DateTime& time)
 {
+	ContextLock lock(mutex);
 	//assert(initialized_);
 	uint8_t buf[7] = {0};
 	//spidev->AcquireBus();
@@ -142,6 +143,7 @@ Result PCF2123::TimeGet(DateTime& time)
 
 Result PCF2123::TimeSet(DateTime& new_time)
 {
+	ContextLock lock(mutex);
 	//DateTime is UTC Epoch seconds
 	uint8_t buf[7];	
 	time_t uTimeStamp = new_time.GetEpochUtc(DateTimeMode::UTC);
