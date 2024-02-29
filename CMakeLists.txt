@@ -5,6 +5,7 @@ idf_component_register(
 		esp_drivers.cpp
 		analog/ina3221.cpp
 		displays/ST7796S.cpp
+		esp/Uart.cpp
 		ethernet/lan87xx.cpp
 		ethernet/TCPClient.cpp
 		ethernet/wifi.cpp
@@ -22,6 +23,7 @@ idf_component_register(
 		analog
 		common
 		displays
+		esp
 		ethernet
 		expanders
 		flash
