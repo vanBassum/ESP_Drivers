@@ -1,14 +1,8 @@
 #pragma once
-//#include "esp_system.h"
-//#include "mcp23s17.h"
 #include <string>
-//#include "gpio.h"
-//#include "spi/device.h"
-#include "interfaces/IGpio.h"
 #include "DeviceManager.h"
 #include "mcp23s17.h"
 #include "helpers.h"
-//#include "gpiopin.h"
 
 //https://github.com/Matiasus/HD44780/blob/master/lib/hd44780.c
 
@@ -35,7 +29,4 @@ public:
 	Result Write(std::string message);
 	Result Write(std::string message, int x, int y);
 };
-
-//DEFINE_ENUM_CLASS_FLAG_OPERATORS(HD44780::Pins, uint32_t);
-
 
