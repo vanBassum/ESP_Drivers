@@ -1,8 +1,14 @@
 #include "hd44780.h"
 
 
-//#define LCD_DATA_PINS	(Pins::DB0 | Pins::DB1 | Pins::DB2 | Pins::DB3 | Pins::DB4 | Pins::DB5 | Pins::DB6 | Pins::DB7)
-//#define LCD_ALL_PINS	(Pins::RS | Pins::RW | Pins::E | LCD_DATA_PINS | Pins::BL)
+#define LCD_DATA_PINS	(Pins::DB0 | Pins::DB1 | Pins::DB2 | Pins::DB3 | Pins::DB4 | Pins::DB5 | Pins::DB6 | Pins::DB7)
+#define LCD_ALL_PINS	(Pins::RS | Pins::RW | Pins::E | LCD_DATA_PINS | Pins::BL)
+#define LCD_DATA_PORT	(uint32_t)(0)
+#define LCD_DATA_MASK	0xFF
+#define LCD_CMD_PORT	(uint32_t)(1)
+#define LCD_RS_PIN		(uint8_t)(0)
+#define LCD_E_PIN		(uint8_t)(1)
+#define LCD_BL_PIN		(uint8_t)(4)
 
 #define HD44780_INIT_SEQ        0x30
 #define HD44780_DISP_CLEAR      0x01
@@ -36,32 +42,9 @@
 
 Result HD44780::DeviceSetConfig(IDeviceConfig &config)
 {
-	const char* temp;
+//	const char* temp;
     ContextLock lock(mutex);
-	RETURN_ON_ERR(config.getProperty("gpioDevice", &gpioDeviceKey));
-
-	RETURN_ON_ERR(config.getProperty("pinD0", &temp));
-	if(sscanf(temp, "%hhu,%hhu", &d0_Port, &d0_Pin) != 2) return Result::Error;
-	RETURN_ON_ERR(config.getProperty("pinD1", &temp));
-	if(sscanf(temp, "%hhu,%hhu", &d1_Port, &d1_Pin) != 2) return Result::Error;
-	RETURN_ON_ERR(config.getProperty("pinD2", &temp));
-	if(sscanf(temp, "%hhu,%hhu", &d2_Port, &d2_Pin) != 2) return Result::Error;
-	RETURN_ON_ERR(config.getProperty("pinD3", &temp));
-	if(sscanf(temp, "%hhu,%hhu", &d3_Port, &d3_Pin) != 2) return Result::Error;
-	RETURN_ON_ERR(config.getProperty("pinD4", &temp));
-	if(sscanf(temp, "%hhu,%hhu", &d4_Port, &d4_Pin) != 2) return Result::Error;
-	RETURN_ON_ERR(config.getProperty("pinD5", &temp));
-	if(sscanf(temp, "%hhu,%hhu", &d5_Port, &d5_Pin) != 2) return Result::Error;
-	RETURN_ON_ERR(config.getProperty("pinD6", &temp));
-	if(sscanf(temp, "%hhu,%hhu", &d6_Port, &d6_Pin) != 2) return Result::Error;
-	RETURN_ON_ERR(config.getProperty("pinD7", &temp));
-	if(sscanf(temp, "%hhu,%hhu", &d7_Port, &d7_Pin) != 2) return Result::Error;
-	RETURN_ON_ERR(config.getProperty("pinE", &temp));
-	if(sscanf(temp, "%hhu,%hhu", &e_Port, &e_Pin) != 2) return Result::Error;
-	RETURN_ON_ERR(config.getProperty("pinRS", &temp));
-	if(sscanf(temp, "%hhu,%hhu", &rs_Port, &rs_Pin) != 2) return Result::Error;
-	RETURN_ON_ERR(config.getProperty("pinBL", &temp));
-	if(sscanf(temp, "%hhu,%hhu", &bl_Port, &bl_Pin) != 2) return Result::Error;
+	RETURN_ON_ERR_LOGD(config.getProperty("mcpdevice", &mcpDeviceKey), TAG,  "Setconfig Error");
 
 	DeviceSetStatus(DeviceStatus::Dependencies);
 	return Result::Ok;
@@ -70,98 +53,68 @@ Result HD44780::DeviceSetConfig(IDeviceConfig &config)
 Result HD44780::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager)
 {
 	ContextLock lock(mutex);
-	RETURN_ON_ERR(deviceManager->getDeviceByKey<IGpio>(gpioDeviceKey, gpioDevice));
+	RETURN_ON_ERR_LOGD(deviceManager->getDeviceByKey<MCP23S17>(mcpDeviceKey, mcpDevice), TAG , "load device error");
 
 	DeviceSetStatus(DeviceStatus::Initializing);
 	return Result::Ok;
 }
 
-HD44780::Pins FromData(uint8_t data)
-{
-	//return (HD44780::Pins)data;
-}
-
 Result HD44780::DeviceInit()
 {
 	ContextLock lock(mutex);
-    //RETURN_ON_ERR(rwPin.DeviceInit());
-    RETURN_ON_ERR(rs_Pin.DeviceInit());
-    RETURN_ON_ERR(e_Pin.DeviceInit());
-	RETURN_ON_ERR(bl_Pin.DeviceInit());
 
- const GpioConfig outputConfig = GPIO_CREATE_CONFIG(GpioConfigMode::GPIO_CFG_MODE_OUTPUT, GpioConfigIntr::GPIO_CFG_INTR_DISABLE, GpioConfigPull::GPIO_CFG_PULL_DISABLE);
-	//Initialize non-SPI GPIOs
-    //RETURN_ON_ERR(rwPin.GpioConfigure(&gpioOutput));
-    RETURN_ON_ERR(rs_Pin.GpioConfigure(&outputConfig));
-    RETURN_ON_ERR(e_Pin.GpioConfigure(&outputConfig));
-	RETURN_ON_ERR(bl_Pin.GpioConfigure(&outputConfig));
-	RETURN_ON_ERR(d0_Pin.GpioConfigure(&outputConfig));
-	RETURN_ON_ERR(d1_Pin.GpioConfigure(&outputConfig));
-	RETURN_ON_ERR(d2_Pin.GpioConfigure(&outputConfig));
-	RETURN_ON_ERR(d3_Pin.GpioConfigure(&outputConfig));
-	RETURN_ON_ERR(d4_Pin.GpioConfigure(&outputConfig));
-	RETURN_ON_ERR(d5_Pin.GpioConfigure(&outputConfig));
-	RETURN_ON_ERR(d6_Pin.GpioConfigure(&outputConfig));
-	RETURN_ON_ERR(d7_Pin.GpioConfigure(&outputConfig));
-
-	//RETURN_ON_ERR(rwPin.GpioPinWrite(0));
-	RETURN_ON_ERR(rs_Pin.GpioPinWrite(0));
-	RETURN_ON_ERR(e_Pin.GpioPinWrite(0));
-	RETURN_ON_ERR(bl_Pin.GpioPinWrite(0));
+	const GpioConfig outputConfig = GPIO_CREATE_CONFIG(GpioConfigMode::GPIO_CFG_MODE_OUTPUT, GpioConfigIntr::GPIO_CFG_INTR_DISABLE, GpioConfigPull::GPIO_CFG_PULL_DISABLE);
+	RETURN_ON_ERR_LOGD(mcpDevice->GpioConfigure(LCD_DATA_PORT,LCD_DATA_MASK,&outputConfig),TAG,  "GPIOconfig Error1");
+	RETURN_ON_ERR_LOGD(mcpDevice->GpioConfigure(LCD_E_PIN,LCD_E_PIN,&outputConfig), TAG,  "GPIOconfig Error2");
+	RETURN_ON_ERR_LOGD(mcpDevice->GpioConfigure(LCD_BL_PIN,LCD_BL_PIN,&outputConfig),TAG,  "GPIOconfig Error3");
 	
-	RETURN_ON_ERR(ALL.GpioPinWrite(0));		//All pins low
+	//RETURN_ON_ERR(rwPin.GpioPinWrite(0));
+	RETURN_ON_ERR_LOGD(mcpDevice->GpioWrite(LCD_RS_PIN, LCD_RS_PIN, 0),TAG,  "GPIO write Error1");
+	RETURN_ON_ERR_LOGD(mcpDevice->GpioWrite(LCD_E_PIN, LCD_E_PIN, 0),TAG,  "GPIO write Error2" );
+	RETURN_ON_ERR_LOGD(mcpDevice->GpioWrite(LCD_BL_PIN, LCD_BL_PIN, 0),TAG,  "GPIO write Error3");
+	
+	RETURN_ON_ERR(mcpDevice->GpioWrite(LCD_DATA_PORT, LCD_DATA_MASK, 0));		//All pins low
 
     //Turn on backlight
-    RETURN_ON_ERR(bl_Pin.GpioPinWrite(1));   
+  	RETURN_ON_ERR(mcpDevice->GpioWrite(LCD_BL_PIN, LCD_BL_PIN, 1)); 
 
 	ESP_LOGI(TAG, "Initializing");
 
 	vTaskDelay(pdMS_TO_TICKS(100));								//Wait for screen
 
-	vTaskDelay(pdMS_TO_TICKS(10));	
-	//io.SetPins(LCD_DATA_PINS, FromData(0x30) | Pins::E);
-	RETURN_ON_ERR(rs_Pin.GpioPinWrite(0));	
-	RETURN_ON_ERR(e_Pin.GpioPinWrite(0));	
-	
-	LCD_cmd(HD44780_INIT_SEQ);
+	RETURN_ON_ERR(LCD_cmd(HD44780_INIT_SEQ));
 	vTaskDelay(pdMS_TO_TICKS(105)); //+5	 
 	//ets_delay_us(4500);
-	
-	LCD_cmd(HD44780_INIT_SEQ);
+	ESP_LOGI(TAG, "Initializing1");
+	RETURN_ON_ERR(LCD_cmd(HD44780_INIT_SEQ));
 	vTaskDelay(pdMS_TO_TICKS(101));	//+1
 	//ets_delay_us(120);
-	
-	LCD_cmd(HD44780_INIT_SEQ);
+	ESP_LOGI(TAG, "Initializing2");
+	RETURN_ON_ERR(LCD_cmd(HD44780_INIT_SEQ));
 	vTaskDelay(pdMS_TO_TICKS(101));	//+1
 	//ets_delay_us(50);
-	
-	LCD_cmd(HD44780_8BIT_MODE | HD44780_2_ROWS | HD44780_FONT_5x10);
-	LCD_cmd(HD44780_DISP_OFF);
-	LCD_cmd(HD44780_DISP_CLEAR);
-	LCD_cmd(HD44780_ENTRY_MODE | HD44780_RETURN_HOME);
-	LCD_cmd(HD44780_DISP_ON);
-	LCD_cmd(HD44780_CURSOR_OFF);
-	
-	
-	
+	ESP_LOGI(TAG, "Initializing3");
+	RETURN_ON_ERR(LCD_cmd(HD44780_8BIT_MODE | HD44780_2_ROWS | HD44780_FONT_5x10));
+	RETURN_ON_ERR(LCD_cmd(HD44780_DISP_OFF));
+	RETURN_ON_ERR(LCD_cmd(HD44780_DISP_CLEAR));
+	RETURN_ON_ERR(LCD_cmd(HD44780_ENTRY_MODE | HD44780_RETURN_HOME));
+	RETURN_ON_ERR(LCD_cmd(HD44780_DISP_ON));
+	RETURN_ON_ERR(LCD_cmd(HD44780_CURSOR_OFF));
+	ESP_LOGI(TAG, "Initializing4");
+	return Result::Ok;
 	//WaitBFClear();
 }
 
-
-
-
-
-void HD44780::SetBacklight(bool enabled)
+Result HD44780::SetBacklight(bool enabled)
 {
 	if (enabled)
 		//io.SetPins(Pins::BL, Pins::BL);
-		RETURN_ON_ERR(bl_Pin.GpioPinWrite(1));
+  		RETURN_ON_ERR(mcpDevice->GpioWrite(LCD_BL_PIN, LCD_BL_PIN, 1)); 
 	else		
 		//io.SetPins(Pins::BL, Pins::NONE);
-		RETURN_ON_ERR(bl_Pin.GpioPinWrite(0));
-	
+  		RETURN_ON_ERR(mcpDevice->GpioWrite(LCD_BL_PIN, LCD_BL_PIN, 0)); 	
+	return Result::Ok;
 }
-
 
 void HD44780::SetCursor(int x, int row)
 {
@@ -171,19 +124,18 @@ void HD44780::SetCursor(int x, int row)
 	LCD_cmd(HD44780_POSITION + x);
 }
 
-
-void HD44780::LCD_cmd(unsigned char cmd)
+Result HD44780::LCD_cmd(unsigned char cmd)
 {
 	//io.SetPins(Pins::E | Pins::RW | Pins::RS, Pins::E);
-	RETURN_ON_ERR(e_Pin.GpioPinWrite(1));
+	RETURN_ON_ERR(mcpDevice->GpioWrite(LCD_E_PIN, LCD_E_PIN, 1));
 	vTaskDelay(pdMS_TO_TICKS(10));	
 	//io.SetPins(LCD_DATA_PINS, FromData(cmd));
-	RETURN_ON_ERR(data_Pin.GpioPinWrite(cmd));
+	RETURN_ON_ERR(mcpDevice->GpioWrite(LCD_DATA_PORT, LCD_DATA_MASK, cmd));
 	vTaskDelay(pdMS_TO_TICKS(10));	
 	//io.SetPins(Pins::E | Pins::RW | Pins::RS, Pins::NONE);
-	RETURN_ON_ERR(e_Pin.GpioPinWrite(0));
+	RETURN_ON_ERR(mcpDevice->GpioWrite(LCD_E_PIN, LCD_E_PIN, 0));
+	return Result::Ok;
 }
-
 
 void HD44780::WaitBFClear()
 {
@@ -191,34 +143,35 @@ void HD44780::WaitBFClear()
 	//ets_delay_us(100);	//TODO
 }
 
-
-void HD44780::LCD_Data(unsigned char cmd)
+Result HD44780::LCD_Data(unsigned char cmd)
 {
 	//io.SetPins(Pins::E | Pins::RW | Pins::RS, Pins::RS | Pins::E);
-	RETURN_ON_ERR(rs_Pin.GpioPinWrite(1));
-	RETURN_ON_ERR(e_Pin.GpioPinWrite(1));
+	RETURN_ON_ERR(mcpDevice->GpioWrite(LCD_RS_PIN, LCD_RS_PIN, 1));
+	RETURN_ON_ERR(mcpDevice->GpioWrite(LCD_E_PIN, LCD_E_PIN, 1));
 	//io.SetPins(LCD_DATA_PINS, FromData(cmd));
-	RETURN_ON_ERR(data_Pin.GpioPinWrite(cmd));
+	RETURN_ON_ERR(mcpDevice->GpioWrite(LCD_DATA_PORT, LCD_DATA_MASK, cmd));
 	vTaskDelay(pdMS_TO_TICKS(1));	//TODO Whaaaa?? This HAS to be �S...
 	//ets_delay_us(1);
 	//io.SetPins(Pins::E | Pins::RW | Pins::RS, Pins::NONE);
-	RETURN_ON_ERR(rs_Pin.GpioPinWrite(0));
-	RETURN_ON_ERR(e_Pin.GpioPinWrite(0));	
+	RETURN_ON_ERR(mcpDevice->GpioWrite(LCD_RS_PIN, LCD_RS_PIN, 0));
+	RETURN_ON_ERR(mcpDevice->GpioWrite(LCD_E_PIN, LCD_E_PIN, 0));
+	return Result::Ok;
 	WaitBFClear();
 }
 
-
-void HD44780::Write(std::string message, int x, int y)
+Result HD44780::Write(std::string message, int x, int y)
 {
 	SetCursor(x, y);
-	Write(message);
+	RETURN_ON_ERR(Write(message));
+	return Result::Ok;
 }
 
 
-void HD44780::Write(std::string message)
+Result HD44780::Write(std::string message)
 {
 	for (int i = 0; i < message.length(); i++)
 	{
-		LCD_Data(message.c_str()[i]);
+		RETURN_ON_ERR( LCD_Data(message.c_str()[i]));
 	}
+	return Result::Ok;
 }
