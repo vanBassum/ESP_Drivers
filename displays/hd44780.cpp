@@ -113,6 +113,8 @@ Result HD44780::SetBacklight(bool enabled)
 	return Result::Ok;
 }
 
+
+
 void HD44780::SetCursor(int x, int row)
 {
 	x %= 16;
@@ -150,22 +152,58 @@ Result HD44780::LCD_Data(unsigned char cmd)
 	WaitBFClear();
 }
 
-Result HD44780::Write(std::string message, int x, int y)
+Result HD44780::printf(const char *format, ...)
+{
+    ContextLock lock(mutex);
+    RETURN_ON_ERR(DeviceCheckStatus(DeviceStatus::Ready));
+
+    va_list args;
+    va_start(args, format);
+
+    char buffer[256]; // Adjust the buffer size as per your requirements
+
+    // Print formatted message to buffer
+    int written = vsnprintf(buffer, sizeof(buffer), format, args);
+    if (written < 0 || written >= sizeof(buffer)) {
+        // Handle error if vsnprintf fails or the buffer is not large enough
+        va_end(args);
+        return Result::Error;
+    }
+
+    va_end(args);
+
+    // Write each character from the buffer to the LCD
+    for (int i = 0; i < written; i++) {
+        RETURN_ON_ERR(LCD_Data(buffer[i]));
+    }
+
+    return Result::Ok;
+}
+
+Result HD44780::printf(int x, int y, const char *format, ...)
 {
 	ContextLock lock(mutex);
 	RETURN_ON_ERR(DeviceCheckStatus(DeviceStatus::Ready));
 	SetCursor(x, y);
-	RETURN_ON_ERR(Write(message));
-	return Result::Ok;
-}
+    va_list args;
+    va_start(args, format);
 
-Result HD44780::Write(std::string message)
-{
-	ContextLock lock(mutex);
-	RETURN_ON_ERR(DeviceCheckStatus(DeviceStatus::Ready));
-	for (int i = 0; i < (message.length()); i++)
-	{
-		RETURN_ON_ERR( LCD_Data(message.c_str()[i]));
-	}
-	return Result::Ok;
+    char buffer[256]; // Adjust the buffer size as per your requirements
+
+    // Print formatted message to buffer
+    int written = vsnprintf(buffer, sizeof(buffer), format, args);
+    if (written < 0 || written >= sizeof(buffer)) {
+        // Handle error if vsnprintf fails or the buffer is not large enough
+        va_end(args);
+        return Result::Error;
+    }
+
+    va_end(args);
+
+    // Write each character from the buffer to the LCD
+    for (int i = 0; i < written; i++) {
+        RETURN_ON_ERR(LCD_Data(buffer[i]));
+    }
+
+    return Result::Ok;
 }

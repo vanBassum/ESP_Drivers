@@ -26,7 +26,7 @@ public:
     virtual Result DeviceInit() override;
 	
 	Result SetBacklight(bool enabled);
-	Result Write(std::string message);
-	Result Write(std::string message, int x, int y);
+	Result printf(const char* format, ...);
+	Result printf(int x, int y, const char* format, ...);
 };
 
