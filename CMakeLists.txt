@@ -4,6 +4,7 @@ idf_component_register(
 	SRCS
 		esp_drivers.cpp
 		analog/ina3221.cpp
+		displays/hd44780.cpp
 		displays/ST7796S.cpp
 		esp/Uart.cpp
 		ethernet/lan87xx.cpp
