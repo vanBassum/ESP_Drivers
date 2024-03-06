@@ -104,6 +104,8 @@ Result HD44780::DeviceInit()
 
 Result HD44780::SetBacklight(bool enabled)
 {
+	ContextLock lock(mutex);
+	RETURN_ON_ERR(DeviceCheckStatus(DeviceStatus::Ready));
 	if (enabled)
   		RETURN_ON_ERR(mcpDevice->GpioWrite(LCD_CMD_PORT, LCD_BL_PIN, 0)); 
 	else		
@@ -150,6 +152,8 @@ Result HD44780::LCD_Data(unsigned char cmd)
 
 Result HD44780::Write(std::string message, int x, int y)
 {
+	ContextLock lock(mutex);
+	RETURN_ON_ERR(DeviceCheckStatus(DeviceStatus::Ready));
 	SetCursor(x, y);
 	RETURN_ON_ERR(Write(message));
 	return Result::Ok;
@@ -157,6 +161,8 @@ Result HD44780::Write(std::string message, int x, int y)
 
 Result HD44780::Write(std::string message)
 {
+	ContextLock lock(mutex);
+	RETURN_ON_ERR(DeviceCheckStatus(DeviceStatus::Ready));
 	for (int i = 0; i < (message.length()); i++)
 	{
 		RETURN_ON_ERR( LCD_Data(message.c_str()[i]));
