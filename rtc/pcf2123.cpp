@@ -127,13 +127,18 @@ Result PCF2123::TimeGet(DateTime &time)
 	uint8_t buf[7] = {0};
 	RETURN_ON_ERR(this->rxt(REG_TIME_DATE_ADDR, RXT_READ, buf, sizeof(buf))); // @TODO error check toevoegen
 
-	time = DateTime(bcd_decode(buf[0]) +
-					bcd_decode(buf[1]) * 60 +
-					bcd_decode(buf[2]) * 60 * 60 +
-					(bcd_decode(buf[3]) - 1) * 24 * 60 * 60 +
-					(bcd_decode(buf[5]) - 1) * 31 * 24 * 60 * 60 +
-					(bcd_decode(buf[6])) * 12 * 31 * 24 * 60 * 60);
+	int sec = bcd_decode(buf[0]		& 0x7F) ;   // 0-59
+	int min = bcd_decode(buf[1]		& 0x7F) ;	// 0-59
+	int hour = bcd_decode(buf[2]	& 0x2F) ;	// 0-24 (24h mode!)
+	int days = bcd_decode(buf[3]	& 0x2F) ;   // 1-31
+	int months = bcd_decode(buf[5]	& 0x1F) ;   // 1-12
+	int years = bcd_decode(buf[6]	& 0xFF) ;   // 0-99
 
+	years += 2000;	// Start at the year 2000
+	char tbuf[32];
+	sprintf(tbuf, "%04d-%02d-%02d %02d:%02d:%02d", years, months, days, hour, min, sec);
+	time = DateTime::FromString(std::string(tbuf), "%Y-%m-%d %H:%M:%S", DateTimeMode::UTC);
+	//ESP_LOGI(TAG, "TimeGet UTC = %s", tbuf);
 	//TODO: Should we wait for clock integrity?
 	return Result::Ok;
 }
@@ -142,21 +147,27 @@ Result PCF2123::TimeSet(DateTime &new_time)
 {
 	ContextLock lock(mutex);
 	RETURN_ON_ERR(DeviceCheckStatus(DeviceStatus::Ready));
-	// DateTime is UTC Epoch seconds
-	uint8_t buf[7];
-	time_t uTimeStamp = new_time.GetAs_time_t(DateTimeMode::UTC);
+	int sec 	= 0;
+	int min 	= 0;
+	int hour 	= 0;
+	int days 	= 0;
+	int months 	= 0;
+	int years 	= 0;
 
-	buf[0] = bcd_encode(uTimeStamp % 60); // sec
-	uTimeStamp = uTimeStamp / 60;
-	buf[1] = bcd_encode(uTimeStamp % 60); // min
-	uTimeStamp = uTimeStamp / 60;
-	buf[2] = bcd_encode(uTimeStamp % 24); // hour
-	uTimeStamp = uTimeStamp / 24;
-	buf[3] = bcd_encode((uTimeStamp % 31) + 1); // day of month
-	buf[4] = 0;									// Day of week   0 to 6
-	uTimeStamp = uTimeStamp / 31;
-	buf[5] = bcd_encode((uTimeStamp % 12) + 1); // months
-	buf[6] = bcd_encode((uTimeStamp / 12));		// years
+	std::string utcString = new_time.toString("%Y-%m-%d %H:%M:%S", DateTimeMode::UTC).c_str();
+	sscanf(utcString.c_str(), "%d-%d-%d %d:%d:%d", &years, &months, &days, &hour, &min, &sec);
+	//ESP_LOGI(TAG, "TimeSet UTC = %s", utcString.c_str());
+
+	years -= 2000;	// Start at the year 2000
+
+	uint8_t buf[7];
+	buf[0] = bcd_encode(sec);
+	buf[1] = bcd_encode(min);
+	buf[2] = bcd_encode(hour);
+	buf[3] = bcd_encode(days);
+	buf[4] = 0;
+	buf[5] = bcd_encode(months);
+	buf[6] = bcd_encode(years);
 
 	RETURN_ON_ERR(this->rxt(REG_TIME_DATE_ADDR, RXT_WRITE, buf, sizeof(buf)));
 	return Result::Ok;
