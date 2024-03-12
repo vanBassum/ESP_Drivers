@@ -6,6 +6,7 @@ idf_component_register(
 		analog/ina3221.cpp
 		displays/hd44780.cpp
 		displays/ST7796S.cpp
+		esp/ESPNtp.cpp
 		esp/Uart.cpp
 		ethernet/lan87xx.cpp
 		ethernet/TCPClient.cpp
