@@ -17,15 +17,15 @@ static const char *TAG	= "Wifi";
 //}
 
 
-Wifi::Wifi(NetManager& netManager)
-{
-	wifi_init_config_t cfg2 = WIFI_INIT_CONFIG_DEFAULT();
+// Wifi::Wifi(NetManager& netManager)
+// {
+// 	wifi_init_config_t cfg2 = WIFI_INIT_CONFIG_DEFAULT();
 	
-	netIF = esp_netif_create_default_wifi_sta();
-	ESP_ERROR_CHECK(esp_wifi_init(&cfg2));
-	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM)); 
+// 	netIF = esp_netif_create_default_wifi_sta();
+// 	ESP_ERROR_CHECK(esp_wifi_init(&cfg2));
+// 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM)); 
 
-}
+// }
 
 
 bool Wifi::Connect(const std::string& ssid, const std::string& pwd)

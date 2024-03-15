@@ -8,9 +8,7 @@ class NetIF : public IDevice
     Mutex mutex;
 
     // Dependencies:
-
-    //const char* netIfDeviceKey = nullptr;
-    //std::shared_ptr<NetIF> netIfDevice;
+    // none
 	
 protected:
 	esp_netif_t *netIF;
@@ -18,9 +16,14 @@ protected:
 public:
 	virtual ~NetIF() {}
 
-    //virtual Result DeviceSetConfig(IDeviceConfig &config) = 0;
-    //virtual Result DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) = 0;
+    virtual Result DeviceSetConfig(IDeviceConfig &config) override;
+    virtual Result DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
     virtual Result DeviceInit() override;
+
+    // void GetIpInfo(esp_netif_ip_info_t* ip_info);
+    // void SetDNS(esp_ip4_addr_t ip, esp_netif_dns_type_t type);
+    // void SetStaticIp(esp_netif_ip_info_t ip);
+    // void SetDHCP();
 };
 
 

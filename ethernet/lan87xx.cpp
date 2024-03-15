@@ -85,7 +85,7 @@ Result LAN87xx::DeviceInit(IDeviceConfig &config)
     if(err != ESP_OK) return Result::Error;
     // Create new default instance of esp-netif for Ethernet
     esp_netif_config_t cfg                      = ESP_NETIF_DEFAULT_ETH();
-	netIF                                       = esp_netif_new(&cfg);
+	esp_netif_t *netIF                          = esp_netif_new(&cfg);
 
 	err = esp_netif_attach(netIF, esp_eth_new_netif_glue(eth_handle));
     if(err != ESP_OK) return Result::Error;
