@@ -8,6 +8,7 @@ idf_component_register(
 		displays/ST7796S.cpp
 		esp/Uart.cpp
 		ethernet/lan87xx.cpp
+		ethernet/netif.cpp
 		ethernet/TCPClient.cpp
 		ethernet/wifi.cpp
 		expanders/MAX14830.cpp

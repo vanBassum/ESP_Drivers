@@ -1,20 +1,21 @@
 #pragma once
-
-#include "netmanager.h"
 #include "esp_base.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/event_groups.h"
-#include "esp_netif.h"
-#include "esp_system.h"
-#include "driver/gpio.h"
-#include "esp_eth.h"
-#include "esp_event.h"
 #include "netif.h"
+#include "DeviceManager.h"
 
-class Lan87xx : public NetIF
-{	
+class LAN87xx : public NetIF
+{
+    constexpr static const char *TAG = "Lan87xx";
+    Mutex mutex;
+
+    // Dependencies:
+    const char* netIfDeviceKey = nullptr;
+    std::shared_ptr<NetIF> netIfDevice;
+    
 public:
-	
-	Lan87xx(NetManager& netManager);
-};
+    virtual Result DeviceSetConfig(IDeviceConfig &config) override;
+    virtual Result DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
+    virtual Result DeviceInit(IDeviceConfig &config);
 
+	
+};
