@@ -2,17 +2,26 @@
 
 #include "esp_wifi.h"
 #include "esp_base.h"
-#include <string>
 #include "netif.h"
 
-class Wifi : public NetIF
+class Wifi : public IDevice
 {
-	const char* TAG = "Wifi";
-public:
-	
-	//Wifi(NetManager& netManager);
-		
-	bool Connect(const std::string& ssid, const std::string& pwd);
+	constexpr static const char* TAG = "Wifi";
+    
+    Mutex mutex;
 
+    // Dependencies:
+    const char* netIfDeviceKey = nullptr;
+    std::shared_ptr<NetIF> netIfDevice;
+    
+    static void Wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
+    static void got_ip_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+
+public:
+    virtual Result DeviceSetConfig(IDeviceConfig &config) override;
+    virtual Result DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
+    virtual Result DeviceInit();
+
+	Result Connect(const std::string& ssid, const std::string& pwd);
 };
 
