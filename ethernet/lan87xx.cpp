@@ -14,8 +14,8 @@
 #define ETH_STOP_BIT BIT(1)
 #define ETH_CONNECT_BIT BIT(2)
 
-void LAN87xx::eth_event_handler(void* arg, esp_event_base_t event_base,
-    int32_t event_id, void* event_data) {
+void LAN87xx::eth_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
+{
     EventGroupHandle_t eth_event_group = (EventGroupHandle_t)arg;
     esp_eth_handle_t eth_handle = *(esp_eth_handle_t *)event_data;
     uint8_t mac_addr[6] = {0};
@@ -45,8 +45,7 @@ void LAN87xx::eth_event_handler(void* arg, esp_event_base_t event_base,
 }
 
 /** Event handler for IP_EVENT_ETH_GOT_IP */
-void LAN87xx::got_ip_event_handler(void *arg, esp_event_base_t event_base,
-                                 int32_t event_id, void *event_data)
+void LAN87xx::got_ip_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
     const esp_netif_ip_info_t *ip_info = &event->ip_info;
@@ -111,13 +110,15 @@ Result LAN87xx::DeviceInit()
     if(err != ESP_OK) return Result::Error;
     // Create new default instance of esp-netif for Ethernet
     esp_netif_config_t cfg                      = ESP_NETIF_DEFAULT_ETH();
-	esp_netif_t *eth_netif                      = esp_netif_new(&cfg);
+    
+	eth_netif                      = esp_netif_new(&cfg);
+    if(eth_netif == NULL)  return Result::Error;
 
 	err = esp_netif_attach(eth_netif, esp_eth_new_netif_glue(eth_handle));
     if(err != ESP_OK) return Result::Error;
 
     ESP_ERROR_CHECK(esp_event_handler_instance_register(ETH_EVENT, ESP_EVENT_ANY_ID, &eth_event_handler, NULL, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_ETH_GOT_IP, &got_ip_event_handler, NULL, NULL));
+    //ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_ETH_GOT_IP, &got_ip_event_handler, NULL, NULL));
 
 	err = esp_eth_start(eth_handle);
     if(err != ESP_OK) return Result::Error; 
@@ -126,3 +127,40 @@ Result LAN87xx::DeviceInit()
     return Result::Ok;
 }
 
+Result LAN87xx::GetIpInfo(esp_netif_ip_info_t* ip_info)
+{
+	esp_netif_get_ip_info(eth_netif, ip_info);
+    return Result::Ok;
+}
+	
+Result LAN87xx::SetDNS(esp_ip4_addr_t ip, esp_netif_dns_type_t type)
+{
+	esp_netif_dns_info_t dns;
+	dns.ip.u_addr.ip4.addr = ip.addr;
+	dns.ip.type = IPADDR_TYPE_V4;
+	ESP_ERROR_CHECK(esp_netif_set_dns_info(eth_netif, type, &dns));
+    return Result::Ok;
+}	
+		
+Result LAN87xx::SetStaticIp(esp_netif_ip_info_t ip)
+{
+	if (esp_netif_dhcpc_stop(eth_netif) != ESP_OK) {
+		ESP_LOGE(TAG, "Failed to stop dhcp client");
+		return Result::Error;
+	}
+		if (esp_netif_set_ip_info(eth_netif, &ip) != ESP_OK) {
+		ESP_LOGE(TAG, "Failed to set ip info");
+		return Result::Error;
+	}
+	ESP_LOGD(TAG, "Success to set static ip " IPSTR " " IPSTR " " IPSTR " ", IP2STR(&ip.ip), IP2STR(&ip.gw), IP2STR(&ip.netmask));
+    return Result::Ok;
+}
+	
+Result LAN87xx::SetDHCP()
+{
+	if (esp_netif_dhcpc_start(eth_netif) != ESP_OK) {
+		ESP_LOGE(TAG, "Failed to start dhcp client");
+		return Result::Error;
+	}
+    return Result::Ok;
+}

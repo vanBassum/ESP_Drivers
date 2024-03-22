@@ -61,10 +61,11 @@ Result Wifi::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager
 
 Result Wifi::DeviceInit()
 { esp_err_t err = 0;
-	esp_netif_t *wifi_netif;
+	//esp_netif_t *wifi_netif;
 	wifi_init_config_t cfg2 = WIFI_INIT_CONFIG_DEFAULT();
 	
 	wifi_netif = esp_netif_create_default_wifi_sta();
+	if(wifi_netif == NULL) return Result::Error;
 	err = esp_wifi_init(&cfg2);
 	if(err != ESP_OK) return Result::Error;
 	err = esp_wifi_set_storage(WIFI_STORAGE_RAM); 
@@ -104,3 +105,40 @@ Result Wifi::Connect(const std::string& ssid, const std::string& pwd)
     return Result::Ok;
 }
 
+Result Wifi::GetIpInfo(esp_netif_ip_info_t* ip_info)
+{
+	esp_netif_get_ip_info(wifi_netif, ip_info);
+    return Result::Ok;
+}
+	
+Result Wifi::SetDNS(esp_ip4_addr_t ip, esp_netif_dns_type_t type)
+{
+	esp_netif_dns_info_t dns;
+	dns.ip.u_addr.ip4.addr = ip.addr;
+	dns.ip.type = IPADDR_TYPE_V4;
+	ESP_ERROR_CHECK(esp_netif_set_dns_info(wifi_netif, type, &dns));
+    return Result::Ok;
+}	
+		
+Result Wifi::SetStaticIp(esp_netif_ip_info_t ip)
+{
+	if (esp_netif_dhcpc_stop(wifi_netif) != ESP_OK) {
+		ESP_LOGE(TAG, "Failed to stop dhcp client");
+		return Result::Error;
+	}
+		if (esp_netif_set_ip_info(wifi_netif, &ip) != ESP_OK) {
+		ESP_LOGE(TAG, "Failed to set ip info");
+		return Result::Error;
+	}
+	ESP_LOGD(TAG, "Success to set static ip " IPSTR " " IPSTR " " IPSTR " ", IP2STR(&ip.ip), IP2STR(&ip.gw), IP2STR(&ip.netmask));
+    return Result::Ok;
+}
+	
+Result Wifi::SetDHCP()
+{
+	if (esp_netif_dhcpc_start(wifi_netif) != ESP_OK) {
+		ESP_LOGE(TAG, "Failed to start dhcp client");
+		return Result::Error;
+	}
+    return Result::Ok;
+}

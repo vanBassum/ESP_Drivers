@@ -20,10 +20,10 @@ public:
     virtual Result DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceManager) override;
     virtual Result DeviceInit() override;
 
-    void GetIpInfo(esp_netif_ip_info_t* ip_info);
-    void SetDNS(esp_ip4_addr_t ip, esp_netif_dns_type_t type);
-    void SetStaticIp(esp_netif_ip_info_t ip);
-    void SetDHCP();
+    // void GetIpInfo(esp_netif_ip_info_t* ip_info);
+    // void SetDNS(esp_ip4_addr_t ip, esp_netif_dns_type_t type);
+    // void SetStaticIp(esp_netif_ip_info_t ip);
+    // void SetDHCP();
 };
 
 
