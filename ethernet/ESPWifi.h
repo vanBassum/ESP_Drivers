@@ -4,9 +4,9 @@
 #include "esp_base.h"
 #include "netif.h"
 
-class Wifi : public IDevice
+class ESPWifi : public IDevice
 {
-	constexpr static const char* TAG = "Wifi";
+	constexpr static const char* TAG = "ESPWifi";
     
     Mutex mutex;
 
