@@ -20,27 +20,23 @@ Result NetIF::DeviceInit()
 {
 	ContextLock lock(mutex);
 	
-	if(DeviceStatus::Ready != DeviceGetStatus())
-	{
-		esp_err_t err = 0;
-		err = esp_netif_init();
+	esp_err_t err = 0;
+	err = esp_netif_init();
 
-		if (err == ESP_OK)
-		{
-			ESP_LOGI(TAG, "Start NetIf loop.");
-			err = esp_event_loop_create_default();
-		}
-		if (err != ESP_OK)
-		{
-			if(err == ESP_ERR_NO_MEM) ESP_LOGE(TAG, "NetIf NO_MEM error");
-			if(err == ESP_ERR_INVALID_STATE)  ESP_LOGE(TAG, "NetIf alread started error");
-			if(err == ESP_FAIL) ESP_LOGE(TAG, "NetIf Fail to created loop error");
-			ESP_LOGE(TAG, "NetIf error");		
-			DeviceSetStatus(DeviceStatus::FatalError);
-			return Result::Error;
-		}
+	if (err == ESP_OK)
+	{
+		ESP_LOGI(TAG, "Start NetIf loop.");
+		err = esp_event_loop_create_default();
 	}
-	else  ESP_LOGE(TAG, "NetIf Already inited");
+	if (err != ESP_OK)
+	{
+		if(err == ESP_ERR_NO_MEM) ESP_LOGE(TAG, "NetIf NO_MEM error");
+		if(err == ESP_ERR_INVALID_STATE)  ESP_LOGE(TAG, "NetIf alread started error");
+		if(err == ESP_FAIL) ESP_LOGE(TAG, "NetIf Fail to created loop error");
+		ESP_LOGE(TAG, "NetIf error");		
+		DeviceSetStatus(DeviceStatus::FatalError);
+		return Result::Error;
+	}
 
 	DeviceSetStatus(DeviceStatus::Ready);
 	return Result::Ok;
