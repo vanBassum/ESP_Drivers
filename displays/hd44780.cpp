@@ -188,7 +188,7 @@ Result HD44780::printf(int x, int y, const char *format, ...)
     va_list args;
     va_start(args, format);
 
-    char buffer[256]; // Adjust the buffer size as per your requirements
+    char buffer[32]; // Adjust the buffer size as per your requirements
 
     // Print formatted message to buffer
     int written = vsnprintf(buffer, sizeof(buffer), format, args);
@@ -201,8 +201,11 @@ Result HD44780::printf(int x, int y, const char *format, ...)
     va_end(args);
 
     // Write each character from the buffer to the LCD
-    for (int i = 0; i < written; i++) {
-        RETURN_ON_ERR(LCD_Data(buffer[i]));
+    for (int i = 0; i < 16; i++) {
+		if(i < written)
+        	RETURN_ON_ERR(LCD_Data(buffer[i]));
+		else
+        	RETURN_ON_ERR(LCD_Data(' '));	//Append line with white characters to clear the rest of the line.
     }
 
     return Result::Ok;
