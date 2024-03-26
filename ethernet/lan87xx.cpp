@@ -73,7 +73,6 @@ Result LAN87xx::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceMana
 {
     ContextLock lock(mutex); // Protect public functions with a mutex!
     RETURN_ON_ERR(deviceManager->getDeviceByKey<NetIF>(netIfDeviceKey, netIfDevice));
-    // Tell the devicemanager the driver is ready for initialisation. Since a dependency can be ready now, but can break at any time, it makes no sense to check the dependency for ready state, we do this later,
     DeviceSetStatus(DeviceStatus::Initializing);
     return Result::Ok;
 }
@@ -81,6 +80,7 @@ Result LAN87xx::DeviceLoadDependencies(std::shared_ptr<DeviceManager> deviceMana
 Result LAN87xx::DeviceInit()
 {
     ContextLock lock(mutex); // Protect public functions with a mutex!
+    RETURN_ON_ERR(netIfDevice->DeviceCheckStatus(DeviceStatus::Ready));	//Normally this isn't required, but this driver doenst call anything else from the NETIF. So this is the only way to insure NETIF is ready
     esp_err_t err = 0;
     // Init MAC and PHY configs to default
     eth_mac_config_t mac_config = ETH_MAC_DEFAULT_CONFIG();
