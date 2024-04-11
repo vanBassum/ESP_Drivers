@@ -13,6 +13,16 @@ class GpioPin
     const char* deviceKey = nullptr;
     std::shared_ptr<IGpio> device;
     Mutex mutex;
+    bool isrRegistered = false;
+    std::function<void()> isrCallback;
+
+    void DeviceIsrCallbackHandler()
+    {
+        if(isrCallback)
+            isrCallback();
+    }
+
+
 public:
 
     Result DeviceSetConfig(IDeviceConfig& config, const char* propertyKey)
@@ -61,5 +71,31 @@ public:
     {
         ContextLock lock(mutex);
         return device->GpioConfigure(port, 1<<pin, config);
+    }
+
+    Result RegisterISR(std::function<void()> callback)
+    {
+        ContextLock lock(mutex);
+        if(isrCallback)
+            ESP_LOGW(TAG, "Overwriting ISR callback for pin %d.%d", (int)port, (int)pin);
+        isrCallback = callback;
+        if(!isrRegistered)
+        {
+            RETURN_ON_ERR(device->GpioIsrAddCallback(port, pin, [&](){DeviceIsrCallbackHandler();}));
+            isrRegistered = true;
+        }
+        return Result::Ok;
+    }
+
+    Result UnRegisterISR()
+    {
+        ContextLock lock(mutex);
+        isrCallback = NULL;
+        if(isrRegistered)
+        {
+            RETURN_ON_ERR(device->GpioIsrRemoveCallback(port, pin));
+            isrRegistered = false;
+        }
+        return Result::Ok;
     }
 };
