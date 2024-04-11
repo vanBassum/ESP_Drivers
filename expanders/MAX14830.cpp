@@ -298,10 +298,10 @@ Result MAX14830::handleIRQForPort(uint8_t port)
 	}
 
 	//TODO: Optimize this code
-	for(int bit=0; bit < 4; bit++)	//Only 4 pins
+	for(int pin=0; pin < 4; pin++)	//Only 4 pins
 	{
-		uint8_t pin = 1<<bit;
-		if(sts & pin)
+		uint8_t bit = 1<<pin;
+		if(sts & bit)
 		{
 			// Search for the callback associated with the GPIO pin and call the callback
 			for (auto it = callbacks.begin(); it != callbacks.end(); ++it) {
