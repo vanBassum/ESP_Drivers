@@ -29,7 +29,7 @@ public:
     {
         ContextLock lock(mutex);
         const char* temp = nullptr;
-        RETURN_ON_ERR(config.getProperty(propertyKey, &temp));
+        RETURN_ON_ERR_LOGE(config.getProperty(propertyKey, &temp), TAG, "No value for property key '%s' not found", propertyKey);
         int result = sscanf(temp, "%m[^,],%hhu,%hhu", &deviceKey, &port, &pin);
         if(result != 3)
         {
