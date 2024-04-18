@@ -61,7 +61,7 @@ public:
     Result GpioPinRead(bool* value)
     {
         ContextLock lock(mutex);
-        uint8_t val;
+        uint8_t val = 0;
         RETURN_ON_ERR(device->GpioRead(port, 1<<pin, &val));
         *value = val?true:false;
         return Result::Ok;
