@@ -477,6 +477,7 @@ Result MAX14830::GpioRead(uint32_t port, uint8_t mask, uint8_t * value)
 		RETURN_ON_ERR(max310x_port_read(port, MAX310X_GPIODATA_REG, &reg));
 		*value &= ~minimask;
 		*value |= (reg>>4) & minimask;
+		*value &= 0x0F;
 	}
 	return Result::Ok;
 }
